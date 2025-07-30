@@ -1027,15 +1027,23 @@ def main(page: ft.Page):
             with open(filename, "w", newline='', encoding="utf-8") as f:
                 writer = csv.writer(f)
                 writer.writerow([
-                    "Display Name", "Sample ID", "Journeys", "Subjourneys"
+                    "Display Name", "Sample ID", "Parent", "cM", "Journeys", "Subjourneys"
                 ] + region_names)
                 for match in matches:
                     match_profile = match.get('matchProfile', {})
                     display_name = match_profile.get('displayName')
                     sample_id = match.get('sampleId')
+                    # Get Parent value from matchClusterCode
+                    parent_val = match.get('matchClusterCode', '')
+                    # Get cM value from relationship.sharedCentimorgans if present
+                    cm_val = None
+                    rel = match.get('relationship', {})
+                    if isinstance(rel, dict):
+                        cm_val = rel.get('sharedCentimorgans')
+                    if cm_val is None:
+                        cm_val = match.get('cM', '')
                     journey_names = match.get('journey_names', [])
                     subjourneys = match.get('subjourneys', [])
-                    # Debug prints removed
                     journey_names_strs = [str(j) for j in journey_names]
                     journeys_str = ";".join(
                         journey_names_strs) if journey_names_strs else ""
@@ -1046,7 +1054,7 @@ def main(page: ft.Page):
                     region_row = [region_percentages.get(
                         k, 0) for k in region_keys]
                     writer.writerow([
-                        display_name or '', sample_id or '', journeys_str, subjourneys_str
+                        display_name or '', sample_id or '', parent_val, cm_val, journeys_str, subjourneys_str
                     ] + region_row)
             status.value = f"Saved {len(matches)} matches."
             csv_file_label.value = f"CSV file: {filename}"

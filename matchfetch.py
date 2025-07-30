@@ -957,7 +957,6 @@ def main(page: ft.Page):
                             with open(progress_file, "w", encoding="utf-8") as pf:
                                 json.dump({"params": progress_key,
                                           "matches": matches}, pf)
-                            # status.value = f"Fetched {total_fetched} matches so far (page {page_num})."
                             page.update()
                             if len(match_list) < items_per_page or total_fetched >= n_matches:
                                 break

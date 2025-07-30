@@ -184,14 +184,18 @@ def main(page: ft.Page):
         ft.Radio(value="close", label="Close matches"),
         ft.Radio(value="distant", label="Distant matches"),
         ft.Radio(value="custom", label="Custom cM"),
-    ]), value="all")
+    ]), value="all", visible=False)
+
+    # Loading spinner below test_select
+    loading_spinner = ft.ProgressRing(visible=False)
     # Number of matches / cM inputs
     num_matches = ft.TextField(
         label="Number of matches", value="", width=100, visible=False)
     min_cm = ft.TextField(label="Min cM", visible=False, width=100)
     max_cm = ft.TextField(label="Max cM", visible=False, width=100)
-    # Journey checkboxes
-    journey_checkboxes = ft.Column([])
+    # Journey label and checkboxes
+    journey_label = ft.Text("🗺️ Journeys", visible=False)
+    journey_checkboxes = ft.Column([], visible=False)
     # Parent filter as exclusive checkboxes
     parent_options = [
         ("maternal", "Maternal"),
@@ -213,7 +217,8 @@ def main(page: ft.Page):
         cb = ft.Checkbox(label=label, key=val, value=False,
                          on_change=on_parent_checkbox_changed)
         parent_checkboxes.append(cb)
-    parent_row = ft.Row(parent_checkboxes)
+    parent_label = ft.Text("👪 Parent", visible=False)
+    parent_row = ft.Row(parent_checkboxes, visible=False)
     # No CSV filename input needed; always save to 'matches.csv'
     # CSV file output label (hidden by default)
     csv_file_label = ft.Text("", visible=False)
@@ -242,11 +247,20 @@ def main(page: ft.Page):
     def on_test_selected(e):
         idx = None
         options = test_select.options or []
-        # Hide fetch button and number of matches input immediately when switching tests
+        # Hide everything below test_select except spinner
+        radio_group.visible = False
         fetch_btn.visible = False
         num_matches.visible = False
         min_cm.visible = False
         max_cm.visible = False
+        journey_label.visible = False
+        journey_checkboxes.visible = False
+        parent_label.visible = False
+        parent_row.visible = False
+        csv_file_label.visible = False
+        open_csv_btn.visible = False
+        status.visible = False
+        loading_spinner.visible = True
         page.update()
         for i, opt in enumerate(options):
             if opt.key == test_select.value:
@@ -261,6 +275,15 @@ def main(page: ft.Page):
         counts, journeys = fetch_counts_journeys(test_guid, state["cookies"])
         state["counts"] = counts
         state["journeys"] = journeys
+        # Hide spinner after data is loaded
+        loading_spinner.visible = False
+        # Show everything below test_select
+        radio_group.visible = True
+        journey_label.visible = True
+        journey_checkboxes.visible = True
+        parent_label.visible = True
+        parent_row.visible = True
+        status.visible = True
         # Update radio labels (rebuild radios) and set default to 'all'
         radio_group.content = ft.Row([
             ft.Radio(value="all", label=f"All matches ({counts[0]})"),
@@ -431,11 +454,12 @@ def main(page: ft.Page):
 
     page.add(
         test_select,
+        loading_spinner,
         radio_group,
         ft.Row([num_matches, min_cm, max_cm]),
-        ft.Text("🗺️ Journeys"),
+        journey_label,
         journey_checkboxes,
-        ft.Text("👪 Parent"),
+        parent_label,
         parent_row,
         ft.Row([csv_file_label, open_csv_btn]),
         fetch_btn,

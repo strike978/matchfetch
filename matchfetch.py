@@ -341,18 +341,21 @@ class MatchFetchWindow(QWidget):
         parent_hbox = QHBoxLayout()
         self.rb_parent_maternal = QRadioButton("Maternal")
         self.rb_parent_paternal = QRadioButton("Paternal")
+        self.rb_parent_both = QRadioButton("Both sides")
         self.rb_parent_unassigned = QRadioButton("Unassigned")
-        self.rb_parent_none = QRadioButton("All")
+        self.rb_parent_none = QRadioButton("None")
         self.rb_parent_none.setChecked(True)
         self.parent_radio_group = QButtonGroup(self)
-        self.parent_radio_group.addButton(self.rb_parent_none, 0)
         self.parent_radio_group.addButton(self.rb_parent_maternal, 1)
         self.parent_radio_group.addButton(self.rb_parent_paternal, 2)
-        self.parent_radio_group.addButton(self.rb_parent_unassigned, 3)
-        parent_hbox.addWidget(self.rb_parent_none)
+        self.parent_radio_group.addButton(self.rb_parent_both, 3)
+        self.parent_radio_group.addButton(self.rb_parent_unassigned, 4)
+        self.parent_radio_group.addButton(self.rb_parent_none, 0)
         parent_hbox.addWidget(self.rb_parent_maternal)
         parent_hbox.addWidget(self.rb_parent_paternal)
+        parent_hbox.addWidget(self.rb_parent_both)
         parent_hbox.addWidget(self.rb_parent_unassigned)
+        parent_hbox.addWidget(self.rb_parent_none)
         filter_vbox.addLayout(parent_hbox)
         self.main_layout.addWidget(filter_group)
 
@@ -421,9 +424,12 @@ class MatchFetchWindow(QWidget):
             parental_sides = "maternal"
         elif self.rb_parent_paternal.isChecked():
             parental_sides = "paternal"
+        elif self.rb_parent_both.isChecked():
+            parental_sides = "both"
         elif self.rb_parent_unassigned.isChecked():
             parental_sides = "unassigned"
-        # If 'All' is selected, parental_sides remains None
+        # If 'None' is selected, parental_sides remains None and is not sent
+        # If 'None' is selected, parental_sides remains None and is not sent
         # Start fetch
         self.status.setText(
             f"Fetching matches for testGuid: {self.selected_test_guid}")

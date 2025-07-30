@@ -179,10 +179,12 @@ def batch_fetch_ethnicities(test_guid, sample_ids, cookies):
             return {}
 
 
-def enrich_matches_with_journeys_ethnicities(test_guid, matches, cookies, batch_size=24):
+def enrich_matches_with_journeys_ethnicities(test_guid, matches, cookies, batch_size=24, progress_callback=None):
     """
     For a list of matches, batch fetch journeys and ethnicities, and add them to each match dict.
     Modifies matches in place. Also resolves journey and subjourney names.
+    Accepts an optional progress_callback(batch_num, batch_total, batch_start, batch_end) for UI updates.
+    Skips batches that are already fully enriched (all sampleIds in batch are in enriched_ids).
     """
     sample_ids = [m.get('sampleId') for m in matches if m.get('sampleId')]
     total = len(sample_ids)
@@ -212,9 +214,19 @@ def enrich_matches_with_journeys_ethnicities(test_guid, matches, cookies, batch_
         except Exception:
             pass
     import time
+    batch_total = (total + batch_size - 1) // batch_size
+    real_batch_num = 0
     for i in range(0, total, batch_size):
+        batch_num = (i // batch_size) + 1
         batch = sample_ids[i:i+batch_size]
-        print(f"[ENRICH] Processing batch {i//batch_size+1}: {batch}")
+        # Skip batch if all sampleIds in batch are already enriched
+        if all(sid in enriched_ids for sid in batch):
+            continue
+        real_batch_num += 1
+        if progress_callback:
+            progress_callback(real_batch_num, batch_total,
+                              i, min(i+batch_size, total))
+        print(f"[ENRICH] Processing batch {batch_num}: {batch}")
         comm_result = batch_fetch_journeys(test_guid, batch, cookies)
         eth_result = batch_fetch_ethnicities(test_guid, batch, cookies)
         batch_journey_ids = set()
@@ -863,12 +875,17 @@ def main(page: ft.Page):
 
         # Fetch matches with progress
         items_per_page = 100
-        page_num = (len(matches) // items_per_page) + 1 if matches else 1
+        # Calculate correct starting page number based on already-fetched matches
         total_fetched = len(matches)
+        page_num = (total_fetched // items_per_page) + \
+            1 if total_fetched else 1
         import time
         try:
             with requests.Session() as session:
                 while total_fetched < n_matches:
+                    # Only update status for new pages being fetched
+                    status.value = f"Fetching matches (page {page_num})... {total_fetched} fetched so far."
+                    page.update()
                     base_url = f"https://www.ancestry.com/discoveryui-matches/parents/list/api/matchList/{test_guid}?itemsPerPage={items_per_page}&currentPage={page_num}"
                     if parental_sides:
                         base_url += f"&parentalSides={parental_sides}"
@@ -914,6 +931,8 @@ def main(page: ft.Page):
                             with open(progress_file, "w", encoding="utf-8") as pf:
                                 json.dump({"params": progress_key,
                                           "matches": matches}, pf)
+                            status.value = f"Fetched {total_fetched} matches so far (page {page_num})."
+                            page.update()
                             if len(match_list) < items_per_page or total_fetched >= n_matches:
                                 break
                             page_num += 1
@@ -941,8 +960,11 @@ def main(page: ft.Page):
         status.value = f"Enriching {len(matches)} matches..."
         page.update()
         try:
+            def enrichment_progress_callback(batch_num, batch_total, batch_start, batch_end):
+                status.value = f"Enriching batch {batch_num}/{batch_total} (matches {batch_start+1}-{batch_end})..."
+                page.update()
             enrich_matches_with_journeys_ethnicities(
-                test_guid, matches, state["cookies"], batch_size=24)
+                test_guid, matches, state["cookies"], batch_size=24, progress_callback=enrichment_progress_callback)
         except Exception as ex:
             status.value = f"Error during enrichment: {ex}. Progress saved. You can rerun to resume."
             resume_label.value = "Resume available: {} matches fetched, {} enriched.".format(len(

@@ -224,7 +224,8 @@ def enrich_matches_with_journeys_ethnicities(test_guid, matches, cookies, batch_
             continue
         real_batch_num += 1
         if progress_callback:
-            progress_callback(real_batch_num, batch_total,
+            # Pass the true batch_num (overall batch index, 1-based) for correct UI display
+            progress_callback(batch_num, batch_total,
                               i, min(i+batch_size, total))
         print(f"[ENRICH] Processing batch {batch_num}: {batch}")
         comm_result = batch_fetch_journeys(test_guid, batch, cookies)
@@ -670,9 +671,11 @@ def main(page: ft.Page):
                 if len(parts) == 2:
                     min_cm.value = parts[0]
                     max_cm.value = parts[1]
+            # For custom cM, ensure num_matches.value is set for resume logic
+            num_matches.value = str(n_matches)
         else:
             radio_group.value = "all"
-        num_matches.value = str(n_matches)
+            num_matches.value = str(n_matches)
         # Set journey checkboxes
         for cb in journey_checkboxes.controls:
             if isinstance(cb, ft.Checkbox):
@@ -780,32 +783,63 @@ def main(page: ft.Page):
         test_guid = state["test_list"][idx][1]
         shared_dna = None
         match_type = None
-        try:
-            nval = num_matches.value if num_matches.value is not None else "0"
-            n_matches = int(nval)
-            if n_matches <= 0:
-                raise ValueError
-        except Exception:
-            status.value = "Enter a positive integer for matches."
-            page.update()
-            return
-        if radio_group.value == "custom":
+        # Determine if we are resuming and in custom cM mode
+        is_custom_cm = radio_group.value == "custom"
+        progress = {}
+        import os
+        if os.path.exists(progress_file):
+            try:
+                with open(progress_file, "r", encoding="utf-8") as pf:
+                    progress = json.load(pf)
+            except Exception:
+                progress = {}
+        resuming = False
+        progress_params = progress.get("params", {})
+        progress_n_matches = progress_params.get("n_matches")
+        # If resuming and custom cM, use n_matches from progress
+        if is_custom_cm and progress.get("params") and progress.get("matches") and progress_params.get("shared_dna"):
+            n_matches = int(progress_n_matches)
+            user_n_matches = n_matches
             minv = min_cm.value.strip() if min_cm.value else ""
             maxv = max_cm.value.strip() if max_cm.value else ""
-            if minv and maxv:
-                shared_dna = f"{minv}-{maxv}"
-            elif minv:
-                shared_dna = f"{minv}-"
-            elif maxv:
-                shared_dna = f"0-{maxv}"
-            n_matches = 999999
+            shared_dna = progress_params.get("shared_dna")
+            # If min/max cm are not set, try to parse from shared_dna
+            if not minv or not maxv:
+                parts = shared_dna.split("-")
+                if len(parts) == 2:
+                    minv = parts[0]
+                    maxv = parts[1]
+            n_matches_fetch = 999999
         else:
-            if radio_group.value == "close":
-                match_type = "close"
-            elif radio_group.value == "distant":
-                match_type = "distant"
+            try:
+                nval = num_matches.value if num_matches.value is not None else "0"
+                n_matches = int(nval)
+                if n_matches <= 0:
+                    raise ValueError
+            except Exception:
+                status.value = "Enter a positive integer for matches."
+                page.update()
+                return
+            user_n_matches = n_matches  # Save the user's intended value for progress tracking
+            if radio_group.value == "custom":
+                minv = min_cm.value.strip() if min_cm.value else ""
+                maxv = max_cm.value.strip() if max_cm.value else ""
+                if minv and maxv:
+                    shared_dna = f"{minv}-{maxv}"
+                elif minv:
+                    shared_dna = f"{minv}-"
+                elif maxv:
+                    shared_dna = f"0-{maxv}"
+                # Use large value for fetching, but keep user_n_matches for progress
+                n_matches_fetch = 999999
             else:
-                match_type = "all"
+                if radio_group.value == "close":
+                    match_type = "close"
+                elif radio_group.value == "distant":
+                    match_type = "distant"
+                else:
+                    match_type = "all"
+                n_matches_fetch = n_matches
         journey_ids = [cb.key for cb in journey_checkboxes.controls if isinstance(
             cb, ft.Checkbox) and cb.value]
         # Only one parent checkbox can be selected
@@ -835,21 +869,13 @@ def main(page: ft.Page):
         page.update()
 
         # Progress/resume system
-        progress = {}
-        if os.path.exists(progress_file):
-            try:
-                with open(progress_file, "r", encoding="utf-8") as pf:
-                    progress = json.load(pf)
-            except Exception:
-                progress = {}
-        # Check if progress matches current params
         progress_key = {
             "test_guid": test_guid,
             "shared_dna": shared_dna,
             "journey_ids": journey_ids,
             "parental_sides": parental_sides,
             "match_type": match_type,
-            "n_matches": n_matches
+            "n_matches": user_n_matches
         }
         matches = []
         error = ""
@@ -882,7 +908,7 @@ def main(page: ft.Page):
         import time
         try:
             with requests.Session() as session:
-                while total_fetched < n_matches:
+                while total_fetched < (n_matches if not (is_custom_cm and progress.get("params")) else n_matches):
                     # Only update status for new pages being fetched
                     status.value = f"Fetching matches (page {page_num})... {total_fetched} fetched so far."
                     page.update()
@@ -931,7 +957,7 @@ def main(page: ft.Page):
                             with open(progress_file, "w", encoding="utf-8") as pf:
                                 json.dump({"params": progress_key,
                                           "matches": matches}, pf)
-                            status.value = f"Fetched {total_fetched} matches so far (page {page_num})."
+                            # status.value = f"Fetched {total_fetched} matches so far (page {page_num})."
                             page.update()
                             if len(match_list) < items_per_page or total_fetched >= n_matches:
                                 break
@@ -957,11 +983,13 @@ def main(page: ft.Page):
             return
 
         # Enrich matches with journeys and ethnicities, and resolve subjourney names before CSV export
-        status.value = f"Enriching {len(matches)} matches..."
+        status.value = f"Processing {len(matches)} matches..."
         page.update()
         try:
             def enrichment_progress_callback(batch_num, batch_total, batch_start, batch_end):
-                status.value = f"Enriching batch {batch_num}/{batch_total} (matches {batch_start+1}-{batch_end})..."
+                percent = int((batch_num / batch_total) *
+                              100) if batch_total else 100
+                status.value = f"Processing batch {batch_num}/{batch_total} ({percent}%)..."
                 page.update()
             enrich_matches_with_journeys_ethnicities(
                 test_guid, matches, state["cookies"], batch_size=24, progress_callback=enrichment_progress_callback)

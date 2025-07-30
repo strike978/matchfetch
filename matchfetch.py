@@ -5,7 +5,7 @@ import json
 from functools import partial
 from PySide6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox,
-    QRadioButton, QButtonGroup, QLineEdit, QPushButton, QTextEdit, QCheckBox, QGroupBox, QGridLayout
+    QRadioButton, QButtonGroup, QLineEdit, QPushButton, QTextEdit, QCheckBox, QGroupBox, QGridLayout, QFrame
 )
 from PySide6.QtGui import QIcon
 from PySide6.QtCore import Qt, QThread, Signal
@@ -240,7 +240,7 @@ class MatchFetchWindow(QWidget):
         self.radio_group.buttonClicked.connect(self.on_radio_changed)
 
         # Dynamic input row (number of matches or cM)
-        self.matches_label = QLabel("Number of matches to fetch:")
+        self.matches_label = QLabel("Number of matches to fetch")
         main_layout.addWidget(self.matches_label)
         self.input_row = QHBoxLayout()
         self.input_num_matches = QLineEdit()
@@ -255,22 +255,35 @@ class MatchFetchWindow(QWidget):
 
         # Filtering group
         filter_group = QGroupBox("Filter")
-        self.filter_layout = QGridLayout()
-        filter_group.setLayout(self.filter_layout)
-        # Journeys
-        self.filter_layout.addWidget(QLabel("Journeys:"), 0, 0)
-        self.journey_checkboxes = []
-        # Placeholders, will be filled after test selection
-        # Parents
-        self.filter_layout.addWidget(QLabel("Parent:"), 1, 0)
+        filter_vbox = QVBoxLayout()
+        filter_group.setLayout(filter_vbox)
+
+        # Journeys section
+        journeys_label = QLabel("🗺️ Journeys")
+        filter_vbox.addWidget(journeys_label)
+        self.journey_hbox = QHBoxLayout()
+        filter_vbox.addLayout(self.journey_hbox)
+        self.journey_checkboxes = []  # Will be filled after test selection
+
+        # Horizontal line
+        hline = QFrame()
+        hline.setFrameShape(QFrame.Shape.HLine)
+        hline.setFrameShadow(QFrame.Shadow.Sunken)
+        filter_vbox.addWidget(hline)
+
+        # Parents section
+        parent_label = QLabel("👪 Parent")
+        filter_vbox.addWidget(parent_label)
+        parent_hbox = QHBoxLayout()
         self.cb_parent_paternal = QCheckBox("Maternal")
         self.cb_parent_maternal = QCheckBox("Paternal")
         self.cb_parent_both_signed = QCheckBox("Both sides")
         self.cb_parent_unassigned = QCheckBox("Unassigned")
-        self.filter_layout.addWidget(self.cb_parent_paternal, 1, 1)
-        self.filter_layout.addWidget(self.cb_parent_maternal, 1, 2)
-        self.filter_layout.addWidget(self.cb_parent_both_signed, 1, 3)
-        self.filter_layout.addWidget(self.cb_parent_unassigned, 1, 4)
+        parent_hbox.addWidget(self.cb_parent_paternal)
+        parent_hbox.addWidget(self.cb_parent_maternal)
+        parent_hbox.addWidget(self.cb_parent_both_signed)
+        parent_hbox.addWidget(self.cb_parent_unassigned)
+        filter_vbox.addLayout(parent_hbox)
         main_layout.addWidget(filter_group)
 
         # Fetch button
@@ -337,19 +350,23 @@ class MatchFetchWindow(QWidget):
             self.radio_all.setChecked(True)
             # Set matches input to total
             self.input_num_matches.setText(str(total))
-            # Remove old journey checkboxes
-            for cb in getattr(self, 'journey_checkboxes', []):
-                cb.setParent(None)
-            self.journey_checkboxes = []
-            # Fetch and add journey checkboxes
-            journeys = self.fetch_journeys(self.selected_test_guid)
-            col = 1
-            for jid, jname in journeys:
-                cb = QCheckBox(jname)
-                cb.setObjectName(jid)
-                self.journey_checkboxes.append(cb)
-                self.filter_layout.addWidget(cb, 0, col)
-                col += 1
+        # Remove old journey checkboxes
+        for cb in getattr(self, 'journey_checkboxes', []):
+            cb.setParent(None)
+        self.journey_checkboxes = []
+        # Remove all widgets from journey_hbox
+        while self.journey_hbox.count():
+            item = self.journey_hbox.takeAt(0)
+            widget = item.widget()
+            if widget:
+                widget.setParent(None)
+        # Fetch and add journey checkboxes
+        journeys = self.fetch_journeys(self.selected_test_guid)
+        for jid, jname in journeys:
+            cb = QCheckBox(jname)
+            cb.setObjectName(jid)
+            self.journey_checkboxes.append(cb)
+            self.journey_hbox.addWidget(cb)
             QApplication.restoreOverrideCursor()
             self.status.setText("")
             self.update_input_row()

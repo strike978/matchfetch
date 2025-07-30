@@ -842,10 +842,16 @@ def main(page: ft.Page):
         matches = []
         error = ""
         resume = False
+        existing_ids = set()
         if progress.get("params") == progress_key and "matches" in progress:
             matches = progress["matches"]
             resume = True
             status.value = f"Resuming from previous progress: {len(matches)} matches already fetched."
+            # Track existing sampleIds to avoid duplicates
+            for m in matches:
+                sid = m.get('sampleId')
+                if sid:
+                    existing_ids.add(sid)
             page.update()
         else:
             # New run, clear progress file
@@ -894,9 +900,15 @@ def main(page: ft.Page):
                             match_list = data.get('matchList', [])
                             if not match_list:
                                 break
-                            # Only add up to n_matches total
+                            # Only add up to n_matches total, and avoid duplicates
+                            new_matches = []
+                            for m in match_list:
+                                sid = m.get('sampleId')
+                                if sid and sid not in existing_ids:
+                                    new_matches.append(m)
+                                    existing_ids.add(sid)
                             remaining = n_matches - len(matches)
-                            matches.extend(match_list[:remaining])
+                            matches.extend(new_matches[:remaining])
                             total_fetched = len(matches)
                             # Save progress after each page
                             with open(progress_file, "w", encoding="utf-8") as pf:

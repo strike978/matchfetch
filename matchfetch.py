@@ -211,6 +211,7 @@ def enrich_matches_with_journeys_ethnicities(test_guid, matches, cookies, batch_
                     enriched_ids = set(progress["enriched_ids"])
         except Exception:
             pass
+    import time
     for i in range(0, total, batch_size):
         batch = sample_ids[i:i+batch_size]
         print(f"[ENRICH] Processing batch {i//batch_size+1}: {batch}")
@@ -286,6 +287,7 @@ def enrich_matches_with_journeys_ethnicities(test_guid, matches, cookies, batch_
                           "enriched_ids": list(enriched_ids)}, pf)
         except Exception as ex:
             print(f"[ENRICH] Could not save progress after batch: {ex}")
+        time.sleep(2)  # Delay between batches
 
 
 def resolve_journey_names(journey_ids, cookies):
@@ -857,6 +859,7 @@ def main(page: ft.Page):
         items_per_page = 100
         page_num = (len(matches) // items_per_page) + 1 if matches else 1
         total_fetched = len(matches)
+        import time
         try:
             with requests.Session() as session:
                 while total_fetched < n_matches:
@@ -902,6 +905,7 @@ def main(page: ft.Page):
                             if len(match_list) < items_per_page or total_fetched >= n_matches:
                                 break
                             page_num += 1
+                            time.sleep(2)  # Delay between fetching each page
                         except Exception as ex:
                             error = f"JSON error on page {page_num}: {ex}"
                             break

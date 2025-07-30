@@ -328,7 +328,7 @@ def main(page: ft.Page):
                 shared_dna = f"{minv}-"
             elif maxv:
                 shared_dna = f"0-{maxv}"
-            n_matches = 1000
+            n_matches = 999999
         else:
             if radio_group.value == "close":
                 match_type = "close"

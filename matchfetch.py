@@ -1,120 +1,7 @@
-import sys
-from PySide6.QtCore import QThread, Signal
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox,
-    QRadioButton, QButtonGroup, QLineEdit, QPushButton, QTextEdit, QCheckBox, QGroupBox, QGridLayout, QFrame
-)
-from functools import partial
+import flet as ft
 import json
 import re
 import requests
-
-
-class FetchCountsJourneysThread(QThread):
-    result_signal = Signal(object, object)
-
-    def __init__(self, test_guid, cookies):
-        super().__init__()
-        self.test_guid = test_guid
-        self.cookies = cookies
-
-    def run(self):
-        # Fetch match counts
-        headers = {
-            'User-Agent': 'Mozilla/5.0',
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-        }
-        from time import sleep
-        csrf_token = get_csrf_token(self.cookies)
-        if csrf_token:
-            headers['X-CSRF-Token'] = csrf_token
-        import traceback
-        debug_log = []
-        total = close = distant = 0
-        journeys = []
-        try:
-            with requests.Session() as session:
-                # --- MATCH COUNTS ---
-                count_url = f"https://www.ancestry.com/discoveryui-matches/parents/list/api/matchCount/{self.test_guid}"
-                # Total
-                payload_total = json.dumps({"lower": 0, "upper": 10})
-                resp_total = session.post(
-                    count_url, headers=headers, cookies=self.cookies, data=payload_total)
-                if resp_total.status_code == 200:
-                    data = resp_total.json()
-                    debug_log.append(f"Total count raw: {data}")
-                    total = data.get('count', 0)
-                else:
-                    debug_log.append(
-                        f"Total count status: {resp_total.status_code}")
-                # Close
-                payload_close = json.dumps({"lower": 0, "upper": 9})
-                resp_close = session.post(
-                    count_url, headers=headers, cookies=self.cookies, data=payload_close)
-                if resp_close.status_code == 200:
-                    data = resp_close.json()
-                    debug_log.append(f"Close count raw: {data}")
-                    close = data.get('count', 0)
-                else:
-                    debug_log.append(
-                        f"Close count status: {resp_close.status_code}")
-                # Distant
-                payload_distant = json.dumps({"lower": 10, "upper": 10})
-                resp_distant = session.post(
-                    count_url, headers=headers, cookies=self.cookies, data=payload_distant)
-                if resp_distant.status_code == 200:
-                    data = resp_distant.json()
-                    debug_log.append(f"Distant count raw: {data}")
-                    distant = data.get('count', 0)
-                else:
-                    debug_log.append(
-                        f"Distant count status: {resp_distant.status_code}")
-
-                # --- JOURNEYS ---
-                url_journeys = f"https://www.ancestry.com/discoveryui-matches/parents/list/api/journeys/{self.test_guid}"
-                resp_j = session.get(
-                    url_journeys, headers=headers, cookies=self.cookies)
-                journey_ids = set()
-                if resp_j.status_code == 200:
-                    data = resp_j.json()
-                    debug_log.append(f"Journeys raw: {data}")
-                    # The Go code expects a dict of arrays of objects with communityId
-                    for arr in data.values():
-                        if isinstance(arr, list):
-                            for comm in arr:
-                                cid = comm.get('communityId')
-                                if cid:
-                                    journey_ids.add(cid)
-                else:
-                    debug_log.append(f"Journeys status: {resp_j.status_code}")
-                # Now fetch journey names
-                if journey_ids:
-                    names_url = "https://www.ancestry.com/dna/origins/branches/names"
-                    payload = json.dumps(list(journey_ids))
-                    names_headers = dict(headers)
-                    names_headers['Content-Type'] = 'application/json'
-                    resp_names = session.post(
-                        names_url, headers=names_headers, cookies=self.cookies, data=payload)
-                    if resp_names.status_code == 200:
-                        names_data = resp_names.json()
-                        debug_log.append(f"Journey names raw: {names_data}")
-                        for cid in journey_ids:
-                            jname = names_data.get(cid)
-                            if jname:
-                                journeys.append((cid, jname))
-                    else:
-                        debug_log.append(
-                            f"Journey names status: {resp_names.status_code}")
-        except Exception as e:
-            debug_log.append(f"Exception: {e}\n{traceback.format_exc()}")
-        self.result_signal.emit((total, close, distant), journeys)
-        print("\n".join(debug_log))
-
-
-# Ensure QThread and Signal are imported for background threads
 
 
 def parse_cookie_string(cookie_string):
@@ -182,380 +69,314 @@ def parse_test_list(tests_json):
     return test_list
 
 
-class FetchMatchesThread(QThread):
-    result_signal = Signal(list, str)
-
-    def __init__(self, test_guid, num_matches, cookies, csrf_token, shared_dna=None, journey_ids=None, parental_sides=None, match_type=None):
-        super().__init__()
-        self.test_guid = test_guid
-        self.num_matches = num_matches
-        self.cookies = cookies
-        self.csrf_token = csrf_token
-        self.shared_dna = shared_dna  # e.g. "90-400" or None
-        self.journey_ids = journey_ids or []  # list of journey IDs
-        # e.g. "maternal", "paternal", "both", "unassigned", or None
-        self.parental_sides = parental_sides
-        self.match_type = match_type  # "all", "close", "distant", or None
-        self._should_stop = False
-
-    def stop(self):
-        self._should_stop = True
-
-    def run(self):
-        items_per_page = 100
-        matches = []
-        page = 1
-        headers = {
-            'User-Agent': 'Mozilla/5.0',
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-        }
-        if self.csrf_token:
-            headers['X-CSRF-Token'] = self.csrf_token
+def fetch_counts_journeys(test_guid, cookies):
+    headers = {
+        'User-Agent': 'Mozilla/5.0',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+    }
+    csrf_token = get_csrf_token(cookies)
+    if csrf_token:
+        headers['X-CSRF-Token'] = csrf_token
+    total = close = distant = 0
+    journeys = []
+    journey_ids = set()
+    debug_log = []
+    try:
         with requests.Session() as session:
-            while len(matches) < self.num_matches:
-                if self._should_stop:
-                    break
-                base_url = f"https://www.ancestry.com/discoveryui-matches/parents/list/api/matchList/{self.test_guid}?itemsPerPage={items_per_page}&currentPage={page}"
-                # Add parentalSides if set
-                if self.parental_sides:
-                    base_url += f"&parentalSides={self.parental_sides}"
-                # Add sharedDna for close/distant, or use custom cM
-                if self.match_type == "close":
-                    base_url += "&sharedDna=closeMatches"
-                elif self.match_type == "distant":
-                    base_url += "&sharedDna=distantMatches"
-                elif self.shared_dna:
-                    base_url += f"&sharedDna={self.shared_dna}"
-                # Add journey filter if set
-                if self.journey_ids:
-                    import json as _json
-                    jf = self.journey_ids
-                    if not isinstance(jf, str):
-                        jf = _json.dumps(jf)
-                    base_url += f"&searchCommunity={jf}"
-                url = base_url
-                print(f"[FetchMatchesThread] Fetching URL: {url}")
-                response = session.get(
-                    url, headers=headers, cookies=self.cookies)
-                if self._should_stop:
-                    break
-                if response.status_code == 200:
-                    try:
-                        data = response.json()
-                        match_list = data.get('matchList', [])
-                        if not match_list:
-                            break
-                        matches.extend(match_list)
-                        if len(match_list) < items_per_page:
-                            break
-                        page += 1
-                    except Exception:
+            count_url = f"https://www.ancestry.com/discoveryui-matches/parents/list/api/matchCount/{test_guid}"
+            payload_total = json.dumps({"lower": 0, "upper": 10})
+            resp_total = session.post(
+                count_url, headers=headers, cookies=cookies, data=payload_total)
+            if resp_total.status_code == 200:
+                data = resp_total.json()
+                total = data.get('count', 0)
+            payload_close = json.dumps({"lower": 0, "upper": 9})
+            resp_close = session.post(
+                count_url, headers=headers, cookies=cookies, data=payload_close)
+            if resp_close.status_code == 200:
+                data = resp_close.json()
+                close = data.get('count', 0)
+            payload_distant = json.dumps({"lower": 10, "upper": 10})
+            resp_distant = session.post(
+                count_url, headers=headers, cookies=cookies, data=payload_distant)
+            if resp_distant.status_code == 200:
+                data = resp_distant.json()
+                distant = data.get('count', 0)
+            url_journeys = f"https://www.ancestry.com/discoveryui-matches/parents/list/api/journeys/{test_guid}"
+            resp_j = session.get(
+                url_journeys, headers=headers, cookies=cookies)
+            if resp_j.status_code == 200:
+                data = resp_j.json()
+                for arr in data.values():
+                    if isinstance(arr, list):
+                        for comm in arr:
+                            cid = comm.get('communityId')
+                            if cid:
+                                journey_ids.add(cid)
+            if journey_ids:
+                names_url = "https://www.ancestry.com/dna/origins/branches/names"
+                payload = json.dumps(list(journey_ids))
+                names_headers = dict(headers)
+                names_headers['Content-Type'] = 'application/json'
+                resp_names = session.post(
+                    names_url, headers=names_headers, cookies=cookies, data=payload)
+                if resp_names.status_code == 200:
+                    names_data = resp_names.json()
+                    for cid in journey_ids:
+                        jname = names_data.get(cid)
+                        if jname:
+                            journeys.append((cid, jname))
+    except Exception as e:
+        debug_log.append(f"Exception: {e}")
+    return (total, close, distant), journeys
+
+
+def fetch_matches(test_guid, num_matches, cookies, csrf_token, shared_dna=None, journey_ids=None, parental_sides=None, match_type=None):
+    items_per_page = 100
+    matches = []
+    page = 1
+    headers = {
+        'User-Agent': 'Mozilla/5.0',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+    }
+    if csrf_token:
+        headers['X-CSRF-Token'] = csrf_token
+    with requests.Session() as session:
+        while len(matches) < num_matches:
+            base_url = f"https://www.ancestry.com/discoveryui-matches/parents/list/api/matchList/{test_guid}?itemsPerPage={items_per_page}&currentPage={page}"
+            if parental_sides:
+                base_url += f"&parentalSides={parental_sides}"
+            if match_type == "close":
+                base_url += "&sharedDna=closeMatches"
+            elif match_type == "distant":
+                base_url += "&sharedDna=distantMatches"
+            elif shared_dna:
+                base_url += f"&sharedDna={shared_dna}"
+            if journey_ids:
+                import json as _json
+                jf = journey_ids
+                if not isinstance(jf, str):
+                    jf = _json.dumps(jf)
+                base_url += f"&searchCommunity={jf}"
+            url = base_url
+            response = session.get(url, headers=headers, cookies=cookies)
+            if response.status_code == 200:
+                try:
+                    data = response.json()
+                    match_list = data.get('matchList', [])
+                    if not match_list:
                         break
-                else:
+                    matches.extend(match_list)
+                    if len(match_list) < items_per_page:
+                        break
+                    page += 1
+                except Exception:
                     break
-        self.result_signal.emit(
-            matches[:self.num_matches], "" if matches else "No matches found.")
+            else:
+                break
+    return matches[:num_matches], "" if matches else "No matches found."
 
 
-class MatchFetchWindow(QWidget):
-    def closeEvent(self, event):
-        # Properly stop the fetch thread if running
-        if hasattr(self, 'current_thread') and self.current_thread is not None:
-            if self.current_thread.isRunning():
-                self.current_thread.stop()
+def main(page: ft.Page):
+    page.title = "MatchFetch (Flet)"
+    status = ft.Text("")
+    log = ft.TextField(multiline=True, read_only=True,
+                       min_lines=10, max_lines=20, expand=True)
+    # Cookie file input
+    cookie_file = ft.TextField(
+        label="Cookie file path", value="cookie.txt", width=300)
+    # Test selection
+    test_select = ft.Dropdown(label="Select a test", options=[], width=400)
+    # Radio buttons for match type
+    radio_group = ft.RadioGroup(content=ft.Row([
+        ft.Radio(value="all", label="All matches"),
+        ft.Radio(value="close", label="Close matches"),
+        ft.Radio(value="distant", label="Distant matches"),
+        ft.Radio(value="custom", label="Custom cM"),
+    ]), value="all")
+    # Number of matches / cM inputs
+    num_matches = ft.TextField(label="Number of matches", value="5", width=100)
+    min_cm = ft.TextField(label="Min cM", visible=False, width=100)
+    max_cm = ft.TextField(label="Max cM", visible=False, width=100)
+    # Journey checkboxes
+    journey_checkboxes = ft.Column([])
+    # Parent filter as exclusive checkboxes
+    parent_options = [
+        ("maternal", "Maternal"),
+        ("paternal", "Paternal"),
+        ("both", "Both sides"),
+        ("unassigned", "Unassigned"),
+        ("none", "None"),
+    ]
+    parent_checkboxes = []
 
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle("MatchFetch")
-        self.setWindowIcon(QIcon("icon.png"))
-        self.resize(700, 500)
-        self.cookies = None
-        self.test_list = []
-        self.selected_test_guid = None
-        self.current_thread = None
-        self.match_count_total = 0
-        self.match_count_close = 0
-        self.match_count_distant = 0
+    def on_parent_checkbox_changed(e):
+        # Only allow one checked at a time, but allow all to be unchecked
+        changed = e.control
+        if changed.value:
+            for cb in parent_checkboxes:
+                if cb != changed:
+                    cb.value = False
+        page.update()
+    for val, label in parent_options:
+        cb = ft.Checkbox(label=label, key=val, value=False,
+                         on_change=on_parent_checkbox_changed)
+        parent_checkboxes.append(cb)
+    parent_row = ft.Row(parent_checkboxes)
+    # Fetch button
+    fetch_btn = ft.ElevatedButton("Fetch Matches")
+    # Store cookies and test list
+    state = {"cookies": None, "test_list": [],
+             "counts": (0, 0, 0), "journeys": []}
 
-        # Layouts
-        self.main_layout = QVBoxLayout()
-        self.setLayout(self.main_layout)
+    def load_tests(e=None):
+        tests_json, cookies = fetch_tests_json(
+            cookie_file.value or "cookie.txt")
+        state["cookies"] = cookies
+        state["test_list"] = parse_test_list(tests_json)
+        options = [ft.dropdown.Option("Select a test", "")] + [
+            ft.dropdown.Option(f"[{i+1}] {n} ({g})", g) for i, (n, g) in enumerate(state["test_list"])
+        ]
+        test_select.options = options
+        test_select.value = ""
+        page.update()
 
-        # Test selection
-        self.test_select = QComboBox()
-        self.test_select.addItem("Select a test", None)
-        self.test_select.setCurrentIndex(0)
-        self.test_select.currentIndexChanged.connect(self.on_test_selected)
-        self.main_layout.addWidget(self.test_select)
-
-        # Match filter radios
-        self.radio_group = QButtonGroup(self)
-        radio_layout = QHBoxLayout()
-        self.radio_all = QRadioButton("All matches")
-        self.radio_close = QRadioButton("Close matches")
-        self.radio_distant = QRadioButton("Distant matches")
-        self.radio_custom = QRadioButton("Custom cM")
-        self.radio_all.setChecked(True)
-        for i, radio in enumerate([self.radio_all, self.radio_close, self.radio_distant, self.radio_custom]):
-            self.radio_group.addButton(radio, i)
-            radio_layout.addWidget(radio)
-        self.main_layout.addLayout(radio_layout)
-        self.radio_group.buttonClicked.connect(self.on_radio_changed)
-
-        # Dynamic input row (number of matches or cM)
-        self.matches_label = QLabel("Number of matches to fetch")
-        self.main_layout.addWidget(self.matches_label)
-        self.input_row = QHBoxLayout()
-        self.input_num_matches = QLineEdit()
-        self.input_num_matches.setPlaceholderText("e.g. 5")
-        self.input_num_matches.setText("5")
-        self.input_min_cm = QLineEdit()
-        self.input_min_cm.setPlaceholderText("Min cM")
-        self.input_max_cm = QLineEdit()
-        self.input_max_cm.setPlaceholderText("Max cM")
-        self.input_row.addWidget(self.input_num_matches)
-        self.main_layout.addLayout(self.input_row)
-
-        # Filtering group
-        filter_group = QGroupBox("Filter")
-        filter_vbox = QVBoxLayout()
-        filter_group.setLayout(filter_vbox)
-
-        # Journeys section
-        journeys_label = QLabel("🗺️ Journeys")
-        filter_vbox.addWidget(journeys_label)
-        self.journey_hbox = QHBoxLayout()
-        filter_vbox.addLayout(self.journey_hbox)
-        self.journey_checkboxes = []
-
-        # Horizontal line
-        hline = QFrame()
-        hline.setFrameShape(QFrame.Shape.HLine)
-        hline.setFrameShadow(QFrame.Shadow.Sunken)
-        filter_vbox.addWidget(hline)
-
-        # Parents section
-        parent_label = QLabel("👪 Parent")
-        filter_vbox.addWidget(parent_label)
-        parent_hbox = QHBoxLayout()
-        self.rb_parent_maternal = QRadioButton("Maternal")
-        self.rb_parent_paternal = QRadioButton("Paternal")
-        self.rb_parent_both = QRadioButton("Both sides")
-        self.rb_parent_unassigned = QRadioButton("Unassigned")
-        self.rb_parent_none = QRadioButton("None")
-        self.rb_parent_none.setChecked(True)
-        self.parent_radio_group = QButtonGroup(self)
-        self.parent_radio_group.addButton(self.rb_parent_maternal, 1)
-        self.parent_radio_group.addButton(self.rb_parent_paternal, 2)
-        self.parent_radio_group.addButton(self.rb_parent_both, 3)
-        self.parent_radio_group.addButton(self.rb_parent_unassigned, 4)
-        self.parent_radio_group.addButton(self.rb_parent_none, 0)
-        parent_hbox.addWidget(self.rb_parent_maternal)
-        parent_hbox.addWidget(self.rb_parent_paternal)
-        parent_hbox.addWidget(self.rb_parent_both)
-        parent_hbox.addWidget(self.rb_parent_unassigned)
-        parent_hbox.addWidget(self.rb_parent_none)
-        filter_vbox.addLayout(parent_hbox)
-        self.main_layout.addWidget(filter_group)
-
-        # Fetch button
-        self.fetch_button = QPushButton("Fetch Matches")
-        self.fetch_button.clicked.connect(self.on_fetch_clicked)
-        self.main_layout.addWidget(self.fetch_button)
-
-        # Log area
-        self.log = QTextEdit()
-        self.log.setReadOnly(True)
-        self.main_layout.addWidget(self.log, stretch=1)
-
-        # Status
-        self.status = QLabel("")
-        self.main_layout.addWidget(self.status)
-
-        self.load_tests()
-        self.update_input_row()
-
-    def on_fetch_clicked(self):
-        # Stop previous thread if running
-        if hasattr(self, 'current_thread') and self.current_thread is not None:
-            if self.current_thread.isRunning():
-                self.current_thread.stop()
-                self.current_thread.wait()
-        if not self.selected_test_guid:
-            self.status.setText("No test selected.")
+    def on_test_selected(e):
+        idx = None
+        options = test_select.options or []
+        for i, opt in enumerate(options):
+            if opt.key == test_select.value:
+                idx = i-1
+                break
+        if idx is None or idx < 0:
+            status.value = "No test selected."
+            journey_checkboxes.controls.clear()
+            page.update()
             return
-        # Gather filters
-        shared_dna = None
-        num_matches = 5
-        match_type = None
-        if self.radio_custom.isChecked():
-            min_cm = self.input_min_cm.text().strip()
-            max_cm = self.input_max_cm.text().strip()
-            if min_cm and max_cm:
-                shared_dna = f"{min_cm}-{max_cm}"
-            elif min_cm:
-                shared_dna = f"{min_cm}-"
-            elif max_cm:
-                shared_dna = f"0-{max_cm}"
-            num_matches = 1000  # default high value for custom cM, or make this user-configurable
+        test_guid = state["test_list"][idx][1]
+        counts, journeys = fetch_counts_journeys(test_guid, state["cookies"])
+        state["counts"] = counts
+        state["journeys"] = journeys
+        # Update radio labels (rebuild radios)
+        radio_group.content = ft.Row([
+            ft.Radio(value="all", label=f"All matches ({counts[0]})"),
+            ft.Radio(value="close", label=f"Close matches ({counts[1]})"),
+            ft.Radio(value="distant", label=f"Distant matches ({counts[2]})"),
+            ft.Radio(value="custom", label="Custom cM"),
+        ])
+        num_matches.value = str(counts[0])
+        journey_checkboxes.controls.clear()
+        for jid, jname in journeys:
+            journey_checkboxes.controls.append(
+                ft.Checkbox(label=jname, key=jid))
+        page.update()
+
+    def on_radio_changed(e):
+        if radio_group.value == "custom":
+            num_matches.visible = False
+            min_cm.visible = True
+            max_cm.visible = True
         else:
-            try:
-                num_matches = int(self.input_num_matches.text())
-                if num_matches <= 0:
-                    raise ValueError
-            except ValueError:
-                self.status.setText("Enter a positive integer for matches.")
-                return
-            # Determine match_type from radio selection
-            if self.radio_close.isChecked():
+            num_matches.visible = True
+            min_cm.visible = False
+            max_cm.visible = False
+            if radio_group.value == "all":
+                num_matches.value = str(state["counts"][0])
+            elif radio_group.value == "close":
+                num_matches.value = str(state["counts"][1])
+            elif radio_group.value == "distant":
+                num_matches.value = str(state["counts"][2])
+        page.update()
+
+    def on_fetch_clicked(e):
+        idx = None
+        options = test_select.options or []
+        for i, opt in enumerate(options):
+            if opt.key == test_select.value:
+                idx = i-1
+                break
+        if idx is None or idx < 0:
+            status.value = "No test selected."
+            page.update()
+            return
+        test_guid = state["test_list"][idx][1]
+        shared_dna = None
+        match_type = None
+        try:
+            nval = num_matches.value if num_matches.value is not None else "0"
+            n_matches = int(nval)
+            if n_matches <= 0:
+                raise ValueError
+        except Exception:
+            status.value = "Enter a positive integer for matches."
+            page.update()
+            return
+        if radio_group.value == "custom":
+            minv = min_cm.value.strip() if min_cm.value else ""
+            maxv = max_cm.value.strip() if max_cm.value else ""
+            if minv and maxv:
+                shared_dna = f"{minv}-{maxv}"
+            elif minv:
+                shared_dna = f"{minv}-"
+            elif maxv:
+                shared_dna = f"0-{maxv}"
+            n_matches = 1000
+        else:
+            if radio_group.value == "close":
                 match_type = "close"
-            elif self.radio_distant.isChecked():
+            elif radio_group.value == "distant":
                 match_type = "distant"
             else:
                 match_type = "all"
-            shared_dna = None  # Only set shared_dna for custom cM
-        # Journey filter
-        journey_ids = [cb.objectName() for cb in getattr(
-            self, 'journey_checkboxes', []) if cb.isChecked()]
-        # Parent filter (radio buttons)
+        journey_ids = [cb.key for cb in journey_checkboxes.controls if isinstance(
+            cb, ft.Checkbox) and cb.value]
+        # Only one parent checkbox can be selected
         parental_sides = None
-        if self.rb_parent_maternal.isChecked():
-            parental_sides = "maternal"
-        elif self.rb_parent_paternal.isChecked():
-            parental_sides = "paternal"
-        elif self.rb_parent_both.isChecked():
-            parental_sides = "both"
-        elif self.rb_parent_unassigned.isChecked():
-            parental_sides = "unassigned"
-        # If 'None' is selected, parental_sides remains None and is not sent
-        # If 'None' is selected, parental_sides remains None and is not sent
-        # Start fetch
-        self.status.setText(
-            f"Fetching matches for testGuid: {self.selected_test_guid}")
-        csrf_token = get_csrf_token(self.cookies)
-        self.current_thread = FetchMatchesThread(
-            self.selected_test_guid, num_matches, self.cookies, csrf_token,
+        for cb in parent_checkboxes:
+            if cb.value:
+                if cb.key != "none":
+                    parental_sides = cb.key
+                break
+        csrf_token = get_csrf_token(state["cookies"])
+        status.value = f"Fetching matches for testGuid: {test_guid}"
+        page.update()
+        matches, error = fetch_matches(
+            test_guid, n_matches, state["cookies"], csrf_token,
             shared_dna=shared_dna, journey_ids=journey_ids, parental_sides=parental_sides, match_type=match_type)
-        self.current_thread.result_signal.connect(self.display_matches)
-        self.current_thread.start()
-
-    def load_tests(self):
-        tests_json, cookies = fetch_tests_json('cookie.txt')
-        self.cookies = cookies
-        self.test_list = parse_test_list(tests_json)
-        self.test_select.clear()
-        self.test_select.blockSignals(True)
-        self.test_select.clear()
-        self.test_select.addItem("Select a test", None)
-        for idx, (subject_name, test_guid) in enumerate(self.test_list, 1):
-            self.test_select.addItem(
-                f"[{idx}] {subject_name} ({test_guid})", test_guid)
-        self.test_select.setCurrentIndex(0)
-        self.selected_test_guid = None
-        self.test_select.blockSignals(False)
-
-    def on_test_selected(self, idx):
-        if idx == 0:
-            self.selected_test_guid = None
-            self.radio_all.setText("All matches")
-            self.radio_close.setText("Close matches")
-            self.radio_distant.setText("Distant matches")
-            # Remove journey checkboxes
-            for cb in getattr(self, 'journey_checkboxes', []):
-                cb.setParent(None)
-            self.journey_checkboxes = []
-            # Reset cached counts
-            self.match_count_total = 0
-            self.match_count_close = 0
-            self.match_count_distant = 0
-            return
-        elif 1 <= idx <= len(self.test_list):
-            self.selected_test_guid = self.test_list[idx-1][1]
-            # Remove old journey checkboxes
-            for cb in getattr(self, 'journey_checkboxes', []):
-                cb.setParent(None)
-            self.journey_checkboxes = []
-            # Remove all widgets from journey_hbox
-            while self.journey_hbox.count():
-                item = self.journey_hbox.takeAt(0)
-                widget = item.widget()
-                if widget:
-                    widget.setParent(None)
-            # Start background thread to fetch counts and journeys
-            self.status.setText("Fetching match counts and journeys...")
-            QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
-            self.counts_journeys_thread = FetchCountsJourneysThread(
-                self.selected_test_guid, self.cookies)
-            self.counts_journeys_thread.result_signal.connect(
-                self.on_counts_journeys_ready)
-            self.counts_journeys_thread.start()
-
-    def on_counts_journeys_ready(self, counts, journeys):
-        total, close, distant = counts
-        self.match_count_total = total
-        self.match_count_close = close
-        self.match_count_distant = distant
-        self.radio_all.setText(f"All matches ({total})")
-        self.radio_close.setText(f"Close matches ({close})")
-        self.radio_distant.setText(f"Distant matches ({distant})")
-        # Always select 'All matches' radio
-        self.radio_all.setChecked(True)
-        # Set matches input to total
-        self.input_num_matches.setText(str(total))
-        # Add journey checkboxes
-        for jid, jname in journeys:
-            cb = QCheckBox(jname)
-            cb.setObjectName(jid)
-            self.journey_checkboxes.append(cb)
-            self.journey_hbox.addWidget(cb)
-        QApplication.restoreOverrideCursor()
-        self.status.setText("")
-        self.update_input_row()
-
-    def on_radio_changed(self):
-        # Set matches input to the cached count for the selected radio
-        if self.selected_test_guid:
-            if self.radio_all.isChecked():
-                self.input_num_matches.setText(str(self.match_count_total))
-            elif self.radio_close.isChecked():
-                self.input_num_matches.setText(str(self.match_count_close))
-            elif self.radio_distant.isChecked():
-                self.input_num_matches.setText(str(self.match_count_distant))
-        self.update_input_row()
-
-    def update_input_row(self):
-        # Remove all widgets from input_row
-        while self.input_row.count():
-            item = self.input_row.takeAt(0)
-            widget = item.widget()
-            if widget:
-                widget.setParent(None)
-        if self.radio_custom.isChecked():
-            self.matches_label.hide()
-            self.input_row.addWidget(self.input_min_cm)
-            self.input_row.addWidget(self.input_max_cm)
-        else:
-            self.matches_label.show()
-            self.input_row.addWidget(self.input_num_matches)
-
-    def display_matches(self, matches, error):
-        self.log.clear()
+        log.value = ""
         if error:
-            self.status.setText(error)
-            self.log.append(error)
-            return
-        self.log.append(f"Fetched {len(matches)} matches:")
-        for idx, match in enumerate(matches, 1):
-            match_profile = match.get('matchProfile', {})
-            display_name = match_profile.get('displayName')
-            sample_id = match.get('sampleId')
-            self.log.append(f"{idx}. {display_name or ''} | {sample_id or ''}")
-        self.status.setText(f"Fetched {len(matches)} matches. (See below)")
+            status.value = error
+            log.value = error
+        else:
+            log.value = f"Fetched {len(matches)} matches:\n"
+            for idx, match in enumerate(matches, 1):
+                match_profile = match.get('matchProfile', {})
+                display_name = match_profile.get('displayName')
+                sample_id = match.get('sampleId')
+                log.value += f"{idx}. {display_name or ''} | {sample_id or ''}\n"
+            status.value = f"Fetched {len(matches)} matches. (See below)"
+        page.update()
+
+    load_btn = ft.ElevatedButton("Load Tests", on_click=load_tests)
+    test_select.on_change = on_test_selected
+    radio_group.on_change = on_radio_changed
+    fetch_btn.on_click = on_fetch_clicked
+
+    page.add(
+        ft.Row([cookie_file, load_btn]),
+        test_select,
+        radio_group,
+        ft.Row([num_matches, min_cm, max_cm]),
+        ft.Text("🗺️ Journeys"),
+        journey_checkboxes,
+        ft.Text("👪 Parent"),
+        parent_row,
+        fetch_btn,
+        log,
+        status
+    )
 
 
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    window = MatchFetchWindow()
-    window.show()
-    sys.exit(app.exec())
+ft.app(target=main)

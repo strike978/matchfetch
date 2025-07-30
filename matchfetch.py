@@ -1,6 +1,7 @@
-import flet as ft
 import json
 import re
+
+import flet as ft
 import requests
 
 
@@ -185,7 +186,8 @@ def main(page: ft.Page):
         ft.Radio(value="custom", label="Custom cM"),
     ]), value="all")
     # Number of matches / cM inputs
-    num_matches = ft.TextField(label="Number of matches", value="5", width=100)
+    num_matches = ft.TextField(
+        label="Number of matches", value="", width=100, visible=False)
     min_cm = ft.TextField(label="Min cM", visible=False, width=100)
     max_cm = ft.TextField(label="Max cM", visible=False, width=100)
     # Journey checkboxes
@@ -212,11 +214,13 @@ def main(page: ft.Page):
                          on_change=on_parent_checkbox_changed)
         parent_checkboxes.append(cb)
     parent_row = ft.Row(parent_checkboxes)
-    # CSV filename input
-    csv_filename = ft.TextField(
-        label="CSV filename", value="matches.csv", width=200)
+    # No CSV filename input needed; always save to 'matches.csv'
     # CSV file output label (hidden by default)
     csv_file_label = ft.Text("", visible=False)
+    # Button to open CSV file (hidden by default)
+    open_csv_btn = ft.ElevatedButton("Open CSV file", visible=False)
+    # Store last CSV filename for open button
+    last_csv_filename = {"filename": ""}
     # Fetch button
     fetch_btn = ft.ElevatedButton("Fetch Matches", visible=False)
     # Store cookies and test list
@@ -238,8 +242,11 @@ def main(page: ft.Page):
     def on_test_selected(e):
         idx = None
         options = test_select.options or []
-        # Hide fetch button immediately when switching tests
+        # Hide fetch button and number of matches input immediately when switching tests
         fetch_btn.visible = False
+        num_matches.visible = False
+        min_cm.visible = False
+        max_cm.visible = False
         page.update()
         for i, opt in enumerate(options):
             if opt.key == test_select.value:
@@ -254,14 +261,16 @@ def main(page: ft.Page):
         counts, journeys = fetch_counts_journeys(test_guid, state["cookies"])
         state["counts"] = counts
         state["journeys"] = journeys
-        # Update radio labels (rebuild radios)
+        # Update radio labels (rebuild radios) and set default to 'all'
         radio_group.content = ft.Row([
             ft.Radio(value="all", label=f"All matches ({counts[0]})"),
             ft.Radio(value="close", label=f"Close matches ({counts[1]})"),
             ft.Radio(value="distant", label=f"Distant matches ({counts[2]})"),
             ft.Radio(value="custom", label="Custom cM"),
         ])
+        radio_group.value = "all"
         num_matches.value = str(counts[0])
+        num_matches.visible = True
         journey_checkboxes.controls.clear()
         for jid, jname in journeys:
             journey_checkboxes.controls.append(
@@ -287,6 +296,7 @@ def main(page: ft.Page):
         page.update()
 
     def on_fetch_clicked(e):
+        num_matches.visible = False
         idx = None
         options = test_select.options or []
         for i, opt in enumerate(options):
@@ -350,6 +360,8 @@ def main(page: ft.Page):
         # Hide CSV file label before processing
         csv_file_label.visible = False
         csv_file_label.value = ""
+        open_csv_btn.visible = False
+        last_csv_filename["filename"] = ""
         page.update()
         matches, error = fetch_matches(
             test_guid, n_matches, state["cookies"], csrf_token,
@@ -359,7 +371,24 @@ def main(page: ft.Page):
         if error:
             status.value = error
         else:
-            filename = (csv_filename.value or "matches.csv").strip()
+            import datetime
+
+            # Get person name for filename
+            idx = None
+            options = test_select.options or []
+            for i, opt in enumerate(options):
+                if opt.key == test_select.value:
+                    idx = i-1
+                    break
+            person_name = "person"
+            if idx is not None and idx >= 0:
+                person_name = state["test_list"][idx][0] or "person"
+            # Clean name for filename
+            safe_name = "_".join(person_name.split()).replace(
+                ',', '').replace('.', '').replace('/', '_')
+            date_str = datetime.datetime.now().strftime("%Y%m%d")
+            match_count = len(matches)
+            filename = f"{safe_name}_{date_str}_{match_count}.csv"
             try:
                 with open(filename, "w", newline='', encoding="utf-8") as f:
                     writer = csv.writer(f)
@@ -373,15 +402,29 @@ def main(page: ft.Page):
                 status.value = f"Saved {len(matches)} matches."
                 csv_file_label.value = f"CSV file: {filename}"
                 csv_file_label.visible = True
+                open_csv_btn.visible = True
+                last_csv_filename["filename"] = filename
             except Exception as ex:
                 status.value = f"Error saving CSV: {ex}"
                 csv_file_label.value = ""
                 csv_file_label.visible = False
+                open_csv_btn.visible = False
+                last_csv_filename["filename"] = ""
+        page.update()
+
+    def on_open_csv_clicked(e):
+        import os
+        filename = last_csv_filename["filename"] or "matches.csv"
+        try:
+            os.startfile(filename)
+        except Exception as ex:
+            status.value = f"Could not open file: {ex}"
         page.update()
 
     test_select.on_change = on_test_selected
     radio_group.on_change = on_radio_changed
     fetch_btn.on_click = on_fetch_clicked
+    open_csv_btn.on_click = on_open_csv_clicked
 
     # Auto-load tests on app start
     load_tests()
@@ -394,8 +437,7 @@ def main(page: ft.Page):
         journey_checkboxes,
         ft.Text("👪 Parent"),
         parent_row,
-        csv_filename,
-        csv_file_label,
+        ft.Row([csv_file_label, open_csv_btn]),
         fetch_btn,
         status
     )

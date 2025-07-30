@@ -51,20 +51,11 @@ def fetch_tests_json(cookie_path):
 
 
 def parse_test_list(tests_json):
+    # Assume API always returns dict with 'dnaSamplesData' list
     test_list = []
-    if isinstance(tests_json, dict) and 'dnaSamplesData' in tests_json:
-        for sample in tests_json['dnaSamplesData']:
-            subject_name = sample.get('subjectName')
-            test_guid = sample.get('testGuid')
-            test_list.append((subject_name, test_guid))
-    elif isinstance(tests_json, list):
-        for test in tests_json:
-            subject_name = test.get('subjectName')
-            test_guid = test.get('testGuid')
-            test_list.append((subject_name, test_guid))
-    elif isinstance(tests_json, dict):
-        subject_name = tests_json.get('subjectName')
-        test_guid = tests_json.get('testGuid')
+    for sample in tests_json.get('dnaSamplesData', []):
+        subject_name = sample.get('subjectName')
+        test_guid = sample.get('testGuid')
         test_list.append((subject_name, test_guid))
     return test_list
 
@@ -184,9 +175,6 @@ def main(page: ft.Page):
     status = ft.Text("")
     log = ft.TextField(multiline=True, read_only=True,
                        min_lines=10, max_lines=20, expand=True)
-    # Cookie file input
-    cookie_file = ft.TextField(
-        label="Cookie file path", value="cookie.txt", width=300)
     # Test selection
     test_select = ft.Dropdown(label="Select a test", options=[], width=400)
     # Radio buttons for match type
@@ -208,7 +196,6 @@ def main(page: ft.Page):
         ("paternal", "Paternal"),
         ("both", "Both sides"),
         ("unassigned", "Unassigned"),
-        ("none", "None"),
     ]
     parent_checkboxes = []
 
@@ -231,13 +218,13 @@ def main(page: ft.Page):
     state = {"cookies": None, "test_list": [],
              "counts": (0, 0, 0), "journeys": []}
 
-    def load_tests(e=None):
-        tests_json, cookies = fetch_tests_json(
-            cookie_file.value or "cookie.txt")
+    def load_tests():
+        tests_json, cookies = fetch_tests_json("cookie.txt")
         state["cookies"] = cookies
         state["test_list"] = parse_test_list(tests_json)
+        # Show subject name as label, use test_guid as value/key
         options = [ft.dropdown.Option("Select a test", "")] + [
-            ft.dropdown.Option(f"[{i+1}] {n} ({g})", g) for i, (n, g) in enumerate(state["test_list"])
+            ft.dropdown.Option(text=(n or f"Test {i+1}"), key=g) for i, (n, g) in enumerate(state["test_list"])
         ]
         test_select.options = options
         test_select.value = ""
@@ -336,10 +323,19 @@ def main(page: ft.Page):
         parental_sides = None
         for cb in parent_checkboxes:
             if cb.value:
-                if cb.key != "none":
-                    parental_sides = cb.key
+                parental_sides = cb.key
                 break
         csrf_token = get_csrf_token(state["cookies"])
+        # Print API request info
+        print("\n--- Fetch Matches API Request ---")
+        print(f"test_guid: {test_guid}")
+        print(f"n_matches: {n_matches}")
+        print(f"shared_dna: {shared_dna}")
+        print(f"journey_ids: {journey_ids}")
+        print(f"parental_sides: {parental_sides}")
+        print(f"match_type: {match_type}")
+        print(f"csrf_token: {csrf_token}")
+        print("-------------------------------\n")
         status.value = f"Fetching matches for testGuid: {test_guid}"
         page.update()
         matches, error = fetch_matches(
@@ -359,13 +355,14 @@ def main(page: ft.Page):
             status.value = f"Fetched {len(matches)} matches. (See below)"
         page.update()
 
-    load_btn = ft.ElevatedButton("Load Tests", on_click=load_tests)
     test_select.on_change = on_test_selected
     radio_group.on_change = on_radio_changed
     fetch_btn.on_click = on_fetch_clicked
 
+    # Auto-load tests on app start
+    load_tests()
+
     page.add(
-        ft.Row([cookie_file, load_btn]),
         test_select,
         radio_group,
         ft.Row([num_matches, min_cm, max_cm]),

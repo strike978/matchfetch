@@ -552,8 +552,25 @@ def main(page: ft.Page):
     # Number of matches / cM inputs
     num_matches = ft.TextField(
         label="Number of matches", value="", width=100, visible=False)
-    min_cm = ft.TextField(label="Min cM", visible=False, width=100)
-    max_cm = ft.TextField(label="Max cM", visible=False, width=100)
+
+    def enforce_cm_bounds(e):
+        field = e.control
+        try:
+            val = float(field.value)
+            if val < 6:
+                field.value = "6"
+            elif val > 3490:
+                field.value = "3490"
+            else:
+                field.value = str(int(val)) if val.is_integer() else str(val)
+        except Exception:
+            pass
+        page.update()
+
+    min_cm = ft.TextField(label="Min cM", visible=False,
+                          width=100, value="90", on_change=enforce_cm_bounds)
+    max_cm = ft.TextField(label="Max cM", visible=False,
+                          width=100, value="400", on_change=enforce_cm_bounds)
     # Journey label and checkboxes
     journey_label = ft.Text("🗺️ Journeys", visible=False)
     journey_checkboxes = ft.Column([], visible=False)
@@ -753,6 +770,11 @@ def main(page: ft.Page):
             num_matches.visible = False
             min_cm.visible = True
             max_cm.visible = True
+            # Set default min/max cM for custom mode
+            if not min_cm.value:
+                min_cm.value = "90"
+            if not max_cm.value:
+                max_cm.value = "400"
         else:
             num_matches.visible = True
             min_cm.visible = False
@@ -824,12 +846,25 @@ def main(page: ft.Page):
             if radio_group.value == "custom":
                 minv = min_cm.value.strip() if min_cm.value else ""
                 maxv = max_cm.value.strip() if max_cm.value else ""
-                if minv and maxv:
-                    shared_dna = f"{minv}-{maxv}"
-                elif minv:
-                    shared_dna = f"{minv}-"
-                elif maxv:
-                    shared_dna = f"0-{maxv}"
+                # Enforce min/max bounds
+                try:
+                    minv_num = max(
+                        6, min(3490, int(float(minv)))) if minv else 6
+                except Exception:
+                    minv_num = 6
+                try:
+                    maxv_num = max(6, min(3490, int(float(maxv)))
+                                   ) if maxv else 3490
+                except Exception:
+                    maxv_num = 3490
+                min_cm.value = str(minv_num)
+                max_cm.value = str(maxv_num)
+                if minv_num and maxv_num:
+                    shared_dna = f"{minv_num}-{maxv_num}"
+                elif minv_num:
+                    shared_dna = f"{minv_num}-"
+                elif maxv_num:
+                    shared_dna = f"0-{maxv_num}"
                 # Use large value for fetching, but keep user_n_matches for progress
                 n_matches_fetch = 999999
             else:

@@ -210,6 +210,9 @@ class MatchFetchWindow(QWidget):
         self.test_list = []
         self.selected_test_guid = None
         self.current_thread = None  # Keep reference to running thread
+        self.match_count_total = 0
+        self.match_count_close = 0
+        self.match_count_distant = 0
 
         # Layouts
         main_layout = QVBoxLayout()
@@ -251,7 +254,7 @@ class MatchFetchWindow(QWidget):
         main_layout.addLayout(self.input_row)
 
         # Filtering group
-        filter_group = QGroupBox("Filtering")
+        filter_group = QGroupBox("Filter")
         self.filter_layout = QGridLayout()
         filter_group.setLayout(self.filter_layout)
         # Journeys
@@ -259,10 +262,10 @@ class MatchFetchWindow(QWidget):
         self.journey_checkboxes = []
         # Placeholders, will be filled after test selection
         # Parents
-        self.filter_layout.addWidget(QLabel("Parents:"), 1, 0)
-        self.cb_parent_paternal = QCheckBox("Paternal")
-        self.cb_parent_maternal = QCheckBox("Maternal")
-        self.cb_parent_both_signed = QCheckBox("Both Signed")
+        self.filter_layout.addWidget(QLabel("Parent:"), 1, 0)
+        self.cb_parent_paternal = QCheckBox("Maternal")
+        self.cb_parent_maternal = QCheckBox("Paternal")
+        self.cb_parent_both_signed = QCheckBox("Both sides")
         self.cb_parent_unassigned = QCheckBox("Unassigned")
         self.filter_layout.addWidget(self.cb_parent_paternal, 1, 1)
         self.filter_layout.addWidget(self.cb_parent_maternal, 1, 2)
@@ -312,6 +315,10 @@ class MatchFetchWindow(QWidget):
             for cb in getattr(self, 'journey_checkboxes', []):
                 cb.setParent(None)
             self.journey_checkboxes = []
+            # Reset cached counts
+            self.match_count_total = 0
+            self.match_count_close = 0
+            self.match_count_distant = 0
             return
         elif 1 <= idx <= len(self.test_list):
             self.selected_test_guid = self.test_list[idx-1][1]
@@ -320,9 +327,16 @@ class MatchFetchWindow(QWidget):
             QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
             total, close, distant = self.fetch_match_counts(
                 self.selected_test_guid)
+            self.match_count_total = total
+            self.match_count_close = close
+            self.match_count_distant = distant
             self.radio_all.setText(f"All matches ({total})")
             self.radio_close.setText(f"Close matches ({close})")
             self.radio_distant.setText(f"Distant matches ({distant})")
+            # Always select 'All matches' radio
+            self.radio_all.setChecked(True)
+            # Set matches input to total
+            self.input_num_matches.setText(str(total))
             # Remove old journey checkboxes
             for cb in getattr(self, 'journey_checkboxes', []):
                 cb.setParent(None)
@@ -338,8 +352,17 @@ class MatchFetchWindow(QWidget):
                 col += 1
             QApplication.restoreOverrideCursor()
             self.status.setText("")
+            self.update_input_row()
 
     def on_radio_changed(self):
+        # Set matches input to the cached count for the selected radio
+        if self.selected_test_guid:
+            if self.radio_all.isChecked():
+                self.input_num_matches.setText(str(self.match_count_total))
+            elif self.radio_close.isChecked():
+                self.input_num_matches.setText(str(self.match_count_close))
+            elif self.radio_distant.isChecked():
+                self.input_num_matches.setText(str(self.match_count_distant))
         self.update_input_row()
 
     def update_input_row(self):

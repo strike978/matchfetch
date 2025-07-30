@@ -127,19 +127,14 @@ def batch_fetch_journeys(test_guid, sample_ids, cookies):
         'Accept': 'application/json',
         'Content-Type': 'application/json',
     }
-    print(f"\n[BATCH JOURNEYS] URL: {url}")
-    print(f"[BATCH JOURNEYS] Payload: {payload}")
-    print(f"[BATCH JOURNEYS] Headers: {headers}")
+    # Debug prints removed
     with requests.Session() as session:
         resp = session.post(url, headers=headers,
                             cookies=cookies, data=json.dumps(payload))
-        print(f"[BATCH JOURNEYS] Status: {resp.status_code}")
+        # Debug prints removed
         try:
             resp_json = resp.json()
-            print(
-                f"[BATCH JOURNEYS] Response: {json.dumps(resp_json)[:500]}{'...truncated' if len(json.dumps(resp_json)) > 500 else ''}")
         except Exception as ex:
-            print(f"[BATCH JOURNEYS] Response not JSON: {ex}")
             resp_json = {}
         if resp.status_code == 200:
             return resp_json
@@ -159,19 +154,14 @@ def batch_fetch_ethnicities(test_guid, sample_ids, cookies):
         'Accept': 'application/json',
         'Content-Type': 'application/json',
     }
-    print(f"\n[BATCH ETHNICITIES] URL: {url}")
-    print(f"[BATCH ETHNICITIES] Payload: {payload}")
-    print(f"[BATCH ETHNICITIES] Headers: {headers}")
+    # Debug prints removed
     with requests.Session() as session:
         resp = session.put(url, headers=headers,
                            cookies=cookies, data=json.dumps(payload))
-        print(f"[BATCH ETHNICITIES] Status: {resp.status_code}")
+        # Debug prints removed
         try:
             resp_json = resp.json()
-            print(
-                f"[BATCH ETHNICITIES] Response: {json.dumps(resp_json)[:500]}{'...truncated' if len(json.dumps(resp_json)) > 500 else ''}")
         except Exception as ex:
-            print(f"[BATCH ETHNICITIES] Response not JSON: {ex}")
             resp_json = {}
         if resp.status_code == 200:
             return resp_json
@@ -188,8 +178,7 @@ def enrich_matches_with_journeys_ethnicities(test_guid, matches, cookies, batch_
     """
     sample_ids = [m.get('sampleId') for m in matches if m.get('sampleId')]
     total = len(sample_ids)
-    print(
-        f"\n[ENRICH] Total matches to enrich: {total}, batch size: {batch_size}")
+    # Debug prints removed
     import os
     progress_file = "progress.json"
     # Try to load params from progress file if present, else fallback to minimal params
@@ -227,7 +216,7 @@ def enrich_matches_with_journeys_ethnicities(test_guid, matches, cookies, batch_
             # Pass the true batch_num (overall batch index, 1-based) for correct UI display
             progress_callback(batch_num, batch_total,
                               i, min(i+batch_size, total))
-        print(f"[ENRICH] Processing batch {batch_num}: {batch}")
+        # Debug prints removed
         comm_result = batch_fetch_journeys(test_guid, batch, cookies)
         eth_result = batch_fetch_ethnicities(test_guid, batch, cookies)
         batch_journey_ids = set()
@@ -266,13 +255,7 @@ def enrich_matches_with_journeys_ethnicities(test_guid, matches, cookies, batch_
                     {'key': r.get('key'), 'percentage': r.get('percentage')}
                     for r in regions if 'key' in r and 'percentage' in r
                 ]
-                print(f"[ENRICHED] SampleID: {sid}")
-                print(f"  Journeys (branches): {journeys}")
-                print(f"  Subjourneys (communities): {subjourneys}")
-                print(
-                    f"  Branch IDs for subjourney names: {branch_ids_for_subjourneys}")
-                print(
-                    f"  Regions: {[f'{r['key']}:{r['percentage']}' for r in m['regions']]}")
+                # Debug prints removed
         journey_names = resolve_journey_names(list(batch_journey_ids), cookies)
         subjourney_names = resolve_subjourney_names(
             list(batch_branch_ids_for_subjourneys), cookies)
@@ -323,7 +306,7 @@ def resolve_journey_names(journey_ids, cookies):
             if resp.status_code == 200:
                 return resp.json()
     except Exception as ex:
-        print(f"[resolve_journey_names] Exception: {ex}")
+        pass
     return {j: j for j in journey_ids}
 
 
@@ -340,15 +323,14 @@ def resolve_subjourney_names(subjourney_ids, cookies):
         'Content-Type': 'application/json',
     }
     payload = json.dumps(subjourney_ids)
-    print(f"[DEBUG] /communities/names API payload (branch IDs): {payload}")
+    # Debug prints removed
     try:
         with requests.Session() as session:
             resp = session.post(url, headers=headers,
                                 cookies=cookies, data=payload)
             if resp.status_code == 200:
                 resp_json = resp.json()
-                print(
-                    f"[DEBUG] /communities/names API response: {json.dumps(resp_json)}")
+                # Debug prints removed
                 # Return the full dict for each branch, not just the branch name
                 result = {}
                 for k, v in resp_json.items():
@@ -358,7 +340,7 @@ def resolve_subjourney_names(subjourney_ids, cookies):
                         result[k] = {}
                 return result
     except Exception as ex:
-        print(f"[resolve_subjourney_names] Exception: {ex}")
+        pass
     return {sj: sj for sj in subjourney_ids}
 
 
@@ -885,15 +867,7 @@ def main(page: ft.Page):
                 break
         csrf_token = get_csrf_token(state["cookies"])
         # Print API request info
-        print("\n--- Fetch Matches API Request ---")
-        print(f"test_guid: {test_guid}")
-        print(f"n_matches: {n_matches}")
-        print(f"shared_dna: {shared_dna}")
-        print(f"journey_ids: {journey_ids}")
-        print(f"parental_sides: {parental_sides}")
-        print(f"match_type: {match_type}")
-        print(f"csrf_token: {csrf_token}")
-        print("-------------------------------\n")
+        # Debug prints removed
         status.value = f"Fetching matches for testGuid: {test_guid}"
         page.update()
         # Hide CSV file label before processing
@@ -1061,8 +1035,7 @@ def main(page: ft.Page):
                     sample_id = match.get('sampleId')
                     journey_names = match.get('journey_names', [])
                     subjourneys = match.get('subjourneys', [])
-                    print(
-                        f"[DEBUG CSV] SampleID: {sample_id} | Subjourneys: {subjourneys}")
+                    # Debug prints removed
                     journey_names_strs = [str(j) for j in journey_names]
                     journeys_str = ";".join(
                         journey_names_strs) if journey_names_strs else ""

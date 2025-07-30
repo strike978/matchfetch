@@ -799,6 +799,11 @@ def main(page: ft.Page):
 
         if error:
             status.value = error + ". Progress saved. You can rerun to resume."
+            # Show resume UI immediately
+            resume_label.value = "Resume available: {} matches fetched, {} enriched.".format(
+                len(matches), len(progress.get("enriched_ids", [])) if "enriched_ids" in progress else 0)
+            resume_label.visible = True
+            resume_btn.visible = True
             page.update()
             return
 
@@ -858,6 +863,11 @@ def main(page: ft.Page):
                               "enriched_ids": list(enriched_ids)}, pf)
         except Exception as ex:
             status.value = f"Error during enrichment: {ex}. Progress saved. You can rerun to resume."
+            # Show resume UI immediately
+            resume_label.value = "Resume available: {} matches fetched, {} enriched.".format(
+                len(matches), len(progress.get("enriched_ids", [])) if "enriched_ids" in progress else 0)
+            resume_label.visible = True
+            resume_btn.visible = True
             page.update()
             return
 

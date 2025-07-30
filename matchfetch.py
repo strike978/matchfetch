@@ -404,6 +404,10 @@ def main(page: ft.Page):
     status = ft.Text("")
     log = ft.TextField(multiline=True, read_only=True,
                        min_lines=10, max_lines=20, expand=True)
+    progress_file = "progress.json"
+    # Resume UI
+    resume_btn = ft.ElevatedButton("Resume previous session", visible=False)
+    resume_label = ft.Text("", visible=False)
     # Test selection
     test_select = ft.Dropdown(label="Select a test", options=[], width=400)
     # Radio buttons for match type
@@ -461,6 +465,26 @@ def main(page: ft.Page):
              "counts": (0, 0, 0), "journeys": []}
 
     def load_tests():
+        # Check for progress file and show resume UI if present
+        import os
+        progress = None
+        if os.path.exists(progress_file):
+            try:
+                with open(progress_file, "r", encoding="utf-8") as pf:
+                    progress = json.load(pf)
+            except Exception:
+                progress = None
+        if progress and "params" in progress:
+            params = progress["params"]
+            matches = progress.get("matches", [])
+            enriched_ids = progress.get("enriched_ids", [])
+            resume_label.value = f"Resume available: {len(matches)} matches fetched, {len(enriched_ids) if enriched_ids else 0} enriched."
+            resume_label.visible = True
+            resume_btn.visible = True
+        else:
+            resume_label.visible = False
+            resume_btn.visible = False
+        # ...existing code...
         tests_json, cookies = fetch_tests_json("cookie.txt")
         state["cookies"] = cookies
         state["test_list"] = parse_test_list(tests_json)
@@ -471,6 +495,70 @@ def main(page: ft.Page):
         test_select.options = options
         test_select.value = ""
         page.update()
+
+    def on_resume_clicked(e):
+        # Load progress and resume as if fetch was started
+        import os
+        if not os.path.exists(progress_file):
+            resume_label.value = "No progress file found."
+            resume_label.visible = True
+            resume_btn.visible = False
+            page.update()
+            return
+        # Load params from progress file
+        with open(progress_file, "r", encoding="utf-8") as pf:
+            progress = json.load(pf)
+        params = progress.get("params", {})
+        # Set UI to match params
+        # Set test selection
+        test_guid = params.get("test_guid", "")
+        shared_dna = params.get("shared_dna", None)
+        journey_ids = params.get("journey_ids", [])
+        parental_sides = params.get("parental_sides", None)
+        match_type = params.get("match_type", None)
+        n_matches = params.get("n_matches", 0)
+        # Set test dropdown
+        found = False
+        options = test_select.options or []
+        for opt in options:
+            if hasattr(opt, 'key') and opt.key == test_guid:
+                test_select.value = test_guid
+                found = True
+                break
+        if not found:
+            resume_label.value = "Test not found in current list."
+            page.update()
+            return
+        # Set radio group and fields
+        if match_type == "close":
+            radio_group.value = "close"
+        elif match_type == "distant":
+            radio_group.value = "distant"
+        elif shared_dna:
+            radio_group.value = "custom"
+            min_cm.value, max_cm.value = "", ""
+            if shared_dna:
+                parts = shared_dna.split("-")
+                if len(parts) == 2:
+                    min_cm.value = parts[0]
+                    max_cm.value = parts[1]
+        else:
+            radio_group.value = "all"
+        num_matches.value = str(n_matches)
+        # Set journey checkboxes
+        for cb in journey_checkboxes.controls:
+            if isinstance(cb, ft.Checkbox):
+                cb.value = cb.key in journey_ids
+        # Set parent checkboxes
+        for cb in parent_checkboxes:
+            if hasattr(cb, 'key') and hasattr(cb, 'value'):
+                cb.value = (cb.key == parental_sides)
+        # Hide resume UI
+        resume_label.visible = False
+        resume_btn.visible = False
+        page.update()
+        # Call fetch as if user clicked fetch
+        on_fetch_clicked(None)
 
     def on_test_selected(e):
         idx = None
@@ -547,6 +635,10 @@ def main(page: ft.Page):
         page.update()
 
     def on_fetch_clicked(e):
+        import csv
+        import datetime
+        import os
+        import time
         idx = None
         options = test_select.options or []
         for i, opt in enumerate(options):
@@ -613,75 +705,215 @@ def main(page: ft.Page):
         open_csv_btn.visible = False
         last_csv_filename["filename"] = ""
         page.update()
-        matches, error = fetch_matches(
-            test_guid, n_matches, state["cookies"], csrf_token,
-            shared_dna=shared_dna, journey_ids=journey_ids, parental_sides=parental_sides, match_type=match_type)
-        import csv
-        import os
-        if error:
-            status.value = error
-        else:
-            # Enrich matches with journeys and ethnicities before saving
-            enrich_matches_with_journeys_ethnicities(
-                test_guid, matches, state["cookies"])
-            import datetime
 
-            # Get person name for filename
-            idx = None
-            options = test_select.options or []
-            for i, opt in enumerate(options):
-                if opt.key == test_select.value:
-                    idx = i-1
-                    break
-            person_name = "person"
-            if idx is not None and idx >= 0:
-                person_name = state["test_list"][idx][0] or "person"
-            # Clean name for filename
-            safe_name = "_".join(person_name.split()).replace(
-                ',', '').replace('.', '').replace('/', '_')
-            date_str = datetime.datetime.now().strftime("%Y%m%d")
-            match_count = len(matches)
-            filename = f"{safe_name}_{date_str}_{match_count}.csv"
+        # Progress/resume system
+        progress = {}
+        if os.path.exists(progress_file):
             try:
-                region_keys = list(REGIONS.keys())
-                region_names = [REGIONS[k] for k in region_keys]
-                with open(filename, "w", newline='', encoding="utf-8") as f:
-                    writer = csv.writer(f)
-                    # Write header with each region as its own column after Subjourneys
+                with open(progress_file, "r", encoding="utf-8") as pf:
+                    progress = json.load(pf)
+            except Exception:
+                progress = {}
+        # Check if progress matches current params
+        progress_key = {
+            "test_guid": test_guid,
+            "shared_dna": shared_dna,
+            "journey_ids": journey_ids,
+            "parental_sides": parental_sides,
+            "match_type": match_type,
+            "n_matches": n_matches
+        }
+        matches = []
+        error = ""
+        resume = False
+        if progress.get("params") == progress_key and "matches" in progress:
+            matches = progress["matches"]
+            resume = True
+            status.value = f"Resuming from previous progress: {len(matches)} matches already fetched."
+            page.update()
+        else:
+            # New run, clear progress file
+            if os.path.exists(progress_file):
+                try:
+                    os.remove(progress_file)
+                except Exception:
+                    pass
+
+        # Fetch matches with progress
+        items_per_page = 100
+        page_num = (len(matches) // items_per_page) + 1 if matches else 1
+        total_fetched = len(matches)
+        try:
+            with requests.Session() as session:
+                while total_fetched < n_matches:
+                    base_url = f"https://www.ancestry.com/discoveryui-matches/parents/list/api/matchList/{test_guid}?itemsPerPage={items_per_page}&currentPage={page_num}"
+                    if parental_sides:
+                        base_url += f"&parentalSides={parental_sides}"
+                    if match_type == "close":
+                        base_url += "&sharedDna=closeMatches"
+                    elif match_type == "distant":
+                        base_url += "&sharedDna=distantMatches"
+                    elif shared_dna:
+                        base_url += f"&sharedDna={shared_dna}"
+                    if journey_ids:
+                        import json as _json
+                        jf = journey_ids
+                        if not isinstance(jf, str):
+                            jf = _json.dumps(jf)
+                        base_url += f"&searchCommunity={jf}"
+                    url = base_url
+                    headers = {
+                        'User-Agent': 'Mozilla/5.0',
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                    }
+                    if csrf_token:
+                        headers['X-CSRF-Token'] = csrf_token
+                    response = session.get(
+                        url, headers=headers, cookies=state["cookies"])
+                    if response.status_code == 200:
+                        try:
+                            data = response.json()
+                            match_list = data.get('matchList', [])
+                            if not match_list:
+                                break
+                            # Only add up to n_matches total
+                            remaining = n_matches - len(matches)
+                            matches.extend(match_list[:remaining])
+                            total_fetched = len(matches)
+                            # Save progress after each page
+                            with open(progress_file, "w", encoding="utf-8") as pf:
+                                json.dump({"params": progress_key,
+                                          "matches": matches}, pf)
+                            if len(match_list) < items_per_page or total_fetched >= n_matches:
+                                break
+                            page_num += 1
+                        except Exception as ex:
+                            error = f"JSON error on page {page_num}: {ex}"
+                            break
+                    else:
+                        error = f"HTTP error {response.status_code} on page {page_num}"
+                        break
+        except Exception as ex:
+            error = f"Exception during fetch: {ex}"
+
+        if error:
+            status.value = error + ". Progress saved. You can rerun to resume."
+            page.update()
+            return
+
+        # Enrich matches with journeys and ethnicities, with true resume support
+        status.value = f"Enriching {len(matches)} matches..."
+        page.update()
+        try:
+            batch_size = 24
+            # Determine which matches still need enrichment
+            enriched_ids = set()
+            if "enriched_ids" in progress:
+                enriched_ids = set(progress["enriched_ids"])
+            # Only process matches that are missing 'journeys', 'subjourneys', or 'regions'
+            to_enrich = [m for m in matches if not (m.get('journeys') and m.get(
+                'subjourneys') and m.get('regions')) or (m.get('sampleId') not in enriched_ids)]
+            total = len(to_enrich)
+            for i in range(0, total, batch_size):
+                batch_matches = to_enrich[i:i+batch_size]
+                batch = [m.get('sampleId')
+                         for m in batch_matches if m.get('sampleId')]
+                if not batch:
+                    continue
+                comm_result = batch_fetch_journeys(
+                    test_guid, batch, state["cookies"])
+                eth_result = batch_fetch_ethnicities(
+                    test_guid, batch, state["cookies"])
+                for m in matches:
+                    sid = m.get('sampleId')
+                    if sid in batch:
+                        comm = comm_result.get(sid, {})
+                        journeys = []
+                        subjourneys = []
+                        if isinstance(comm, dict):
+                            branches = comm.get('branches', [])
+                            if isinstance(branches, list):
+                                journeys = [b.get('id') for b in branches if isinstance(
+                                    b, dict) and 'id' in b]
+                                for b in branches:
+                                    if isinstance(b, dict):
+                                        communities = b.get('communities', [])
+                                        if isinstance(communities, list):
+                                            subjourneys.extend(
+                                                [c.get('id') for c in communities if isinstance(c, dict) and 'id' in c])
+                        m['journeys'] = journeys
+                        m['subjourneys'] = subjourneys
+                        eth = eth_result.get(sid, {})
+                        regions = eth.get('regions', [])
+                        m['regions'] = [
+                            {'key': r.get('key'), 'percentage': r.get(
+                                'percentage')}
+                            for r in regions if 'key' in r and 'percentage' in r
+                        ]
+                        enriched_ids.add(sid)
+                # Save progress after each batch
+                with open(progress_file, "w", encoding="utf-8") as pf:
+                    json.dump({"params": progress_key, "matches": matches,
+                              "enriched_ids": list(enriched_ids)}, pf)
+        except Exception as ex:
+            status.value = f"Error during enrichment: {ex}. Progress saved. You can rerun to resume."
+            page.update()
+            return
+
+        # Save CSV
+        status.value = f"Saving CSV..."
+        page.update()
+        person_name = "person"
+        if idx is not None and idx >= 0:
+            person_name = state["test_list"][idx][0] or "person"
+        safe_name = "_".join(person_name.split()).replace(
+            ',', '').replace('.', '').replace('/', '_')
+        date_str = datetime.datetime.now().strftime("%Y%m%d")
+        match_count = len(matches)
+        filename = f"{safe_name}_{date_str}_{match_count}.csv"
+        try:
+            region_keys = list(REGIONS.keys())
+            region_names = [REGIONS[k] for k in region_keys]
+            with open(filename, "w", newline='', encoding="utf-8") as f:
+                writer = csv.writer(f)
+                writer.writerow([
+                    "Display Name", "Sample ID", "Journeys", "Subjourneys"
+                ] + region_names)
+                for match in matches:
+                    match_profile = match.get('matchProfile', {})
+                    display_name = match_profile.get('displayName')
+                    sample_id = match.get('sampleId')
+                    journeys = match.get('journeys', [])
+                    subjourneys = match.get('subjourneys', [])
+                    journeys_str = ";".join(str(j)
+                                            for j in journeys) if journeys else ""
+                    subjourneys_str = ";".join(
+                        str(sj) for sj in subjourneys) if subjourneys else ""
+                    region_percentages = {r['key']: r['percentage'] for r in match.get(
+                        'regions', []) if 'key' in r and 'percentage' in r}
+                    region_row = [region_percentages.get(
+                        k, 0) for k in region_keys]
                     writer.writerow([
-                        "Display Name", "Sample ID", "Journeys", "Subjourneys"
-                    ] + region_names)
-                    for match in matches:
-                        match_profile = match.get('matchProfile', {})
-                        display_name = match_profile.get('displayName')
-                        sample_id = match.get('sampleId')
-                        journeys = match.get('journeys', [])
-                        subjourneys = match.get('subjourneys', [])
-                        # Convert lists to semicolon-separated strings
-                        journeys_str = ";".join(
-                            str(j) for j in journeys) if journeys else ""
-                        subjourneys_str = ";".join(
-                            str(sj) for sj in subjourneys) if subjourneys else ""
-                        # Build a dict of region key to percentage for this match
-                        region_percentages = {r['key']: r['percentage'] for r in match.get(
-                            'regions', []) if 'key' in r and 'percentage' in r}
-                        # Output percentages in the order of region_keys, 0 if not present
-                        region_row = [region_percentages.get(
-                            k, 0) for k in region_keys]
-                        writer.writerow([
-                            display_name or '', sample_id or '', journeys_str, subjourneys_str
-                        ] + region_row)
-                status.value = f"Saved {len(matches)} matches."
-                csv_file_label.value = f"CSV file: {filename}"
-                csv_file_label.visible = True
-                open_csv_btn.visible = True
-                last_csv_filename["filename"] = filename
-            except Exception as ex:
-                status.value = f"Error saving CSV: {ex}"
-                csv_file_label.value = ""
-                csv_file_label.visible = False
-                open_csv_btn.visible = False
-                last_csv_filename["filename"] = ""
+                        display_name or '', sample_id or '', journeys_str, subjourneys_str
+                    ] + region_row)
+            status.value = f"Saved {len(matches)} matches."
+            csv_file_label.value = f"CSV file: {filename}"
+            csv_file_label.visible = True
+            open_csv_btn.visible = True
+            last_csv_filename["filename"] = filename
+            # Remove progress file after successful completion
+            if os.path.exists(progress_file):
+                try:
+                    os.remove(progress_file)
+                except Exception:
+                    pass
+        except Exception as ex:
+            status.value = f"Error saving CSV: {ex}"
+            csv_file_label.value = ""
+            csv_file_label.visible = False
+            open_csv_btn.visible = False
+            last_csv_filename["filename"] = ""
         page.update()
 
     def on_open_csv_clicked(e):
@@ -697,11 +929,14 @@ def main(page: ft.Page):
     radio_group.on_change = on_radio_changed
     fetch_btn.on_click = on_fetch_clicked
     open_csv_btn.on_click = on_open_csv_clicked
+    resume_btn.on_click = on_resume_clicked
 
     # Auto-load tests on app start
     load_tests()
 
     page.add(
+        resume_label,
+        resume_btn,
         test_select,
         loading_spinner,
         radio_group,

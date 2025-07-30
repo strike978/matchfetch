@@ -171,7 +171,7 @@ def fetch_matches(test_guid, num_matches, cookies, csrf_token, shared_dna=None, 
 
 
 def main(page: ft.Page):
-    page.title = "MatchFetch (Flet)"
+    page.title = "MatchFetch"
     status = ft.Text("")
     log = ft.TextField(multiline=True, read_only=True,
                        min_lines=10, max_lines=20, expand=True)
@@ -212,8 +212,13 @@ def main(page: ft.Page):
                          on_change=on_parent_checkbox_changed)
         parent_checkboxes.append(cb)
     parent_row = ft.Row(parent_checkboxes)
+    # CSV filename input
+    csv_filename = ft.TextField(
+        label="CSV filename", value="matches.csv", width=200)
+    # CSV file output label (hidden by default)
+    csv_file_label = ft.Text("", visible=False)
     # Fetch button
-    fetch_btn = ft.ElevatedButton("Fetch Matches")
+    fetch_btn = ft.ElevatedButton("Fetch Matches", visible=False)
     # Store cookies and test list
     state = {"cookies": None, "test_list": [],
              "counts": (0, 0, 0), "journeys": []}
@@ -224,7 +229,7 @@ def main(page: ft.Page):
         state["test_list"] = parse_test_list(tests_json)
         # Show subject name as label, use test_guid as value/key
         options = [ft.dropdown.Option("Select a test", "")] + [
-            ft.dropdown.Option(text=(n or f"Test {i+1}"), key=g) for i, (n, g) in enumerate(state["test_list"])
+            ft.dropdown.Option(text=n, key=g) for n, g in state["test_list"]
         ]
         test_select.options = options
         test_select.value = ""
@@ -233,6 +238,9 @@ def main(page: ft.Page):
     def on_test_selected(e):
         idx = None
         options = test_select.options or []
+        # Hide fetch button immediately when switching tests
+        fetch_btn.visible = False
+        page.update()
         for i, opt in enumerate(options):
             if opt.key == test_select.value:
                 idx = i-1
@@ -258,6 +266,7 @@ def main(page: ft.Page):
         for jid, jname in journeys:
             journey_checkboxes.controls.append(
                 ft.Checkbox(label=jname, key=jid))
+        fetch_btn.visible = True
         page.update()
 
     def on_radio_changed(e):
@@ -338,21 +347,36 @@ def main(page: ft.Page):
         print("-------------------------------\n")
         status.value = f"Fetching matches for testGuid: {test_guid}"
         page.update()
+        # Hide CSV file label before processing
+        csv_file_label.visible = False
+        csv_file_label.value = ""
+        page.update()
         matches, error = fetch_matches(
             test_guid, n_matches, state["cookies"], csrf_token,
             shared_dna=shared_dna, journey_ids=journey_ids, parental_sides=parental_sides, match_type=match_type)
-        log.value = ""
+        import csv
+        import os
         if error:
             status.value = error
-            log.value = error
         else:
-            log.value = f"Fetched {len(matches)} matches:\n"
-            for idx, match in enumerate(matches, 1):
-                match_profile = match.get('matchProfile', {})
-                display_name = match_profile.get('displayName')
-                sample_id = match.get('sampleId')
-                log.value += f"{idx}. {display_name or ''} | {sample_id or ''}\n"
-            status.value = f"Fetched {len(matches)} matches. (See below)"
+            filename = (csv_filename.value or "matches.csv").strip()
+            try:
+                with open(filename, "w", newline='', encoding="utf-8") as f:
+                    writer = csv.writer(f)
+                    # Write header
+                    writer.writerow(["Display Name", "Sample ID"])
+                    for match in matches:
+                        match_profile = match.get('matchProfile', {})
+                        display_name = match_profile.get('displayName')
+                        sample_id = match.get('sampleId')
+                        writer.writerow([display_name or '', sample_id or ''])
+                status.value = f"Saved {len(matches)} matches."
+                csv_file_label.value = f"CSV file: {filename}"
+                csv_file_label.visible = True
+            except Exception as ex:
+                status.value = f"Error saving CSV: {ex}"
+                csv_file_label.value = ""
+                csv_file_label.visible = False
         page.update()
 
     test_select.on_change = on_test_selected
@@ -370,8 +394,9 @@ def main(page: ft.Page):
         journey_checkboxes,
         ft.Text("👪 Parent"),
         parent_row,
+        csv_filename,
+        csv_file_label,
         fetch_btn,
-        log,
         status
     )
 

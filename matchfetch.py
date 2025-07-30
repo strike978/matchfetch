@@ -7,6 +7,7 @@ from PySide6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox,
     QRadioButton, QButtonGroup, QLineEdit, QPushButton, QTextEdit, QCheckBox, QGroupBox, QGridLayout
 )
+from PySide6.QtGui import QIcon
 from PySide6.QtCore import Qt, QThread, Signal
 
 
@@ -202,7 +203,8 @@ class MatchFetchWindow(QWidget):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Ancestry Match Fetcher")
+        self.setWindowTitle("MatchFetch")
+        self.setWindowIcon(QIcon("icon.png"))  # Use your icon file here
         self.resize(700, 500)
         self.cookies = None
         self.test_list = []
@@ -218,7 +220,6 @@ class MatchFetchWindow(QWidget):
         self.test_select.addItem("Select a test", None)
         self.test_select.setCurrentIndex(0)
         self.test_select.currentIndexChanged.connect(self.on_test_selected)
-        main_layout.addWidget(QLabel("Select a test:"))
         main_layout.addWidget(self.test_select)
 
         # Match filter radios
@@ -236,9 +237,11 @@ class MatchFetchWindow(QWidget):
         self.radio_group.buttonClicked.connect(self.on_radio_changed)
 
         # Dynamic input row (number of matches or cM)
+        self.matches_label = QLabel("Number of matches to fetch:")
+        main_layout.addWidget(self.matches_label)
         self.input_row = QHBoxLayout()
         self.input_num_matches = QLineEdit()
-        self.input_num_matches.setPlaceholderText("Number of matches")
+        self.input_num_matches.setPlaceholderText("e.g. 5")
         self.input_num_matches.setText("5")
         self.input_min_cm = QLineEdit()
         self.input_min_cm.setPlaceholderText("Min cM")
@@ -347,9 +350,11 @@ class MatchFetchWindow(QWidget):
             if widget:
                 widget.setParent(None)
         if self.radio_custom.isChecked():
+            self.matches_label.hide()
             self.input_row.addWidget(self.input_min_cm)
             self.input_row.addWidget(self.input_max_cm)
         else:
+            self.matches_label.show()
             self.input_row.addWidget(self.input_num_matches)
 
     def on_fetch_clicked(self):

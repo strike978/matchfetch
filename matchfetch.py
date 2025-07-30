@@ -4,6 +4,116 @@ import re
 import flet as ft
 import requests
 
+REGIONS = {
+    "00100": "Senegal",
+    "00200": "Mali",
+    "00300": "Ivory Coast & Ghana",
+    "00401": "Benin & Togo",
+    "00402": "Yorubaland",
+    "00403": "Central West Africa",
+    "00501": "Central Nigeria",
+    "00502": "North-Central Nigeria",
+    "00503": "Nigeria",
+    "00600": "Nigerian Woodlands",
+    "00700": "Cameroon",
+    "00750": "Western Bantu Peoples",
+    "00760": "Twa",
+    "00800": "Southern Bantu Peoples",
+    "00900": "Eastern Bantu Peoples",
+    "01000": "Nilotic Peoples",
+    "01100": "Ethiopia & Eritrea",
+    "01200": "Somalia",
+    "01300": "Khoisan, Aka & Mbuti Peoples",
+    "01400": "Northern Africa",
+    "01500": "Egypt",
+    "01600": "Arabian Peninsula",
+    "01700": "Levant",
+    "01800": "Cyprus",
+    "01900": "Anatolia & the Caucasus",
+    "02000": "Iran/Persia",
+    "02001": "Lower Central Asia",
+    "02002": "Northern Iraq & Northern Iran",
+    "02100": "Burusho",
+    "02200": "Indo-Gangetic Plain",
+    "02301": "Western Himalayas & the Hindu Kush",
+    "02302": "Gujarat",
+    "02303": "Gulf of Khambhat",
+    "02401": "Southern India",
+    "02402": "Southwest India",
+    "02403": "The Deccan & the Gulf of Mannar",
+    "02500": "Bengal",
+    "02600": "Nepal & the Himalayan Foothills",
+    "02700": "Tibetan Peoples",
+    "02800": "Northern Asia",
+    "02900": "Mongolia & Upper Central Asia",
+    "03000": "Korea",
+    "03100": "Japan",
+    "03200": "Southern Japanese Islands",
+    "03300": "Northern China",
+    "03350": "Western China",
+    "03400": "Southwestern China",
+    "03500": "Central & Eastern China",
+    "03600": "Southern China",
+    "03700": "Dai",
+    "03800": "Mainland Southeast Asia",
+    "03850": "Maritime Southeast Asia",
+    "03900": "Vietnam",
+    "04000": "Northern & Central Philippines",
+    "04150": "Central & Southern Philippines",
+    "04151": "Luzon",
+    "04152": "Western Visayas",
+    "04200": "Guam",
+    "04300": "Melanesia",
+    "04400": "Aboriginal and/or Torres Strait Islander Peoples",
+    "04500": "Tonga",
+    "04600": "Samoa",
+    "04700": "Hawaii",
+    "04800": "New Zealand Maori",
+    "04900": "Indigenous Arctic",
+    "05000": "Indigenous Americas—North",
+    "05100": "Indigenous Americas—Mexico ",
+    "05200": "Indigenous Americas— Yucatán Peninsula ",
+    "05300": "Indigenous Americas—Central",
+    "05400": "Indigenous Americas—Panama & Costa Rica",
+    "05500": "Indigenous Cuba",
+    "05600": "Indigenous Haiti & Dominican Republic",
+    "05700": "Indigenous Puerto Rico",
+    "05800": "Indigenous Americas—Colombia & Venezuela",
+    "05900": "Indigenous Americas—Ecuador",
+    "06000": "Indigenous Americas—Bolivia & Peru",
+    "06100": "Indigenous Americas—Chile",
+    "06200": "Indigenous Eastern South America",
+    "06300": "Ashkenazi Jews",
+    "06301": "Sephardic Jews",
+    "06400": "Finland",
+    "06500": "Sweden",
+    "06501": "Denmark",
+    "06600": "Norway",
+    "06601": "Iceland",
+    "06700": "Baltics",
+    "06800": "Central & Eastern Europe",
+    "06801": "Russia",
+    "06900": "The Balkans",
+    "06950": "Eastern European Roma",
+    "07000": "Greece & Albania",
+    "07100": "Aegean Islands",
+    "07200": "Malta",
+    "07300": "Sardinia",
+    "07400": "Southern Italy & the Eastern Mediterranean",
+    "07500": "Northern Italy",
+    "07600": "France",
+    "07700": "Germanic Europe",
+    "07701": "The Netherlands",
+    "07800": "Basque",
+    "07900": "Spain",
+    "08000": "Portugal",
+    "08100": "England & Northwestern Europe",
+    "08101": "Cornwall",
+    "08200": "Wales",
+    "08300": "Scotland",
+    "08400": "Ireland",
+}
+
 
 def batch_fetch_journeys(test_guid, sample_ids, cookies):
     """
@@ -533,15 +643,34 @@ def main(page: ft.Page):
             match_count = len(matches)
             filename = f"{safe_name}_{date_str}_{match_count}.csv"
             try:
+                region_keys = list(REGIONS.keys())
+                region_names = [REGIONS[k] for k in region_keys]
                 with open(filename, "w", newline='', encoding="utf-8") as f:
                     writer = csv.writer(f)
-                    # Write header
-                    writer.writerow(["Display Name", "Sample ID"])
+                    # Write header with each region as its own column after Subjourneys
+                    writer.writerow([
+                        "Display Name", "Sample ID", "Journeys", "Subjourneys"
+                    ] + region_names)
                     for match in matches:
                         match_profile = match.get('matchProfile', {})
                         display_name = match_profile.get('displayName')
                         sample_id = match.get('sampleId')
-                        writer.writerow([display_name or '', sample_id or ''])
+                        journeys = match.get('journeys', [])
+                        subjourneys = match.get('subjourneys', [])
+                        # Convert lists to semicolon-separated strings
+                        journeys_str = ";".join(
+                            str(j) for j in journeys) if journeys else ""
+                        subjourneys_str = ";".join(
+                            str(sj) for sj in subjourneys) if subjourneys else ""
+                        # Build a dict of region key to percentage for this match
+                        region_percentages = {r['key']: r['percentage'] for r in match.get(
+                            'regions', []) if 'key' in r and 'percentage' in r}
+                        # Output percentages in the order of region_keys, 0 if not present
+                        region_row = [region_percentages.get(
+                            k, 0) for k in region_keys]
+                        writer.writerow([
+                            display_name or '', sample_id or '', journeys_str, subjourneys_str
+                        ] + region_row)
                 status.value = f"Saved {len(matches)} matches."
                 csv_file_label.value = f"CSV file: {filename}"
                 csv_file_label.visible = True

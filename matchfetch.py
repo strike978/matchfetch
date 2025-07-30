@@ -5,6 +5,124 @@ import flet as ft
 import requests
 
 
+def batch_fetch_journeys(test_guid, sample_ids, cookies):
+    """
+    Fetch journeys (communities) for a batch of sample IDs.
+    Returns: {sample_id: {'journeys': [...], 'subjourneys': [...]}}
+    """
+    url = f"https://www.ancestry.com/dna/origins/secure/compare/{test_guid}/batchCommunities"
+    payload = [test_guid] + sample_ids
+    headers = {
+        'User-Agent': 'Mozilla/5.0',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+    }
+    print(f"\n[BATCH JOURNEYS] URL: {url}")
+    print(f"[BATCH JOURNEYS] Payload: {payload}")
+    print(f"[BATCH JOURNEYS] Headers: {headers}")
+    with requests.Session() as session:
+        resp = session.post(url, headers=headers,
+                            cookies=cookies, data=json.dumps(payload))
+        print(f"[BATCH JOURNEYS] Status: {resp.status_code}")
+        try:
+            resp_json = resp.json()
+            print(
+                f"[BATCH JOURNEYS] Response: {json.dumps(resp_json)[:500]}{'...truncated' if len(json.dumps(resp_json)) > 500 else ''}")
+        except Exception as ex:
+            print(f"[BATCH JOURNEYS] Response not JSON: {ex}")
+            resp_json = {}
+        if resp.status_code == 200:
+            return resp_json
+        else:
+            return {}
+
+
+def batch_fetch_ethnicities(test_guid, sample_ids, cookies):
+    """
+    Fetch ethnicities for a batch of sample IDs.
+    Returns: {sample_id: {'regions': [{'key':..., 'label':..., 'percentage':...}, ...]}}
+    """
+    url = f"https://www.ancestry.com/dna/origins/secure/compare/{test_guid}/batchEthnicity"
+    payload = [test_guid] + sample_ids
+    headers = {
+        'User-Agent': 'Mozilla/5.0',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+    }
+    print(f"\n[BATCH ETHNICITIES] URL: {url}")
+    print(f"[BATCH ETHNICITIES] Payload: {payload}")
+    print(f"[BATCH ETHNICITIES] Headers: {headers}")
+    with requests.Session() as session:
+        resp = session.put(url, headers=headers,
+                           cookies=cookies, data=json.dumps(payload))
+        print(f"[BATCH ETHNICITIES] Status: {resp.status_code}")
+        try:
+            resp_json = resp.json()
+            print(
+                f"[BATCH ETHNICITIES] Response: {json.dumps(resp_json)[:500]}{'...truncated' if len(json.dumps(resp_json)) > 500 else ''}")
+        except Exception as ex:
+            print(f"[BATCH ETHNICITIES] Response not JSON: {ex}")
+            resp_json = {}
+        if resp.status_code == 200:
+            return resp_json
+        else:
+            return {}
+
+
+def enrich_matches_with_journeys_ethnicities(test_guid, matches, cookies, batch_size=24):
+    """
+    For a list of matches, batch fetch journeys and ethnicities, and add them to each match dict.
+    Modifies matches in place.
+    """
+    sample_ids = [m.get('sampleId') for m in matches if m.get('sampleId')]
+    total = len(sample_ids)
+    print(
+        f"\n[ENRICH] Total matches to enrich: {total}, batch size: {batch_size}")
+    for i in range(0, total, batch_size):
+        batch = sample_ids[i:i+batch_size]
+        print(f"[ENRICH] Processing batch {i//batch_size+1}: {batch}")
+        comm_result = batch_fetch_journeys(test_guid, batch, cookies)
+        eth_result = batch_fetch_ethnicities(test_guid, batch, cookies)
+        # Map sampleId to journeys/subjourneys and region percentages
+        for m in matches:
+            sid = m.get('sampleId')
+        for m in matches:
+            sid = m.get('sampleId')
+            if sid in batch:
+                comm = comm_result.get(sid, {})
+                # For batchCommunities: journeys = all branch ids, subjourneys = all community ids under all branches
+                journeys = []
+                subjourneys = []
+                if isinstance(comm, dict):
+                    branches = comm.get('branches', [])
+                    if isinstance(branches, list):
+                        journeys = [b.get('id') for b in branches if isinstance(
+                            b, dict) and 'id' in b]
+                        # For each branch, get all community ids
+                        for b in branches:
+                            if isinstance(b, dict):
+                                communities = b.get('communities', [])
+                                if isinstance(communities, list):
+                                    subjourneys.extend(
+                                        [c.get('id') for c in communities if isinstance(c, dict) and 'id' in c])
+                m['journeys'] = journeys
+                m['subjourneys'] = subjourneys
+                # For batchEthnicity: extract region percentages
+                eth = eth_result.get(sid, {})
+                regions = eth.get('regions', [])
+                # Only keep key and percentage for each region
+                m['regions'] = [
+                    {'key': r.get('key'), 'percentage': r.get('percentage')}
+                    for r in regions if 'key' in r and 'percentage' in r
+                ]
+                # Print extracted data for this match
+                print(f"[ENRICHED] SampleID: {sid}")
+                print(f"  Journeys (branches): {journeys}")
+                print(f"  Subjourneys (communities): {subjourneys}")
+                print(
+                    f"  Regions: {[f'{r['key']}:{r['percentage']}' for r in m['regions']]}")
+
+
 def parse_cookie_string(cookie_string):
     cookies = {}
     if not cookie_string:
@@ -319,7 +437,6 @@ def main(page: ft.Page):
         page.update()
 
     def on_fetch_clicked(e):
-        num_matches.visible = False
         idx = None
         options = test_select.options or []
         for i, opt in enumerate(options):
@@ -394,6 +511,9 @@ def main(page: ft.Page):
         if error:
             status.value = error
         else:
+            # Enrich matches with journeys and ethnicities before saving
+            enrich_matches_with_journeys_ethnicities(
+                test_guid, matches, state["cookies"])
             import datetime
 
             # Get person name for filename

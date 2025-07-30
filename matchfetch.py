@@ -222,6 +222,8 @@ def enrich_matches_with_journeys_ethnicities(test_guid, matches, cookies, batch_
                                         [c.get('id') for c in communities if isinstance(c, dict) and 'id' in c])
                 m['journeys'] = journeys
                 m['subjourneys'] = subjourneys
+                # Store per-match branch IDs for subjourney names
+                m['subjourney_branch_ids'] = branch_ids_for_subjourneys
                 all_journey_ids.update(journeys)
                 all_branch_ids_for_subjourneys.update(
                     branch_ids_for_subjourneys)
@@ -246,16 +248,19 @@ def enrich_matches_with_journeys_ethnicities(test_guid, matches, cookies, batch_
     for m in matches:
         m['journey_names'] = [journey_names.get(
             j, j) for j in m.get('journeys', [])]
-        # For subjourney_names, use the branch id(s) for this match
-        # Find the branch ids for this match that had subjourneys
-        subjourney_branch_ids = []
-        comm = None
-        if 'journeys' in m:
-            # Use the journey ids that had subjourneys (from all_branch_ids_for_subjourneys)
-            subjourney_branch_ids = [jid for jid in m.get(
-                'journeys', []) if jid in all_branch_ids_for_subjourneys]
-        m['subjourney_names'] = [subjourney_names.get(
-            bid, bid) for bid in subjourney_branch_ids]
+        subjourney_names_list = []
+        # For each journey/branch, only include communities present in this match's communities array
+        for branch_id in m.get('journeys', []):
+            branch_communities = subjourney_names.get(branch_id)
+            if isinstance(branch_communities, dict):
+                # Find the communities for this branch in the original subjourneys list
+                comm_ids = [c for c in m.get(
+                    'subjourneys', []) if c.startswith(branch_id + '.')]
+                for comm_id in comm_ids:
+                    name = branch_communities.get(comm_id)
+                    if name and name not in subjourney_names_list:
+                        subjourney_names_list.append(name)
+        m['subjourneys'] = subjourney_names_list
 
 
 def resolve_journey_names(journey_ids, cookies):
@@ -304,15 +309,13 @@ def resolve_subjourney_names(subjourney_ids, cookies):
                 resp_json = resp.json()
                 print(
                     f"[DEBUG] /communities/names API response: {json.dumps(resp_json)}")
-                # If the value is a dict, extract the 'name' field
+                # Return the full dict for each branch, not just the branch name
                 result = {}
                 for k, v in resp_json.items():
-                    if isinstance(v, dict) and 'name' in v:
-                        result[k] = v['name']
-                    elif isinstance(v, str):
+                    if isinstance(v, dict):
                         result[k] = v
                     else:
-                        result[k] = str(v)
+                        result[k] = {}
                 return result
     except Exception as ex:
         print(f"[resolve_subjourney_names] Exception: {ex}")
@@ -893,89 +896,12 @@ def main(page: ft.Page):
             page.update()
             return
 
-        # Enrich matches with journeys and ethnicities, with true resume support
+        # Enrich matches with journeys and ethnicities, and resolve subjourney names before CSV export
         status.value = f"Enriching {len(matches)} matches..."
         page.update()
         try:
-            batch_size = 24
-            enriched_ids = set()
-            if "enriched_ids" in progress:
-                enriched_ids = set(progress["enriched_ids"])
-            to_enrich = [m for m in matches if not (m.get('journeys') and m.get(
-                'subjourneys') and m.get('regions')) or (m.get('sampleId') not in enriched_ids)]
-            total = len(to_enrich)
-            all_journey_ids = set()
-            all_branch_ids_for_subjourneys = set()
-            for i in range(0, total, batch_size):
-                batch_matches = to_enrich[i:i+batch_size]
-                batch = [m.get('sampleId')
-                         for m in batch_matches if m.get('sampleId')]
-                if not batch:
-                    continue
-                comm_result = batch_fetch_journeys(
-                    test_guid, batch, state["cookies"])
-                eth_result = batch_fetch_ethnicities(
-                    test_guid, batch, state["cookies"])
-                for m in matches:
-                    sid = m.get('sampleId')
-                    if sid in batch:
-                        comm = comm_result.get(sid, {})
-                        journeys = []
-                        subjourneys = []
-                        branch_ids_for_subjourneys = []
-                        if isinstance(comm, dict):
-                            branches = comm.get('branches', [])
-                            if isinstance(branches, list):
-                                journeys = [b.get('id') for b in branches if isinstance(
-                                    b, dict) and 'id' in b]
-                                for b in branches:
-                                    if isinstance(b, dict):
-                                        branch_id = b.get('id')
-                                        communities = b.get('communities', [])
-                                        if isinstance(communities, list) and branch_id:
-                                            if communities:
-                                                branch_ids_for_subjourneys.append(
-                                                    branch_id)
-                                            subjourneys.extend(
-                                                [c.get('id') for c in communities if isinstance(c, dict) and 'id' in c])
-                        m['journeys'] = journeys
-                        m['subjourneys'] = subjourneys
-                        all_journey_ids.update(journeys)
-                        all_branch_ids_for_subjourneys.update(
-                            branch_ids_for_subjourneys)
-                        eth = eth_result.get(sid, {})
-                        regions = eth.get('regions', [])
-                        m['regions'] = [
-                            {'key': r.get('key'), 'percentage': r.get(
-                                'percentage')}
-                            for r in regions if 'key' in r and 'percentage' in r
-                        ]
-                        enriched_ids.add(sid)
-                # Save progress after each batch
-                with open(progress_file, "w", encoding="utf-8") as pf:
-                    json.dump({"params": progress_key, "matches": matches,
-                              "enriched_ids": list(enriched_ids)}, pf)
-            # After all enrichment, resolve names for journeys and subjourneys
-            journey_names = resolve_journey_names(
-                list(all_journey_ids), state["cookies"])
-            subjourney_names = resolve_subjourney_names(
-                list(all_branch_ids_for_subjourneys), state["cookies"])
-            for m in matches:
-                m['journey_names'] = [journey_names.get(
-                    j, j) for j in m.get('journeys', [])]
-                # For subjourney_names, use the branch id(s) for this match
-                subjourney_branch_ids = []
-                if 'journeys' in m:
-                    subjourney_branch_ids = [jid for jid in m.get(
-                        'journeys', []) if jid in all_branch_ids_for_subjourneys]
-                m['subjourney_names'] = [subjourney_names.get(
-                    bid, bid) for bid in subjourney_branch_ids]
-                print(
-                    f"[DEBUG] SampleID: {m.get('sampleId')} | Subjourney Branch IDs: {subjourney_branch_ids} | Subjourney Names: {m.get('subjourney_names', [])}")
-            # Save progress again after name resolution
-            with open(progress_file, "w", encoding="utf-8") as pf:
-                json.dump({"params": progress_key, "matches": matches,
-                          "enriched_ids": list(enriched_ids)}, pf)
+            enrich_matches_with_journeys_ethnicities(
+                test_guid, matches, state["cookies"], batch_size=24)
         except Exception as ex:
             status.value = f"Error during enrichment: {ex}. Progress saved. You can rerun to resume."
             resume_label.value = "Resume available: {} matches fetched, {} enriched.".format(len(
@@ -1009,18 +935,14 @@ def main(page: ft.Page):
                     display_name = match_profile.get('displayName')
                     sample_id = match.get('sampleId')
                     journey_names = match.get('journey_names', [])
-                    subjourney_names = match.get('subjourney_names', [])
-                    # If subjourney_names is a dict (from previous bug), use its values
-                    if isinstance(subjourney_names, dict):
-                        subjourney_names = list(subjourney_names.values())
-                    # Ensure all items are strings
+                    subjourneys = match.get('subjourneys', [])
+                    print(
+                        f"[DEBUG CSV] SampleID: {sample_id} | Subjourneys: {subjourneys}")
                     journey_names_strs = [str(j) for j in journey_names]
-                    subjourney_names_strs = [str(sj)
-                                             for sj in subjourney_names]
                     journeys_str = ";".join(
                         journey_names_strs) if journey_names_strs else ""
                     subjourneys_str = ";".join(
-                        subjourney_names_strs) if subjourney_names_strs else ""
+                        [str(sj) for sj in subjourneys]) if subjourneys else ""
                     region_percentages = {r['key']: r['percentage'] for r in match.get(
                         'regions', []) if 'key' in r and 'percentage' in r}
                     region_row = [region_percentages.get(

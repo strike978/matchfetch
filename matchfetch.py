@@ -9,6 +9,7 @@ import time
 
 import flet as ft
 import requests
+from flet import FontWeight
 
 REGIONS = {
     "00100": "Senegal",
@@ -581,9 +582,76 @@ def main(page: ft.Page):
     state = {"cookies": None, "test_list": [],
              "counts": (0, 0, 0), "journeys": []}
 
-    # Privacy mode checkbox
+    # Privacy mode checkbox and info modal
     privacy_mode_checkbox = ft.Checkbox(
-        label="Privacy mode: hide Name, Parent, and cM columns in CSV export", value=False)
+        label="Privacy mode", value=False)
+
+    # Modal dialog must be created once and added to the page for Flet to show it
+    info_text_spans = [
+        ft.TextSpan("Privacy mode", style=ft.TextStyle(
+            weight=ft.FontWeight.BOLD)),
+        ft.TextSpan(" removes the "),
+        ft.TextSpan("Name", style=ft.TextStyle(weight=ft.FontWeight.BOLD)),
+        ft.TextSpan(", "),
+        ft.TextSpan("Parent", style=ft.TextStyle(weight=ft.FontWeight.BOLD)),
+        ft.TextSpan(", and "),
+        ft.TextSpan("cM", style=ft.TextStyle(weight=ft.FontWeight.BOLD)),
+        ft.TextSpan(" columns from the exported CSV.\n\n"),
+        ft.TextSpan("The "),
+        ft.TextSpan("ID", style=ft.TextStyle(weight=ft.FontWeight.BOLD)),
+        ft.TextSpan(" column will show a unique "),
+        ft.TextSpan("SHA-256 hash",
+                    style=ft.TextStyle(weight=ft.FontWeight.BOLD)),
+        ft.TextSpan(
+            " instead of the real sample ID, making it impossible to recover the original ID.\n\n"),
+        ft.TextSpan("This helps protect the privacy of individuals in your match list while still letting you analyze and compare matches.",
+                    style=ft.TextStyle(italic=True)),
+    ]
+    from flet import FontWeight, MainAxisAlignment, TextAlign, TextOverflow
+    privacy_info_modal = ft.AlertDialog(
+        title=ft.Row([
+            ft.Icon(name="lock", color="blue", size=28),
+            ft.Text("About Privacy Mode", weight=FontWeight.BOLD, size=20)
+        ], alignment=MainAxisAlignment.START),
+        content=ft.Container(
+            ft.Text(
+                spans=info_text_spans,
+                selectable=True,
+                size=16,
+                color="white",
+                text_align=TextAlign.LEFT,
+                max_lines=12,
+                overflow=TextOverflow.CLIP
+            ),
+            padding=20,
+            bgcolor="#23272f",
+            border_radius=8
+        ),
+        actions=[
+            ft.TextButton(
+                "Close", on_click=lambda e: close_privacy_info_modal(), style=ft.ButtonStyle(bgcolor="#e3e7ef", color="black", padding=ft.padding.symmetric(horizontal=16, vertical=8))
+            )
+        ],
+        open=False,
+        modal=True,
+        shape=ft.RoundedRectangleBorder(radius=12),
+        elevation=8
+    )
+
+    def show_privacy_info_modal(e=None):
+        privacy_info_modal.open = True
+        page.update()
+
+    def close_privacy_info_modal():
+        privacy_info_modal.open = False
+        page.update()
+
+    privacy_info_icon = ft.IconButton(
+        icon="info_outline",
+        tooltip="What is Privacy mode?",
+        on_click=show_privacy_info_modal,
+        style=ft.ButtonStyle(padding=0, shape=None, bgcolor=None)
+    )
 
     # --- UI logic split into helpers ---
     def enforce_cm_bounds(e):
@@ -1134,7 +1202,8 @@ def main(page: ft.Page):
     # --- App start ---
     load_tests()
     page.add(
-        privacy_mode_checkbox,
+        privacy_info_modal,
+        ft.Row([privacy_mode_checkbox, privacy_info_icon]),
         resume_label,
         resume_btn,
         test_select,

@@ -519,7 +519,8 @@ def fetch_matches(test_guid, num_matches, cookies, csrf_token, shared_dna=None, 
 
 def main(page: ft.Page):
     # --- UI setup and state ---
-    page.title = "MatchFetch"
+    APP_VERSION = "1.0.0"
+    page.title = f"MatchFetch v{APP_VERSION}"
     status = ft.Text("")
     log = ft.TextField(multiline=True, read_only=True,
                        min_lines=10, max_lines=20, expand=True)

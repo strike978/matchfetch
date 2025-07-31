@@ -579,6 +579,10 @@ def main(page: ft.Page):
     state = {"cookies": None, "test_list": [],
              "counts": (0, 0, 0), "journeys": []}
 
+    # Privacy mode checkbox
+    privacy_mode_checkbox = ft.Checkbox(
+        label="Privacy mode: hide Name, Parent, and cM columns in CSV export", value=False)
+
     # --- UI logic split into helpers ---
     def enforce_cm_bounds(e):
         field = e.control
@@ -812,11 +816,16 @@ def main(page: ft.Page):
         page.update()
 
     def save_csv(matches, filename, region_keys, region_names, paternal_code, test_list, idx):
+        # Use privacy mode to determine columns
+        privacy_mode = privacy_mode_checkbox.value
         with open(filename, "w", newline='', encoding="utf-8") as f:
             writer = csv.writer(f)
-            writer.writerow([
-                "Name", "ID", "Parent", "cM", "Journeys", "Sub Journeys"
-            ] + region_names)
+            if privacy_mode:
+                header = ["ID", "Journeys", "Sub Journeys"] + region_names
+            else:
+                header = ["Name", "ID", "Parent", "cM",
+                          "Journeys", "Sub Journeys"] + region_names
+            writer.writerow(header)
             for match in matches:
                 match_profile = match.get('matchProfile', {})
                 display_name = match_profile.get('displayName')
@@ -853,9 +862,13 @@ def main(page: ft.Page):
                     'regions', []) if 'key' in r and 'percentage' in r}
                 region_row = [region_percentages.get(
                     k, 0) for k in region_keys]
-                writer.writerow([
-                    display_name or '', sample_id or '', cluster_val, cm_val, journeys_str, subjourneys_str
-                ] + region_row)
+                if privacy_mode:
+                    row = [sample_id or '', journeys_str,
+                           subjourneys_str] + region_row
+                else:
+                    row = [display_name or '', sample_id or '', cluster_val,
+                           cm_val, journeys_str, subjourneys_str] + region_row
+                writer.writerow(row)
 
     def on_fetch_clicked(e):
         # ...existing code from on_fetch_clicked, but split into helpers where possible...
@@ -1113,6 +1126,7 @@ def main(page: ft.Page):
     # --- App start ---
     load_tests()
     page.add(
+        privacy_mode_checkbox,
         resume_label,
         resume_btn,
         test_select,

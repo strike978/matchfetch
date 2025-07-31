@@ -602,16 +602,9 @@ def main(page: ft.Page):
                     progress = json.load(pf)
             except Exception:
                 progress = None
-        if progress and "params" in progress:
-            params = progress["params"]
-            matches = progress.get("matches", [])
-            enriched_ids = progress.get("enriched_ids", [])
-            resume_label.value = f"Resume available: {len(matches)} matches fetched, {len(enriched_ids) if enriched_ids else 0} enriched."
-            resume_label.visible = True
-            resume_btn.visible = True
-        else:
-            resume_label.visible = False
-            resume_btn.visible = False
+        # Only show resume if progress file exists AND a test is selected (handled in on_test_selected)
+        resume_label.visible = False
+        resume_btn.visible = False
         # ...existing code...
         tests_json, cookies = fetch_tests_json("cookie.txt")
         state["cookies"] = cookies
@@ -733,6 +726,24 @@ def main(page: ft.Page):
         open_csv_btn.visible = False
         status.visible = False
         loading_spinner.visible = True
+        # Show resume button only if progress file exists AND a test is selected
+        import os
+        progress = None
+        if os.path.exists(progress_file):
+            try:
+                with open(progress_file, "r", encoding="utf-8") as pf:
+                    progress = json.load(pf)
+            except Exception:
+                progress = None
+        if progress and "params" in progress and test_select.value:
+            matches = progress.get("matches", [])
+            enriched_ids = progress.get("enriched_ids", [])
+            resume_label.value = f"Resume available: {len(matches)} matches fetched, {len(enriched_ids) if enriched_ids else 0} enriched."
+            resume_label.visible = True
+            resume_btn.visible = True
+        else:
+            resume_label.visible = False
+            resume_btn.visible = False
         page.update()
         for i, opt in enumerate(options):
             if opt.key == test_select.value:
@@ -1027,9 +1038,9 @@ def main(page: ft.Page):
         page.update()
         try:
             def enrichment_progress_callback(batch_num, batch_total, batch_start, batch_end):
-                percent = int((batch_num / batch_total) *
-                              100) if batch_total else 100
-                status.value = f"Processing batch {batch_num}/{batch_total} ({percent}%)..."
+                percent = (batch_num / batch_total) * \
+                    100 if batch_total else 100
+                status.value = f"Processing batch {batch_num}/{batch_total} ({percent:.2f}%)..."
                 page.update()
             enrich_matches_with_journeys_ethnicities(
                 test_guid, matches, state["cookies"], batch_size=24, progress_callback=enrichment_progress_callback)

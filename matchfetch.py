@@ -515,30 +515,49 @@ def fetch_matches(test_guid, num_matches, cookies, csrf_token, shared_dna=None, 
 
 
 def main(page: ft.Page):
+    # --- UI setup and state ---
     page.title = "MatchFetch"
     status = ft.Text("")
     log = ft.TextField(multiline=True, read_only=True,
                        min_lines=10, max_lines=20, expand=True)
     progress_file = "progress.json"
-    # Resume UI
     resume_btn = ft.ElevatedButton("Resume previous session", visible=False)
     resume_label = ft.Text("", visible=False)
-    # Test selection
     test_select = ft.Dropdown(label="Select a test", options=[], width=400)
-    # Radio buttons for match type
     radio_group = ft.RadioGroup(content=ft.Row([
         ft.Radio(value="all", label="All matches"),
         ft.Radio(value="close", label="Close matches"),
         ft.Radio(value="distant", label="Distant matches"),
         ft.Radio(value="custom", label="Custom cM"),
     ]), value="all", visible=False)
-
-    # Loading spinner below test_select
     loading_spinner = ft.ProgressRing(visible=False)
-    # Number of matches / cM inputs
     num_matches = ft.TextField(
         label="Number of matches", value="", width=100, visible=False)
+    min_cm = ft.TextField(label="Min cM", visible=False, width=100, value="90")
+    max_cm = ft.TextField(label="Max cM", visible=False,
+                          width=100, value="400")
+    journey_label = ft.Text("🗺️ Journeys", visible=False)
+    journey_checkboxes = ft.Column([], visible=False)
+    parent_options = [
+        ("maternal", "Maternal"),
+        ("paternal", "Paternal"),
+        ("both", "Both sides"),
+        ("unassigned", "Unassigned"),
+    ]
+    parent_checkboxes = []
+    for val, label in parent_options:
+        cb = ft.Checkbox(label=label, key=val, value=False)
+        parent_checkboxes.append(cb)
+    parent_label = ft.Text("👪 Parent", visible=False)
+    parent_row = ft.Row(parent_checkboxes, visible=False)
+    csv_file_label = ft.Text("", visible=False)
+    open_csv_btn = ft.ElevatedButton("Open CSV file", visible=False)
+    last_csv_filename = {"filename": ""}
+    fetch_btn = ft.ElevatedButton("Fetch Matches", visible=False)
+    state = {"cookies": None, "test_list": [],
+             "counts": (0, 0, 0), "journeys": []}
 
+    # --- UI logic split into helpers ---
     def enforce_cm_bounds(e):
         field = e.control
         try:
@@ -552,52 +571,21 @@ def main(page: ft.Page):
         except Exception:
             pass
         page.update()
-
-    min_cm = ft.TextField(label="Min cM", visible=False,
-                          width=100, value="90", on_blur=enforce_cm_bounds)
-    max_cm = ft.TextField(label="Max cM", visible=False,
-                          width=100, value="400", on_blur=enforce_cm_bounds)
-    # Journey label and checkboxes
-    journey_label = ft.Text("🗺️ Journeys", visible=False)
-    journey_checkboxes = ft.Column([], visible=False)
-    # Parent filter as exclusive checkboxes
-    parent_options = [
-        ("maternal", "Maternal"),
-        ("paternal", "Paternal"),
-        ("both", "Both sides"),
-        ("unassigned", "Unassigned"),
-    ]
-    parent_checkboxes = []
+    min_cm.on_blur = enforce_cm_bounds
+    max_cm.on_blur = enforce_cm_bounds
 
     def on_parent_checkbox_changed(e):
-        # Only allow one checked at a time, but allow all to be unchecked
         changed = e.control
         if changed.value:
             for cb in parent_checkboxes:
                 if cb != changed:
                     cb.value = False
         page.update()
-    for val, label in parent_options:
-        cb = ft.Checkbox(label=label, key=val, value=False,
-                         on_change=on_parent_checkbox_changed)
-        parent_checkboxes.append(cb)
-    parent_label = ft.Text("👪 Parent", visible=False)
-    parent_row = ft.Row(parent_checkboxes, visible=False)
-    # No CSV filename input needed; always save to 'matches.csv'
-    # CSV file output label (hidden by default)
-    csv_file_label = ft.Text("", visible=False)
-    # Button to open CSV file (hidden by default)
-    open_csv_btn = ft.ElevatedButton("Open CSV file", visible=False)
-    # Store last CSV filename for open button
-    last_csv_filename = {"filename": ""}
-    # Fetch button
-    fetch_btn = ft.ElevatedButton("Fetch Matches", visible=False)
-    # Store cookies and test list
-    state = {"cookies": None, "test_list": [],
-             "counts": (0, 0, 0), "journeys": []}
+    for cb in parent_checkboxes:
+        cb.on_change = on_parent_checkbox_changed
 
     def load_tests():
-        # Check for progress file and show resume UI if present
+        # ...existing code from load_tests...
         progress = None
         if os.path.exists(progress_file):
             try:
@@ -605,42 +593,31 @@ def main(page: ft.Page):
                     progress = json.load(pf)
             except Exception:
                 progress = None
-        # Only show resume if progress file exists AND a test is selected (handled in on_test_selected)
         resume_label.visible = False
         resume_btn.visible = False
-        # ...existing code...
         tests_json, cookies = fetch_tests_json("cookie.txt")
         state["cookies"] = cookies
         state["test_list"] = parse_test_list(tests_json)
-        # Show subject name as label, use test_guid as value/key
-        options = [ft.dropdown.Option("Select a test", "")] + [
-            ft.dropdown.Option(text=n, key=g) for n, g in state["test_list"]
-        ]
+        options = [ft.dropdown.Option(
+            "Select a test", "")] + [ft.dropdown.Option(text=n, key=g) for n, g in state["test_list"]]
         test_select.options = options
         test_select.value = ""
         page.update()
 
-    def on_resume_clicked(e):
-        # Load progress and resume as if fetch was started
-        if not os.path.exists(progress_file):
-            resume_label.value = "No progress file found."
-            resume_label.visible = True
-            resume_btn.visible = False
-            page.update()
-            return
-        # Load params from progress file
-        with open(progress_file, "r", encoding="utf-8") as pf:
-            progress = json.load(pf)
-        params = progress.get("params", {})
-        # Set UI to match params
-        # Set test selection
+    def set_resume_ui(progress):
+        matches = progress.get("matches", [])
+        enriched_ids = progress.get("enriched_ids", [])
+        resume_label.value = f"Resume available: {len(matches)} matches fetched, {len(enriched_ids) if enriched_ids else 0} processed."
+        resume_label.visible = True
+        resume_btn.visible = True
+
+    def set_test_selection_ui(params):
         test_guid = params.get("test_guid", "")
         shared_dna = params.get("shared_dna", None)
         journey_ids = params.get("journey_ids", [])
         parental_sides = params.get("parental_sides", None)
         match_type = params.get("match_type", None)
         n_matches = params.get("n_matches", 0)
-        # Set test dropdown
         found = False
         options = test_select.options or []
         for opt in options:
@@ -651,8 +628,7 @@ def main(page: ft.Page):
         if not found:
             resume_label.value = "Test not found in current list."
             page.update()
-            return
-        # Set radio group and fields
+            return False
         if match_type == "close":
             radio_group.value = "close"
         elif match_type == "distant":
@@ -665,31 +641,22 @@ def main(page: ft.Page):
                 if len(parts) == 2:
                     min_cm.value = parts[0]
                     max_cm.value = parts[1]
-            # For custom cM, ensure num_matches.value is set for resume logic
             num_matches.value = str(n_matches)
         else:
             radio_group.value = "all"
             num_matches.value = str(n_matches)
-        # Set journey checkboxes
         for cb in journey_checkboxes.controls:
             if isinstance(cb, ft.Checkbox):
                 cb.value = cb.key in journey_ids
-        # Set parent checkboxes
         for cb in parent_checkboxes:
             if hasattr(cb, 'key') and hasattr(cb, 'value'):
                 cb.value = (cb.key == parental_sides)
-        # Hide resume UI
         resume_label.visible = False
         resume_btn.visible = False
         page.update()
-        # Call fetch as if user clicked fetch
-        on_fetch_clicked(None)
+        return True
 
     def fetch_paternal_cluster_code(test_guid, cookies):
-        """
-        Fetch the paternal cluster code for a given test_guid.
-        Returns: 'p1', 'p2', or '' if not found.
-        """
         url = f"https://www.ancestry.com/dna/origins/inheritance/api/v1/matches/{test_guid}/paternal-cluster"
         headers = {
             'User-Agent': 'Mozilla/5.0',
@@ -711,10 +678,23 @@ def main(page: ft.Page):
             print(f"[fetch_paternal_cluster_code] Exception: {ex}")
         return ''
 
+    def on_resume_clicked(e):
+        if not os.path.exists(progress_file):
+            resume_label.value = "No progress file found."
+            resume_label.visible = True
+            resume_btn.visible = False
+            page.update()
+            return
+        with open(progress_file, "r", encoding="utf-8") as pf:
+            progress = json.load(pf)
+        params = progress.get("params", {})
+        if not set_test_selection_ui(params):
+            return
+        on_fetch_clicked(None)
+
     def on_test_selected(e):
         idx = None
         options = test_select.options or []
-        # Hide everything below test_select except spinner
         radio_group.visible = False
         fetch_btn.visible = False
         num_matches.visible = False
@@ -728,7 +708,6 @@ def main(page: ft.Page):
         open_csv_btn.visible = False
         status.visible = False
         loading_spinner.visible = True
-        # Show resume button only if progress file exists AND a test is selected
         progress = None
         if os.path.exists(progress_file):
             try:
@@ -737,11 +716,7 @@ def main(page: ft.Page):
             except Exception:
                 progress = None
         if progress and "params" in progress and test_select.value:
-            matches = progress.get("matches", [])
-            enriched_ids = progress.get("enriched_ids", [])
-            resume_label.value = f"Resume available: {len(matches)} matches fetched, {len(enriched_ids) if enriched_ids else 0} processed."
-            resume_label.visible = True
-            resume_btn.visible = True
+            set_resume_ui(progress)
         else:
             resume_label.visible = False
             resume_btn.visible = False
@@ -756,25 +731,19 @@ def main(page: ft.Page):
             page.update()
             return
         test_guid = state["test_list"][idx][1]
-        # Fetch and print paternal cluster code for debugging, and store in state
         paternal_code = fetch_paternal_cluster_code(
             test_guid, state["cookies"])
-        print(
-            f"[DEBUG] Paternal cluster code for test {test_guid}: {paternal_code}")
         state["paternal_cluster_code"] = paternal_code
         counts, journeys = fetch_counts_journeys(test_guid, state["cookies"])
         state["counts"] = counts
         state["journeys"] = journeys
-        # Hide spinner after data is loaded
         loading_spinner.visible = False
-        # Show everything below test_select
         radio_group.visible = True
         journey_label.visible = True
         journey_checkboxes.visible = True
         parent_label.visible = True
         parent_row.visible = True
         status.visible = True
-        # Update radio labels (rebuild radios) and set default to 'all'
         radio_group.content = ft.Row([
             ft.Radio(value="all", label=f"All matches ({counts[0]})"),
             ft.Radio(value="close", label=f"Close matches ({counts[1]})"),
@@ -796,7 +765,6 @@ def main(page: ft.Page):
             num_matches.visible = False
             min_cm.visible = True
             max_cm.visible = True
-            # Set default min/max cM for custom mode
             if not min_cm.value:
                 min_cm.value = "90"
             if not max_cm.value:
@@ -813,21 +781,75 @@ def main(page: ft.Page):
                 num_matches.value = str(state["counts"][2])
         page.update()
 
+    def enrichment_progress_callback(batch_num, batch_total, batch_start, batch_end):
+        percent = (batch_num / batch_total) * 100 if batch_total else 100
+        status.value = f"Processing batch {batch_num}/{batch_total} ({percent:.2f}%)..."
+        page.update()
+
+    def save_csv(matches, filename, region_keys, region_names, paternal_code, test_list, idx):
+        with open(filename, "w", newline='', encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow([
+                "Name", "ID", "Parent", "cM", "Journeys", "Sub Journeys"
+            ] + region_names)
+            for match in matches:
+                match_profile = match.get('matchProfile', {})
+                display_name = match_profile.get('displayName')
+                sample_id = match.get('sampleId')
+                match_cluster_code = match.get('matchClusterCode', '')
+                cluster_val = ""
+                if paternal_code in ("p1", "p2"):
+                    if match_cluster_code == paternal_code:
+                        cluster_val = "Paternal side"
+                    elif match_cluster_code in ("p1", "p2"):
+                        cluster_val = "Maternal side"
+                    elif match_cluster_code == "both":
+                        cluster_val = "Both sides"
+                    elif match_cluster_code == "no_call":
+                        cluster_val = "Unassigned"
+                    else:
+                        cluster_val = ""
+                else:
+                    cluster_val = ""
+                cm_val = None
+                rel = match.get('relationship', {})
+                if isinstance(rel, dict):
+                    cm_val = rel.get('sharedCentimorgans')
+                if cm_val is None:
+                    cm_val = match.get('cM', '')
+                journey_names = match.get('journey_names', [])
+                subjourneys = match.get('subjourneys', [])
+                journey_names_strs = [str(j) for j in journey_names]
+                journeys_str = ";".join(
+                    journey_names_strs) if journey_names_strs else ""
+                subjourneys_str = ";".join(
+                    [str(sj) for sj in subjourneys]) if subjourneys else ""
+                region_percentages = {r['key']: r['percentage'] for r in match.get(
+                    'regions', []) if 'key' in r and 'percentage' in r}
+                region_row = [region_percentages.get(
+                    k, 0) for k in region_keys]
+                writer.writerow([
+                    display_name or '', sample_id or '', cluster_val, cm_val, journeys_str, subjourneys_str
+                ] + region_row)
+
     def on_fetch_clicked(e):
+        # ...existing code from on_fetch_clicked, but split into helpers where possible...
         idx = None
         options = test_select.options or []
+        fetch_btn.disabled = True
+        page.update()
         for i, opt in enumerate(options):
             if opt.key == test_select.value:
                 idx = i-1
                 break
         if idx is None or idx < 0:
             status.value = "No test selected."
+            fetch_btn.disabled = False
             page.update()
             return
         test_guid = state["test_list"][idx][1]
         shared_dna = None
         match_type = None
-        # Determine if we are resuming and in custom cM mode
         is_custom_cm = radio_group.value == "custom"
         progress = {}
         if os.path.exists(progress_file):
@@ -839,14 +861,12 @@ def main(page: ft.Page):
         resuming = False
         progress_params = progress.get("params", {})
         progress_n_matches = progress_params.get("n_matches")
-        # If resuming and custom cM, use n_matches from progress
         if is_custom_cm and progress.get("params") and progress.get("matches") and progress_params.get("shared_dna"):
             n_matches = int(progress_n_matches)
             user_n_matches = n_matches
             minv = min_cm.value.strip() if min_cm.value else ""
             maxv = max_cm.value.strip() if max_cm.value else ""
             shared_dna = progress_params.get("shared_dna")
-            # If min/max cm are not set, try to parse from shared_dna
             if not minv or not maxv:
                 parts = shared_dna.split("-")
                 if len(parts) == 2:
@@ -863,16 +883,14 @@ def main(page: ft.Page):
                 status.value = "Enter a positive integer for matches."
                 page.update()
                 return
-            user_n_matches = n_matches  # Save the user's intended value for progress tracking
+            user_n_matches = n_matches
             if radio_group.value == "custom":
                 minv = (min_cm.value or '').strip()
                 maxv = (max_cm.value or '').strip()
-                # If both blank, show error
                 if not minv and not maxv:
                     status.value = "Enter at least a min or max cM value."
                     page.update()
                     return
-                # If min is blank, use 6; if max is blank, use 3490
                 try:
                     minv_num = int(float(minv)) if minv else 6
                 except Exception:
@@ -881,7 +899,6 @@ def main(page: ft.Page):
                     maxv_num = int(float(maxv)) if maxv else 3490
                 except Exception:
                     maxv_num = 3490
-                # Clamp to [6, 3490]
                 minv_num = max(6, min(3490, minv_num))
                 maxv_num = max(6, min(3490, maxv_num))
                 min_cm.value = str(minv_num) if minv else ""
@@ -903,25 +920,19 @@ def main(page: ft.Page):
                 n_matches_fetch = n_matches
         journey_ids = [cb.key for cb in journey_checkboxes.controls if isinstance(
             cb, ft.Checkbox) and cb.value]
-        # Only one parent checkbox can be selected
         parental_sides = None
         for cb in parent_checkboxes:
             if cb.value:
                 parental_sides = cb.key
                 break
         csrf_token = get_csrf_token(state["cookies"])
-        # Print API request info
-        # Debug prints removed
         status.value = f"Fetching matches for testGuid: {test_guid}"
         page.update()
-        # Hide CSV file label before processing
         csv_file_label.visible = False
         csv_file_label.value = ""
         open_csv_btn.visible = False
         last_csv_filename["filename"] = ""
         page.update()
-
-        # Progress/resume system
         progress_key = {
             "test_guid": test_guid,
             "shared_dna": shared_dna,
@@ -938,30 +949,24 @@ def main(page: ft.Page):
             matches = progress["matches"]
             resume = True
             status.value = f"Resuming from previous progress: {len(matches)} matches already fetched."
-            # Track existing sampleIds to avoid duplicates
             for m in matches:
                 sid = m.get('sampleId')
                 if sid:
                     existing_ids.add(sid)
             page.update()
         else:
-            # New run, clear progress file
             if os.path.exists(progress_file):
                 try:
                     os.remove(progress_file)
                 except Exception:
                     pass
-
-        # Fetch matches with progress
         items_per_page = 100
-        # Calculate correct starting page number based on already-fetched matches
         total_fetched = len(matches)
         page_num = (total_fetched // items_per_page) + \
             1 if total_fetched else 1
         try:
             with requests.Session() as session:
                 while total_fetched < (n_matches if not (is_custom_cm and progress.get("params")) else n_matches):
-                    # Only update status for new pages being fetched
                     status.value = f"Fetching matches (page {page_num})... {total_fetched} fetched so far."
                     page.update()
                     base_url = f"https://www.ancestry.com/discoveryui-matches/parents/list/api/matchList/{test_guid}?itemsPerPage={items_per_page}&currentPage={page_num}"
@@ -995,7 +1000,6 @@ def main(page: ft.Page):
                             match_list = data.get('matchList', [])
                             if not match_list:
                                 break
-                            # Only add up to n_matches total, and avoid duplicates
                             new_matches = []
                             for m in match_list:
                                 sid = m.get('sampleId')
@@ -1005,7 +1009,6 @@ def main(page: ft.Page):
                             remaining = n_matches - len(matches)
                             matches.extend(new_matches[:remaining])
                             total_fetched = len(matches)
-                            # Save progress after each page
                             with open(progress_file, "w", encoding="utf-8") as pf:
                                 json.dump({"params": progress_key,
                                           "matches": matches}, pf)
@@ -1013,7 +1016,7 @@ def main(page: ft.Page):
                             if len(match_list) < items_per_page or total_fetched >= n_matches:
                                 break
                             page_num += 1
-                            time.sleep(2)  # Delay between fetching each page
+                            time.sleep(2)
                         except Exception as ex:
                             error = f"JSON error on page {page_num}: {ex}"
                             break
@@ -1022,38 +1025,23 @@ def main(page: ft.Page):
                         break
         except Exception as ex:
             error = f"Exception during fetch: {ex}"
-
         if error:
             status.value = error + ". Progress saved. You can rerun to resume."
-            # Show resume UI immediately
-            resume_label.value = "Resume available: {} matches fetched, {} processed.".format(
-                len(matches), len(progress.get("enriched_ids", [])) if "enriched_ids" in progress else 0)
-            resume_label.visible = True
-            resume_btn.visible = True
+            set_resume_ui(progress)
+            fetch_btn.disabled = False
             page.update()
             return
-
-        # Enrich matches with journeys and ethnicities, and resolve subjourney names before CSV export
         status.value = f"Processing {len(matches)} matches..."
         page.update()
         try:
-            def enrichment_progress_callback(batch_num, batch_total, batch_start, batch_end):
-                percent = (batch_num / batch_total) * \
-                    100 if batch_total else 100
-                status.value = f"Processing batch {batch_num}/{batch_total} ({percent:.2f}%)..."
-                page.update()
             enrich_matches_with_journeys_ethnicities(
                 test_guid, matches, state["cookies"], batch_size=24, progress_callback=enrichment_progress_callback)
         except Exception as ex:
             status.value = f"Error during enrichment: {ex}. Progress saved. You can rerun to resume."
-            resume_label.value = "Resume available: {} matches fetched, {} processed.".format(len(
-                matches), len(progress.get("enriched_ids", [])) if "enriched_ids" in progress else 0)
-            resume_label.visible = True
-            resume_btn.visible = True
+            set_resume_ui(progress)
+            fetch_btn.disabled = False
             page.update()
             return
-
-        # Save CSV
         status.value = f"Saving CSV..."
         page.update()
         person_name = "person"
@@ -1068,58 +1056,13 @@ def main(page: ft.Page):
             region_keys = list(REGIONS.keys())
             region_names = [REGIONS[k] for k in region_keys]
             paternal_code = state.get("paternal_cluster_code", "")
-            with open(filename, "w", newline='', encoding="utf-8") as f:
-                writer = csv.writer(f)
-                writer.writerow([
-                    "Display Name", "Sample ID", "Parent", "cM", "Journeys", "Subjourneys"
-                ] + region_names)
-                for match in matches:
-                    match_profile = match.get('matchProfile', {})
-                    display_name = match_profile.get('displayName')
-                    sample_id = match.get('sampleId')
-                    match_cluster_code = match.get('matchClusterCode', '')
-                    # Go-style logic for Parent column
-                    cluster_val = ""
-                    if paternal_code in ("p1", "p2"):
-                        if match_cluster_code == paternal_code:
-                            cluster_val = "Paternal side"
-                        elif match_cluster_code in ("p1", "p2"):
-                            cluster_val = "Maternal side"
-                        elif match_cluster_code == "both":
-                            cluster_val = "Both sides"
-                        elif match_cluster_code == "no_call":
-                            cluster_val = "Unassigned"
-                        else:
-                            cluster_val = ""
-                    else:
-                        cluster_val = ""
-                    # Get cM value from relationship.sharedCentimorgans if present
-                    cm_val = None
-                    rel = match.get('relationship', {})
-                    if isinstance(rel, dict):
-                        cm_val = rel.get('sharedCentimorgans')
-                    if cm_val is None:
-                        cm_val = match.get('cM', '')
-                    journey_names = match.get('journey_names', [])
-                    subjourneys = match.get('subjourneys', [])
-                    journey_names_strs = [str(j) for j in journey_names]
-                    journeys_str = ";".join(
-                        journey_names_strs) if journey_names_strs else ""
-                    subjourneys_str = ";".join(
-                        [str(sj) for sj in subjourneys]) if subjourneys else ""
-                    region_percentages = {r['key']: r['percentage'] for r in match.get(
-                        'regions', []) if 'key' in r and 'percentage' in r}
-                    region_row = [region_percentages.get(
-                        k, 0) for k in region_keys]
-                    writer.writerow([
-                        display_name or '', sample_id or '', cluster_val, cm_val, journeys_str, subjourneys_str
-                    ] + region_row)
+            save_csv(matches, filename, region_keys, region_names,
+                     paternal_code, state["test_list"], idx)
             status.value = f"Saved {len(matches)} matches."
-            csv_file_label.value = f"CSV file: {filename}"
+            csv_file_label.value = f"{filename}"
             csv_file_label.visible = True
             open_csv_btn.visible = True
             last_csv_filename["filename"] = filename
-            # Remove progress file after successful completion
             if os.path.exists(progress_file):
                 try:
                     os.remove(progress_file)
@@ -1131,6 +1074,7 @@ def main(page: ft.Page):
             csv_file_label.visible = False
             open_csv_btn.visible = False
             last_csv_filename["filename"] = ""
+        fetch_btn.disabled = False
         page.update()
 
     def on_open_csv_clicked(e):
@@ -1141,15 +1085,15 @@ def main(page: ft.Page):
             status.value = f"Could not open file: {ex}"
         page.update()
 
+    # --- Event bindings ---
     test_select.on_change = on_test_selected
     radio_group.on_change = on_radio_changed
     fetch_btn.on_click = on_fetch_clicked
     open_csv_btn.on_click = on_open_csv_clicked
     resume_btn.on_click = on_resume_clicked
 
-    # Auto-load tests on app start
+    # --- App start ---
     load_tests()
-
     page.add(
         resume_label,
         resume_btn,

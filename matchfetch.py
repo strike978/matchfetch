@@ -806,9 +806,6 @@ def main(page: ft.Page):
                 num_matches.value = str(state["counts"][2])
         page.update()
 
-    # Also handle the case where the user clicks the already-selected custom radio button
-    radio_group.on_click = on_radio_changed
-
     def enrichment_progress_callback(batch_num, batch_total, batch_start, batch_end):
         percent = (batch_num / batch_total) * 100 if batch_total else 100
         status.value = f"Processing batch {batch_num}/{batch_total} ({percent:.2f}%)..."

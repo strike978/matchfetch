@@ -886,18 +886,37 @@ def main(page: ft.Page):
         resuming = False
         progress_params = progress.get("params", {})
         progress_n_matches = progress_params.get("n_matches")
-        if is_custom_cm and progress.get("params") and progress.get("matches") and progress_params.get("shared_dna"):
-            n_matches = int(progress_n_matches)
-            user_n_matches = n_matches
-            minv = min_cm.value.strip() if min_cm.value else ""
-            maxv = max_cm.value.strip() if max_cm.value else ""
-            shared_dna = progress_params.get("shared_dna")
-            if not minv or not maxv:
-                parts = shared_dna.split("-")
-                if len(parts) == 2:
-                    minv = parts[0]
-                    maxv = parts[1]
-            n_matches_fetch = 999999
+
+        # --- FIX: Always use current min_cm/max_cm for custom cM, never from progress ---
+        if is_custom_cm:
+            minv = (min_cm.value or '').strip()
+            maxv = (max_cm.value or '').strip()
+            if not minv and not maxv:
+                status.value = "Enter at least a min or max cM value."
+                page.update()
+                fetch_btn.disabled = False
+                return
+            try:
+                minv_num = int(float(minv)) if minv else 6
+            except Exception:
+                minv_num = 6
+            try:
+                maxv_num = int(float(maxv)) if maxv else 3490
+            except Exception:
+                maxv_num = 3490
+            minv_num = max(6, min(3490, minv_num))
+            maxv_num = max(6, min(3490, maxv_num))
+            min_cm.value = str(minv_num) if minv else ""
+            max_cm.value = str(maxv_num) if maxv else ""
+            if minv and maxv:
+                shared_dna = f"{minv_num}-{maxv_num}"
+            elif minv:
+                shared_dna = f"{minv_num}-"
+            elif maxv:
+                shared_dna = f"6-{maxv_num}"
+            n_matches = 999999
+            user_n_matches = int(num_matches.value) if num_matches.value else 0
+            n_matches_fetch = n_matches
         else:
             try:
                 nval = num_matches.value if num_matches.value is not None else "0"
@@ -907,42 +926,16 @@ def main(page: ft.Page):
             except Exception:
                 status.value = "Enter a positive integer for matches."
                 page.update()
+                fetch_btn.disabled = False
                 return
             user_n_matches = n_matches
-            if radio_group.value == "custom":
-                minv = (min_cm.value or '').strip()
-                maxv = (max_cm.value or '').strip()
-                if not minv and not maxv:
-                    status.value = "Enter at least a min or max cM value."
-                    page.update()
-                    return
-                try:
-                    minv_num = int(float(minv)) if minv else 6
-                except Exception:
-                    minv_num = 6
-                try:
-                    maxv_num = int(float(maxv)) if maxv else 3490
-                except Exception:
-                    maxv_num = 3490
-                minv_num = max(6, min(3490, minv_num))
-                maxv_num = max(6, min(3490, maxv_num))
-                min_cm.value = str(minv_num) if minv else ""
-                max_cm.value = str(maxv_num) if maxv else ""
-                if minv and maxv:
-                    shared_dna = f"{minv_num}-{maxv_num}"
-                elif minv:
-                    shared_dna = f"{minv_num}-"
-                elif maxv:
-                    shared_dna = f"6-{maxv_num}"
-                n_matches_fetch = 999999
+            if radio_group.value == "close":
+                match_type = "close"
+            elif radio_group.value == "distant":
+                match_type = "distant"
             else:
-                if radio_group.value == "close":
-                    match_type = "close"
-                elif radio_group.value == "distant":
-                    match_type = "distant"
-                else:
-                    match_type = "all"
-                n_matches_fetch = n_matches
+                match_type = "all"
+            n_matches_fetch = n_matches
         journey_ids = [cb.key for cb in journey_checkboxes.controls if isinstance(
             cb, ft.Checkbox) and cb.value]
         parental_sides = None

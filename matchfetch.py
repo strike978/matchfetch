@@ -1,5 +1,9 @@
+import csv
+import datetime
 import json
+import os
 import re
+import time
 
 import flet as ft
 import requests
@@ -179,7 +183,6 @@ def enrich_matches_with_journeys_ethnicities(test_guid, matches, cookies, batch_
     sample_ids = [m.get('sampleId') for m in matches if m.get('sampleId')]
     total = len(sample_ids)
     # Debug prints removed
-    import os
     progress_file = "progress.json"
     # Try to load params from progress file if present, else fallback to minimal params
     params = None
@@ -209,7 +212,6 @@ def enrich_matches_with_journeys_ethnicities(test_guid, matches, cookies, batch_
             # Consider a match enriched if it has both journeys and regions fields
             if sid and m.get('journeys') is not None and m.get('regions') is not None:
                 enriched_ids.add(sid)
-    import time
     batch_total = (total + batch_size - 1) // batch_size
     for batch_num, i in enumerate(range(0, total, batch_size), start=1):
         batch = sample_ids[i:i+batch_size]
@@ -596,7 +598,6 @@ def main(page: ft.Page):
 
     def load_tests():
         # Check for progress file and show resume UI if present
-        import os
         progress = None
         if os.path.exists(progress_file):
             try:
@@ -621,7 +622,6 @@ def main(page: ft.Page):
 
     def on_resume_clicked(e):
         # Load progress and resume as if fetch was started
-        import os
         if not os.path.exists(progress_file):
             resume_label.value = "No progress file found."
             resume_label.visible = True
@@ -729,7 +729,6 @@ def main(page: ft.Page):
         status.visible = False
         loading_spinner.visible = True
         # Show resume button only if progress file exists AND a test is selected
-        import os
         progress = None
         if os.path.exists(progress_file):
             try:
@@ -740,7 +739,7 @@ def main(page: ft.Page):
         if progress and "params" in progress and test_select.value:
             matches = progress.get("matches", [])
             enriched_ids = progress.get("enriched_ids", [])
-            resume_label.value = f"Resume available: {len(matches)} matches fetched, {len(enriched_ids) if enriched_ids else 0} enriched."
+            resume_label.value = f"Resume available: {len(matches)} matches fetched, {len(enriched_ids) if enriched_ids else 0} processed."
             resume_label.visible = True
             resume_btn.visible = True
         else:
@@ -815,10 +814,6 @@ def main(page: ft.Page):
         page.update()
 
     def on_fetch_clicked(e):
-        import csv
-        import datetime
-        import os
-        import time
         idx = None
         options = test_select.options or []
         for i, opt in enumerate(options):
@@ -835,7 +830,6 @@ def main(page: ft.Page):
         # Determine if we are resuming and in custom cM mode
         is_custom_cm = radio_group.value == "custom"
         progress = {}
-        import os
         if os.path.exists(progress_file):
             try:
                 with open(progress_file, "r", encoding="utf-8") as pf:
@@ -959,7 +953,6 @@ def main(page: ft.Page):
         total_fetched = len(matches)
         page_num = (total_fetched // items_per_page) + \
             1 if total_fetched else 1
-        import time
         try:
             with requests.Session() as session:
                 while total_fetched < (n_matches if not (is_custom_cm and progress.get("params")) else n_matches):
@@ -1028,7 +1021,7 @@ def main(page: ft.Page):
         if error:
             status.value = error + ". Progress saved. You can rerun to resume."
             # Show resume UI immediately
-            resume_label.value = "Resume available: {} matches fetched, {} enriched.".format(
+            resume_label.value = "Resume available: {} matches fetched, {} processed.".format(
                 len(matches), len(progress.get("enriched_ids", [])) if "enriched_ids" in progress else 0)
             resume_label.visible = True
             resume_btn.visible = True
@@ -1048,7 +1041,7 @@ def main(page: ft.Page):
                 test_guid, matches, state["cookies"], batch_size=24, progress_callback=enrichment_progress_callback)
         except Exception as ex:
             status.value = f"Error during enrichment: {ex}. Progress saved. You can rerun to resume."
-            resume_label.value = "Resume available: {} matches fetched, {} enriched.".format(len(
+            resume_label.value = "Resume available: {} matches fetched, {} processed.".format(len(
                 matches), len(progress.get("enriched_ids", [])) if "enriched_ids" in progress else 0)
             resume_label.visible = True
             resume_btn.visible = True
@@ -1136,7 +1129,6 @@ def main(page: ft.Page):
         page.update()
 
     def on_open_csv_clicked(e):
-        import os
         filename = last_csv_filename["filename"] or "matches.csv"
         try:
             os.startfile(filename)

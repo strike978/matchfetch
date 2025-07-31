@@ -4,7 +4,7 @@
   <img src="icon.png" alt="MatchFetch icon" width="120" style="margin-bottom:1em;" />
 </p>
 <p align="center">
-  <img src="animation.gif" alt="MatchFetch demo animation" style="max-width:480px; border-radius:10px; box-shadow:0 2px 12px rgba(0,0,0,0.10); background:#222;" />
+  <img src="Animation.gif" alt="MatchFetch demo animation" style="max-width:480px; border-radius:10px; box-shadow:0 2px 12px rgba(0,0,0,0.10); background:#222;" />
 </p>
 
 <p align="center" style="font-size:1.08em; color:#444; margin-top:0.5em;">

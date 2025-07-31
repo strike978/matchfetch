@@ -690,6 +690,32 @@ def main(page: ft.Page):
         # Call fetch as if user clicked fetch
         on_fetch_clicked(None)
 
+    def fetch_paternal_cluster_code(test_guid, cookies):
+        """
+        Fetch the paternal cluster code for a given test_guid.
+        Returns: 'p1', 'p2', or '' if not found.
+        """
+        url = f"https://www.ancestry.com/dna/origins/inheritance/api/v1/matches/{test_guid}/paternal-cluster"
+        headers = {
+            'User-Agent': 'Mozilla/5.0',
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+        }
+        csrf_token = get_csrf_token(cookies)
+        if csrf_token:
+            headers['x-csrf-token'] = csrf_token
+        try:
+            with requests.Session() as session:
+                resp = session.get(url, headers=headers, cookies=cookies)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    code = data.get('item', {}).get('clusterCode', '')
+                    if code in ('p1', 'p2'):
+                        return code
+        except Exception as ex:
+            print(f"[fetch_paternal_cluster_code] Exception: {ex}")
+        return ''
+
     def on_test_selected(e):
         idx = None
         options = test_select.options or []
@@ -718,6 +744,11 @@ def main(page: ft.Page):
             page.update()
             return
         test_guid = state["test_list"][idx][1]
+        # Fetch and print paternal cluster code for debugging
+        paternal_code = fetch_paternal_cluster_code(
+            test_guid, state["cookies"])
+        print(
+            f"[DEBUG] Paternal cluster code for test {test_guid}: {paternal_code}")
         counts, journeys = fetch_counts_journeys(test_guid, state["cookies"])
         state["counts"] = counts
         state["journeys"] = journeys

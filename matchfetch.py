@@ -554,9 +554,9 @@ def main(page: ft.Page):
         page.update()
 
     min_cm = ft.TextField(label="Min cM", visible=False,
-                          width=100, value="90", on_change=enforce_cm_bounds)
+                          width=100, value="90", on_blur=enforce_cm_bounds)
     max_cm = ft.TextField(label="Max cM", visible=False,
-                          width=100, value="400", on_change=enforce_cm_bounds)
+                          width=100, value="400", on_blur=enforce_cm_bounds)
     # Journey label and checkboxes
     journey_label = ft.Text("🗺️ Journeys", visible=False)
     journey_checkboxes = ft.Column([], visible=False)
@@ -865,28 +865,33 @@ def main(page: ft.Page):
                 return
             user_n_matches = n_matches  # Save the user's intended value for progress tracking
             if radio_group.value == "custom":
-                minv = min_cm.value.strip() if min_cm.value else ""
-                maxv = max_cm.value.strip() if max_cm.value else ""
-                # Enforce min/max bounds
+                minv = (min_cm.value or '').strip()
+                maxv = (max_cm.value or '').strip()
+                # If both blank, show error
+                if not minv and not maxv:
+                    status.value = "Enter at least a min or max cM value."
+                    page.update()
+                    return
+                # If min is blank, use 6; if max is blank, use 3490
                 try:
-                    minv_num = max(
-                        6, min(3490, int(float(minv)))) if minv else 6
+                    minv_num = int(float(minv)) if minv else 6
                 except Exception:
                     minv_num = 6
                 try:
-                    maxv_num = max(6, min(3490, int(float(maxv)))
-                                   ) if maxv else 3490
+                    maxv_num = int(float(maxv)) if maxv else 3490
                 except Exception:
                     maxv_num = 3490
-                min_cm.value = str(minv_num)
-                max_cm.value = str(maxv_num)
-                if minv_num and maxv_num:
+                # Clamp to [6, 3490]
+                minv_num = max(6, min(3490, minv_num))
+                maxv_num = max(6, min(3490, maxv_num))
+                min_cm.value = str(minv_num) if minv else ""
+                max_cm.value = str(maxv_num) if maxv else ""
+                if minv and maxv:
                     shared_dna = f"{minv_num}-{maxv_num}"
-                elif minv_num:
+                elif minv:
                     shared_dna = f"{minv_num}-"
-                elif maxv_num:
-                    shared_dna = f"0-{maxv_num}"
-                # Use large value for fetching, but keep user_n_matches for progress
+                elif maxv:
+                    shared_dna = f"6-{maxv_num}"
                 n_matches_fetch = 999999
             else:
                 if radio_group.value == "close":

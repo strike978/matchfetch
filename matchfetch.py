@@ -538,6 +538,17 @@ def main(page: ft.Page):
                           width=100, value="400")
     journey_label = ft.Text("🗺️ Journeys", visible=False)
     journey_checkboxes = ft.Column([], visible=False)
+    journey_container = ft.Container(
+        content=ft.Column([
+            journey_label,
+            journey_checkboxes
+        ]),
+        border=ft.border.all(1, "grey400"),
+        border_radius=8,
+        padding=10,
+        margin=10,
+        visible=False
+    )
     parent_options = [
         ("maternal", "Maternal"),
         ("paternal", "Paternal"),
@@ -550,6 +561,17 @@ def main(page: ft.Page):
         parent_checkboxes.append(cb)
     parent_label = ft.Text("👪 Parent", visible=False)
     parent_row = ft.Row(parent_checkboxes, visible=False)
+    parent_container = ft.Container(
+        content=ft.Column([
+            parent_label,
+            parent_row
+        ]),
+        border=ft.border.all(1, "grey400"),
+        border_radius=8,
+        padding=10,
+        margin=10,
+        visible=False
+    )
     csv_file_label = ft.Text("", visible=False)
     open_csv_btn = ft.ElevatedButton("Open CSV file", visible=False)
     last_csv_filename = {"filename": ""}
@@ -741,8 +763,10 @@ def main(page: ft.Page):
         radio_group.visible = True
         journey_label.visible = True
         journey_checkboxes.visible = True
+        journey_container.visible = True
         parent_label.visible = True
         parent_row.visible = True
+        parent_container.visible = True
         status.visible = True
         radio_group.content = ft.Row([
             ft.Radio(value="all", label=f"All matches ({counts[0]})"),
@@ -761,6 +785,7 @@ def main(page: ft.Page):
         page.update()
 
     def on_radio_changed(e):
+        # Always update visibility and values for custom, even if already selected
         if radio_group.value == "custom":
             num_matches.visible = False
             min_cm.visible = True
@@ -780,6 +805,9 @@ def main(page: ft.Page):
             elif radio_group.value == "distant":
                 num_matches.value = str(state["counts"][2])
         page.update()
+
+    # Also handle the case where the user clicks the already-selected custom radio button
+    radio_group.on_click = on_radio_changed
 
     def enrichment_progress_callback(batch_num, batch_total, batch_start, batch_end):
         percent = (batch_num / batch_total) * 100 if batch_total else 100
@@ -1101,10 +1129,8 @@ def main(page: ft.Page):
         loading_spinner,
         radio_group,
         ft.Row([num_matches, min_cm, max_cm]),
-        journey_label,
-        journey_checkboxes,
-        parent_label,
-        parent_row,
+        journey_container,
+        parent_container,
         ft.Row([csv_file_label, open_csv_btn]),
         fetch_btn,
         status

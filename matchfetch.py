@@ -604,6 +604,8 @@ def main(page: ft.Page):
                     style=ft.TextStyle(weight=ft.FontWeight.BOLD)),
         ft.TextSpan(
             " instead of the real sample ID, making it impossible to recover the original ID.\n\n"),
+        ft.TextSpan("The exported CSV filename will use the most common journey name in your data, instead of the test name, to further protect privacy.\n\n",
+                    style=ft.TextStyle(italic=True)),
         ft.TextSpan("This helps protect the privacy of individuals in your match list while still letting you analyze and compare matches.",
                     style=ft.TextStyle(italic=True)),
     ]
@@ -1151,11 +1153,29 @@ def main(page: ft.Page):
             return
         status.value = f"Saving CSV..."
         page.update()
-        person_name = "person"
-        if idx is not None and idx >= 0:
-            person_name = state["test_list"][idx][0] or "person"
-        safe_name = "_".join(person_name.split()).replace(
-            ',', '').replace('.', '').replace('/', '_')
+        privacy_mode = privacy_mode_checkbox.value
+        if privacy_mode:
+            # Find the most common journey name in the data
+            from collections import Counter
+            all_journeys = []
+            for match in matches:
+                journey_names = match.get('journey_names', [])
+                if journey_names:
+                    all_journeys.extend(journey_names)
+            if all_journeys:
+                most_common_journey, _ = Counter(
+                    all_journeys).most_common(1)[0]
+                journey_name = most_common_journey
+            else:
+                journey_name = "journey"
+            safe_name = "_".join(str(journey_name).split()).replace(
+                ',', '').replace('.', '').replace('/', '_')
+        else:
+            person_name = "person"
+            if idx is not None and idx >= 0:
+                person_name = state["test_list"][idx][0] or "person"
+            safe_name = "_".join(person_name.split()).replace(
+                ',', '').replace('.', '').replace('/', '_')
         date_str = datetime.datetime.now().strftime("%Y%m%d")
         match_count = len(matches)
         filename = f"{safe_name}_{date_str}_{match_count}.csv"

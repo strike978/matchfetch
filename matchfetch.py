@@ -744,11 +744,12 @@ def main(page: ft.Page):
             page.update()
             return
         test_guid = state["test_list"][idx][1]
-        # Fetch and print paternal cluster code for debugging
+        # Fetch and print paternal cluster code for debugging, and store in state
         paternal_code = fetch_paternal_cluster_code(
             test_guid, state["cookies"])
         print(
             f"[DEBUG] Paternal cluster code for test {test_guid}: {paternal_code}")
+        state["paternal_cluster_code"] = paternal_code
         counts, journeys = fetch_counts_journeys(test_guid, state["cookies"])
         state["counts"] = counts
         state["journeys"] = journeys
@@ -1055,6 +1056,7 @@ def main(page: ft.Page):
         try:
             region_keys = list(REGIONS.keys())
             region_names = [REGIONS[k] for k in region_keys]
+            paternal_code = state.get("paternal_cluster_code", "")
             with open(filename, "w", newline='', encoding="utf-8") as f:
                 writer = csv.writer(f)
                 writer.writerow([
@@ -1064,8 +1066,22 @@ def main(page: ft.Page):
                     match_profile = match.get('matchProfile', {})
                     display_name = match_profile.get('displayName')
                     sample_id = match.get('sampleId')
-                    # Get Parent value from matchClusterCode
-                    parent_val = match.get('matchClusterCode', '')
+                    match_cluster_code = match.get('matchClusterCode', '')
+                    # Go-style logic for Parent column
+                    cluster_val = ""
+                    if paternal_code in ("p1", "p2"):
+                        if match_cluster_code == paternal_code:
+                            cluster_val = "Paternal side"
+                        elif match_cluster_code in ("p1", "p2"):
+                            cluster_val = "Maternal side"
+                        elif match_cluster_code == "both":
+                            cluster_val = "Both sides"
+                        elif match_cluster_code == "no_call":
+                            cluster_val = "Unassigned"
+                        else:
+                            cluster_val = ""
+                    else:
+                        cluster_val = ""
                     # Get cM value from relationship.sharedCentimorgans if present
                     cm_val = None
                     rel = match.get('relationship', {})
@@ -1085,7 +1101,7 @@ def main(page: ft.Page):
                     region_row = [region_percentages.get(
                         k, 0) for k in region_keys]
                     writer.writerow([
-                        display_name or '', sample_id or '', parent_val, cm_val, journeys_str, subjourneys_str
+                        display_name or '', sample_id or '', cluster_val, cm_val, journeys_str, subjourneys_str
                     ] + region_row)
             status.value = f"Saved {len(matches)} matches."
             csv_file_label.value = f"CSV file: {filename}"

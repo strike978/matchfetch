@@ -1,5 +1,7 @@
+
 import csv
 import datetime
+import hashlib
 import json
 import os
 import re
@@ -863,7 +865,13 @@ def main(page: ft.Page):
                 region_row = [region_percentages.get(
                     k, 0) for k in region_keys]
                 if privacy_mode:
-                    row = [sample_id or '', journeys_str,
+                    # Use SHA-256 hash of sample_id for anonymized ID
+                    if sample_id:
+                        hashed_id = hashlib.sha256(
+                            str(sample_id).encode('utf-8')).hexdigest()
+                    else:
+                        hashed_id = ''
+                    row = [hashed_id, journeys_str,
                            subjourneys_str] + region_row
                 else:
                     row = [display_name or '', sample_id or '', cluster_val,

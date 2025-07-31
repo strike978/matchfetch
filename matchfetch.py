@@ -193,7 +193,7 @@ def enrich_matches_with_journeys_ethnicities(test_guid, matches, cookies, batch_
     if not params:
         params = {"test_guid": test_guid}
     enriched_ids = set()
-    # Try to load existing enriched_ids if present
+    # Try to load existing enriched_ids if present, else infer from matches
     if os.path.exists(progress_file):
         try:
             with open(progress_file, "r", encoding="utf-8") as pf:
@@ -202,28 +202,31 @@ def enrich_matches_with_journeys_ethnicities(test_guid, matches, cookies, batch_
                     enriched_ids = set(progress["enriched_ids"])
         except Exception:
             pass
+    # If enriched_ids is empty, infer from matches that already have enrichment fields
+    if not enriched_ids:
+        for m in matches:
+            sid = m.get('sampleId')
+            # Consider a match enriched if it has both journeys and regions fields
+            if sid and m.get('journeys') is not None and m.get('regions') is not None:
+                enriched_ids.add(sid)
     import time
     batch_total = (total + batch_size - 1) // batch_size
-    real_batch_num = 0
-    for i in range(0, total, batch_size):
-        batch_num = (i // batch_size) + 1
+    for batch_num, i in enumerate(range(0, total, batch_size), start=1):
         batch = sample_ids[i:i+batch_size]
-        # Skip batch if all sampleIds in batch are already enriched
-        if all(sid in enriched_ids for sid in batch):
-            continue
-        real_batch_num += 1
+        # Only process sampleIds in this batch that are not yet enriched
+        to_enrich = [sid for sid in batch if sid not in enriched_ids]
         if progress_callback:
-            # Pass the true batch_num (overall batch index, 1-based) for correct UI display
-            progress_callback(batch_num, batch_total,
-                              i, min(i+batch_size, total))
-        # Debug prints removed
-        comm_result = batch_fetch_journeys(test_guid, batch, cookies)
-        eth_result = batch_fetch_ethnicities(test_guid, batch, cookies)
+            progress_callback(batch_num, batch_total, i,
+                              min(i+batch_size, total))
+        if not to_enrich:
+            continue  # All already enriched, skip actual processing
+        comm_result = batch_fetch_journeys(test_guid, to_enrich, cookies)
+        eth_result = batch_fetch_ethnicities(test_guid, to_enrich, cookies)
         batch_journey_ids = set()
         batch_branch_ids_for_subjourneys = set()
         for m in matches:
             sid = m.get('sampleId')
-            if sid in batch:
+            if sid in to_enrich:
                 comm = comm_result.get(sid, {})
                 journeys = []
                 subjourneys = []
@@ -255,13 +258,12 @@ def enrich_matches_with_journeys_ethnicities(test_guid, matches, cookies, batch_
                     {'key': r.get('key'), 'percentage': r.get('percentage')}
                     for r in regions if 'key' in r and 'percentage' in r
                 ]
-                # Debug prints removed
         journey_names = resolve_journey_names(list(batch_journey_ids), cookies)
         subjourney_names = resolve_subjourney_names(
             list(batch_branch_ids_for_subjourneys), cookies)
         for m in matches:
             sid = m.get('sampleId')
-            if sid in batch:
+            if sid in to_enrich:
                 m['journey_names'] = [journey_names.get(
                     j, j) for j in m.get('journeys', [])]
                 subjourney_names_list = []

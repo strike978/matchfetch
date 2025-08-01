@@ -14,7 +14,7 @@ import flet as ft
 import requests
 from flet import FontWeight
 
-APP_VERSION = "1.0.1"
+APP_VERSION = "1.0.2"
 
 
 def atomic_json_save(data, filename):
@@ -291,9 +291,8 @@ def enrich_matches_with_journeys_ethnicities(test_guid, matches, cookies, batch_
                     for branch_id in m.get('journeys', []):
                         branch_communities = subjourney_names.get(branch_id)
                         if isinstance(branch_communities, dict):
-                            comm_ids = [c for c in m.get(
-                                'subjourneys', []) if c.startswith(branch_id + '.')]
-                            for comm_id in comm_ids:
+                            # Look for community IDs that match this branch
+                            for comm_id in m.get('subjourneys', []):
                                 name = branch_communities.get(comm_id)
                                 if name and name not in subjourney_names_list:
                                     subjourney_names_list.append(name)

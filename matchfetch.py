@@ -14,7 +14,7 @@ import flet as ft
 import requests
 from flet import FontWeight
 
-APP_VERSION = "1.0.2"
+APP_VERSION = "1.0.3"
 
 
 def atomic_json_save(data, filename):

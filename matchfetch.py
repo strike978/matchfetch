@@ -1,15 +1,24 @@
-
 import csv
-import datetime
-import hashlib
-import json
-import os
-import re
-import time
-
-import flet as ft
-import requests
 from flet import FontWeight
+import requests
+import flet as ft
+import time
+import re
+import os
+import json
+import hashlib
+import datetime
+import shutil
+import tempfile
+
+
+def atomic_json_save(data, filename):
+    dir_name = os.path.dirname(os.path.abspath(filename)) or "."
+    with tempfile.NamedTemporaryFile("w", dir=dir_name, delete=False, encoding="utf-8") as tf:
+        json.dump(data, tf)
+        tempname = tf.name
+    shutil.move(tempname, filename)
+
 
 REGIONS = {
     "00100": "Senegal",
@@ -285,9 +294,8 @@ def enrich_matches_with_journeys_ethnicities(test_guid, matches, cookies, batch_
                 enriched_ids.add(sid)
         # Save progress after each batch enrichment (params + matches + enriched_ids)
         try:
-            with open(progress_file, "w", encoding="utf-8") as pf:
-                json.dump({"params": params, "matches": matches,
-                          "enriched_ids": list(enriched_ids)}, pf)
+            atomic_json_save({"params": params, "matches": matches,
+                             "enriched_ids": list(enriched_ids)}, progress_file)
         except Exception as ex:
             print(f"[ENRICH] Could not save progress after batch: {ex}")
         time.sleep(2)  # Delay between batches
@@ -515,6 +523,11 @@ def fetch_matches(test_guid, num_matches, cookies, csrf_token, shared_dna=None, 
             else:
                 break
     return matches[:num_matches], "" if matches else "No matches found."
+
+
+def sanitize_filename(name):
+    # Remove or replace all invalid filename characters for Windows
+    return re.sub(r'[<>:"/\\|?*\.]', '_', name)
 
 
 def main(page: ft.Page):
@@ -1119,9 +1132,8 @@ def main(page: ft.Page):
                             remaining = n_matches - len(matches)
                             matches.extend(new_matches[:remaining])
                             total_fetched = len(matches)
-                            with open(progress_file, "w", encoding="utf-8") as pf:
-                                json.dump({"params": progress_key,
-                                          "matches": matches}, pf)
+                            atomic_json_save(
+                                {"params": progress_key, "matches": matches}, progress_file)
                             page.update()
                             if len(match_list) < items_per_page or total_fetched >= n_matches:
                                 break
@@ -1169,14 +1181,12 @@ def main(page: ft.Page):
                 journey_name = most_common_journey
             else:
                 journey_name = "journey"
-            safe_name = "_".join(str(journey_name).split()).replace(
-                ',', '').replace('.', '').replace('/', '_')
+            safe_name = sanitize_filename("_".join(str(journey_name).split()))
         else:
             person_name = "person"
             if idx is not None and idx >= 0:
                 person_name = state["test_list"][idx][0] or "person"
-            safe_name = "_".join(person_name.split()).replace(
-                ',', '').replace('.', '').replace('/', '_')
+            safe_name = sanitize_filename("_".join(person_name.split()))
         date_str = datetime.datetime.now().strftime("%Y%m%d")
         match_count = len(matches)
         filename = f"{safe_name}_{date_str}_{match_count}.csv"

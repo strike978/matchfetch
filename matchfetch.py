@@ -910,7 +910,7 @@ def main(page: ft.Page):
     def save_csv(matches, filename, region_keys, region_names, paternal_code, test_list, idx):
         # Use privacy mode to determine columns
         privacy_mode = privacy_mode_checkbox.value
-        with open(filename, "w", newline='', encoding="utf-8") as f:
+        with open(filename, "w", newline='', encoding="utf-8-sig", errors="replace") as f:
             writer = csv.writer(f)
             if privacy_mode:
                 header = ["ID", "Journeys", "Sub Journeys"] + region_names

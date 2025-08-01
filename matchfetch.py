@@ -1,15 +1,20 @@
+
+# Application version
 import csv
-from flet import FontWeight
-import requests
-import flet as ft
-import time
-import re
-import os
-import json
-import hashlib
 import datetime
+import hashlib
+import json
+import os
+import re
 import shutil
 import tempfile
+import time
+
+import flet as ft
+import requests
+from flet import FontWeight
+
+APP_VERSION = "1.0.1"
 
 
 def atomic_json_save(data, filename):
@@ -227,78 +232,81 @@ def enrich_matches_with_journeys_ethnicities(test_guid, matches, cookies, batch_
     batch_total = (total + batch_size - 1) // batch_size
     for batch_num, i in enumerate(range(0, total, batch_size), start=1):
         batch = sample_ids[i:i+batch_size]
-        # Only process sampleIds in this batch that are not yet enriched
         to_enrich = [sid for sid in batch if sid not in enriched_ids]
         if progress_callback:
             progress_callback(batch_num, batch_total, i,
                               min(i+batch_size, total))
         if not to_enrich:
-            continue  # All already enriched, skip actual processing
-        comm_result = batch_fetch_journeys(test_guid, to_enrich, cookies)
-        eth_result = batch_fetch_ethnicities(test_guid, to_enrich, cookies)
-        batch_journey_ids = set()
-        batch_branch_ids_for_subjourneys = set()
-        for m in matches:
-            sid = m.get('sampleId')
-            if sid in to_enrich:
-                comm = comm_result.get(sid, {})
-                journeys = []
-                subjourneys = []
-                branch_ids_for_subjourneys = []
-                if isinstance(comm, dict):
-                    branches = comm.get('branches', [])
-                    if isinstance(branches, list):
-                        journeys = [b.get('id') for b in branches if isinstance(
-                            b, dict) and 'id' in b]
-                        for b in branches:
-                            if isinstance(b, dict):
-                                branch_id = b.get('id')
-                                communities = b.get('communities', [])
-                                if isinstance(communities, list) and branch_id:
-                                    if communities:
-                                        branch_ids_for_subjourneys.append(
-                                            branch_id)
-                                    subjourneys.extend(
-                                        [c.get('id') for c in communities if isinstance(c, dict) and 'id' in c])
-                m['journeys'] = journeys
-                m['subjourneys'] = subjourneys
-                m['subjourney_branch_ids'] = branch_ids_for_subjourneys
-                batch_journey_ids.update(journeys)
-                batch_branch_ids_for_subjourneys.update(
-                    branch_ids_for_subjourneys)
-                eth = eth_result.get(sid, {})
-                regions = eth.get('regions', [])
-                m['regions'] = [
-                    {'key': r.get('key'), 'percentage': r.get('percentage')}
-                    for r in regions if 'key' in r and 'percentage' in r
-                ]
-        journey_names = resolve_journey_names(list(batch_journey_ids), cookies)
-        subjourney_names = resolve_subjourney_names(
-            list(batch_branch_ids_for_subjourneys), cookies)
-        for m in matches:
-            sid = m.get('sampleId')
-            if sid in to_enrich:
-                m['journey_names'] = [journey_names.get(
-                    j, j) for j in m.get('journeys', [])]
-                subjourney_names_list = []
-                for branch_id in m.get('journeys', []):
-                    branch_communities = subjourney_names.get(branch_id)
-                    if isinstance(branch_communities, dict):
-                        comm_ids = [c for c in m.get(
-                            'subjourneys', []) if c.startswith(branch_id + '.')]
-                        for comm_id in comm_ids:
-                            name = branch_communities.get(comm_id)
-                            if name and name not in subjourney_names_list:
-                                subjourney_names_list.append(name)
-                m['subjourneys'] = subjourney_names_list
-                enriched_ids.add(sid)
-        # Save progress after each batch enrichment (params + matches + enriched_ids)
+            continue
         try:
+            comm_result = batch_fetch_journeys(test_guid, to_enrich, cookies)
+            eth_result = batch_fetch_ethnicities(test_guid, to_enrich, cookies)
+            batch_journey_ids = set()
+            batch_branch_ids_for_subjourneys = set()
+            for m in matches:
+                sid = m.get('sampleId')
+                if sid in to_enrich:
+                    comm = comm_result.get(sid, {})
+                    journeys = []
+                    subjourneys = []
+                    branch_ids_for_subjourneys = []
+                    if isinstance(comm, dict):
+                        branches = comm.get('branches', [])
+                        if isinstance(branches, list):
+                            journeys = [b.get('id') for b in branches if isinstance(
+                                b, dict) and 'id' in b]
+                            for b in branches:
+                                if isinstance(b, dict):
+                                    branch_id = b.get('id')
+                                    communities = b.get('communities', [])
+                                    if isinstance(communities, list) and branch_id:
+                                        if communities:
+                                            branch_ids_for_subjourneys.append(
+                                                branch_id)
+                                        subjourneys.extend(
+                                            [c.get('id') for c in communities if isinstance(c, dict) and 'id' in c])
+                    m['journeys'] = journeys
+                    m['subjourneys'] = subjourneys
+                    m['subjourney_branch_ids'] = branch_ids_for_subjourneys
+                    batch_journey_ids.update(journeys)
+                    batch_branch_ids_for_subjourneys.update(
+                        branch_ids_for_subjourneys)
+                    eth = eth_result.get(sid, {})
+                    regions = eth.get('regions', [])
+                    m['regions'] = [
+                        {'key': r.get('key'), 'percentage': r.get(
+                            'percentage')}
+                        for r in regions if 'key' in r and 'percentage' in r
+                    ]
+            journey_names = resolve_journey_names(
+                list(batch_journey_ids), cookies)
+            subjourney_names = resolve_subjourney_names(
+                list(batch_branch_ids_for_subjourneys), cookies)
+            for m in matches:
+                sid = m.get('sampleId')
+                if sid in to_enrich:
+                    m['journey_names'] = [journey_names.get(
+                        j, j) for j in m.get('journeys', [])]
+                    subjourney_names_list = []
+                    for branch_id in m.get('journeys', []):
+                        branch_communities = subjourney_names.get(branch_id)
+                        if isinstance(branch_communities, dict):
+                            comm_ids = [c for c in m.get(
+                                'subjourneys', []) if c.startswith(branch_id + '.')]
+                            for comm_id in comm_ids:
+                                name = branch_communities.get(comm_id)
+                                if name and name not in subjourney_names_list:
+                                    subjourney_names_list.append(name)
+                    m['subjourneys'] = subjourney_names_list
+                    enriched_ids.add(sid)
+            # Only save progress if the batch completed without error
             atomic_json_save({"params": params, "matches": matches,
                              "enriched_ids": list(enriched_ids)}, progress_file)
         except Exception as ex:
-            print(f"[ENRICH] Could not save progress after batch: {ex}")
-        time.sleep(2)  # Delay between batches
+            print(f"[ENRICH] Error in batch {batch_num}: {ex}")
+            # Stop processing and propagate the error to halt the process
+            raise
+        time.sleep(2)
 
 
 def resolve_journey_names(journey_ids, cookies):
@@ -532,7 +540,6 @@ def sanitize_filename(name):
 
 def main(page: ft.Page):
     # --- UI setup and state ---
-    APP_VERSION = "1.0.0"
     page.title = f"MatchFetch v{APP_VERSION}"
     status = ft.Text("")
     log = ft.TextField(multiline=True, read_only=True,
@@ -1115,10 +1122,10 @@ def main(page: ft.Page):
                     }
                     if csrf_token:
                         headers['X-CSRF-Token'] = csrf_token
-                    response = session.get(
-                        url, headers=headers, cookies=state["cookies"])
-                    if response.status_code == 200:
-                        try:
+                    try:
+                        response = session.get(
+                            url, headers=headers, cookies=state["cookies"])
+                        if response.status_code == 200:
                             data = response.json()
                             match_list = data.get('matchList', [])
                             if not match_list:
@@ -1132,6 +1139,7 @@ def main(page: ft.Page):
                             remaining = n_matches - len(matches)
                             matches.extend(new_matches[:remaining])
                             total_fetched = len(matches)
+                            # Only save progress after a full page is processed without error
                             atomic_json_save(
                                 {"params": progress_key, "matches": matches}, progress_file)
                             page.update()
@@ -1139,11 +1147,11 @@ def main(page: ft.Page):
                                 break
                             page_num += 1
                             time.sleep(2)
-                        except Exception as ex:
-                            error = f"JSON error on page {page_num}: {ex}"
+                        else:
+                            error = f"HTTP error {response.status_code} on page {page_num}"
                             break
-                    else:
-                        error = f"HTTP error {response.status_code} on page {page_num}"
+                    except Exception as ex:
+                        error = f"JSON error on page {page_num}: {ex}"
                         break
         except Exception as ex:
             error = f"Exception during fetch: {ex}"

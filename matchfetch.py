@@ -595,9 +595,12 @@ def main(page: ft.Page):
         margin=10,
         visible=False
     )
-    csv_file_label = ft.Text("", visible=False)
-    open_csv_btn = ft.ElevatedButton("Open CSV file", visible=False)
-    last_csv_filename = {"filename": ""}
+    regular_csv_label = ft.Text("", visible=False)
+    privacy_csv_label = ft.Text("", visible=False)
+    open_csv_btn_regular = ft.ElevatedButton("Open Regular CSV", visible=False)
+    open_csv_btn_privacy = ft.ElevatedButton(
+        "Open Privacy Mode CSV", visible=False)
+    last_csv_filename = {"regular": "", "privacy": ""}
     fetch_btn = ft.ElevatedButton("Fetch Matches", visible=False)
     state = {"cookies": None, "test_list": [],
              "counts": (0, 0, 0), "journeys": []}
@@ -670,6 +673,12 @@ def main(page: ft.Page):
         on_click=show_privacy_info_modal,
         style=ft.ButtonStyle(padding=0, shape=None, bgcolor=None)
     )
+
+    # Create rows for each CSV: filename + open button (+ info icon for privacy)
+    regular_csv_row = ft.Row(
+        [regular_csv_label, open_csv_btn_regular], visible=False)
+    privacy_csv_row = ft.Row(
+        [privacy_csv_label, open_csv_btn_privacy, privacy_info_icon], visible=False)
 
     # --- UI logic split into helpers ---
     def enforce_cm_bounds(e):
@@ -818,8 +827,8 @@ def main(page: ft.Page):
         journey_checkboxes.visible = False
         parent_label.visible = False
         parent_row.visible = False
-        csv_file_label.visible = False
-        open_csv_btn.visible = False
+        # csv_file_label removed: now using regular_csv_label and privacy_csv_label
+        # Remove reference to open_csv_btn
         status.visible = False
         loading_spinner.visible = True
         progress = None
@@ -961,6 +970,22 @@ def main(page: ft.Page):
                            cm_val, journeys_str, subjourneys_str] + region_row
                 writer.writerow(row)
 
+    def on_open_csv_regular_clicked(e):
+        filename = last_csv_filename["regular"] or "matches.csv"
+        try:
+            os.startfile(filename)
+        except Exception as ex:
+            status.value = f"Could not open regular CSV file: {ex}"
+        page.update()
+
+    def on_open_csv_privacy_clicked(e):
+        filename = last_csv_filename["privacy"] or "matches.csv"
+        try:
+            os.startfile(filename)
+        except Exception as ex:
+            status.value = f"Could not open privacy mode CSV file: {ex}"
+        page.update()
+
     def on_fetch_clicked(e):
         idx = None
         options = test_select.options or []
@@ -1048,10 +1073,16 @@ def main(page: ft.Page):
         csrf_token = get_csrf_token(state["cookies"])
         status.value = f"Fetching matches for testGuid: {test_guid}"
         page.update()
-        csv_file_label.visible = False
-        csv_file_label.value = ""
-        open_csv_btn.visible = False
-        last_csv_filename["filename"] = ""
+        regular_csv_label.visible = False
+        regular_csv_label.value = ""
+        privacy_csv_label.visible = False
+        privacy_csv_label.value = ""
+        open_csv_btn_regular.visible = False
+        open_csv_btn_privacy.visible = False
+        regular_csv_row.visible = False
+        privacy_csv_row.visible = False
+        last_csv_filename["regular"] = ""
+        last_csv_filename["privacy"] = ""
         page.update()
         progress_key = {
             "test_guid": test_guid,
@@ -1193,16 +1224,16 @@ def main(page: ft.Page):
             save_csv(matches, filename_privacy, region_keys, region_names,
                      paternal_code, state["test_list"], idx, privacy_mode=True)
             status.value = f"Saved {len(matches)} matches."
-            # Show both filenames, privacy info icon next to privacy mode CSV
-            csv_file_label.value = f"Regular CSV: {filename_regular}\nPrivacy Mode CSV: {filename_privacy} "
-            csv_file_label.visible = True
-            open_csv_btn.visible = True
-            last_csv_filename["filename"] = filename_regular
-            # Show privacy info icon next to privacy mode CSV label
-            page.add(ft.Row([
-                ft.Text(
-                    f"Privacy Mode CSV: {filename_privacy}"), privacy_info_icon
-            ]))
+            regular_csv_label.value = f"Regular CSV: {filename_regular}"
+            regular_csv_label.visible = True
+            privacy_csv_label.value = f"Privacy Mode CSV: {filename_privacy}"
+            privacy_csv_label.visible = True
+            open_csv_btn_regular.visible = True
+            open_csv_btn_privacy.visible = True
+            regular_csv_row.visible = True
+            privacy_csv_row.visible = True
+            last_csv_filename["regular"] = filename_regular
+            last_csv_filename["privacy"] = filename_privacy
             if os.path.exists(progress_file):
                 try:
                     os.remove(progress_file)
@@ -1210,26 +1241,22 @@ def main(page: ft.Page):
                     pass
         except Exception as ex:
             status.value = f"Error saving CSV: {ex}"
-            csv_file_label.value = ""
-            csv_file_label.visible = False
-            open_csv_btn.visible = False
-            last_csv_filename["filename"] = ""
+            # csv_file_label removed: now using regular_csv_label and privacy_csv_label
+            open_csv_btn_regular.visible = False
+            open_csv_btn_privacy.visible = False
+            last_csv_filename["regular"] = ""
+            last_csv_filename["privacy"] = ""
         fetch_btn.disabled = False
         page.update()
 
-    def on_open_csv_clicked(e):
-        filename = last_csv_filename["filename"] or "matches.csv"
-        try:
-            os.startfile(filename)
-        except Exception as ex:
-            status.value = f"Could not open file: {ex}"
-        page.update()
+    # Remove old open_csv_btn handler
 
     # --- Event bindings ---
     test_select.on_change = on_test_selected
     radio_group.on_change = on_radio_changed
     fetch_btn.on_click = on_fetch_clicked
-    open_csv_btn.on_click = on_open_csv_clicked
+    open_csv_btn_regular.on_click = on_open_csv_regular_clicked
+    open_csv_btn_privacy.on_click = on_open_csv_privacy_clicked
     resume_btn.on_click = on_resume_clicked
 
     # --- App start ---
@@ -1244,7 +1271,8 @@ def main(page: ft.Page):
         ft.Row([num_matches, min_cm, max_cm]),
         journey_container,
         parent_container,
-        ft.Row([csv_file_label, open_csv_btn]),
+        regular_csv_row,
+        privacy_csv_row,
         fetch_btn,
         status
     )

@@ -539,7 +539,7 @@ def sanitize_filename(name):
 
 def main(page: ft.Page):
     # --- UI setup and state ---
-    page.title = f"MatchFetch v{APP_VERSION}"
+    page.title = f"MatchFetch (v{APP_VERSION})"
     status = ft.Text("")
     log = ft.TextField(multiline=True, read_only=True,
                        min_lines=10, max_lines=20, expand=True)

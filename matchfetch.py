@@ -597,9 +597,10 @@ def main(page: ft.Page):
     )
     regular_csv_label = ft.Text("", visible=False)
     privacy_csv_label = ft.Text("", visible=False)
-    open_csv_btn_regular = ft.ElevatedButton("Open Regular CSV", visible=False)
+    open_csv_btn_regular = ft.ElevatedButton(
+        "Open", visible=False)
     open_csv_btn_privacy = ft.ElevatedButton(
-        "Open Privacy Mode CSV", visible=False)
+        "Open", visible=False)
     last_csv_filename = {"regular": "", "privacy": ""}
     fetch_btn = ft.ElevatedButton("Fetch Matches", visible=False)
     state = {"cookies": None, "test_list": [],
@@ -607,7 +608,7 @@ def main(page: ft.Page):
 
     # Modal dialog for privacy info
     info_text_spans = [
-        ft.TextSpan("Privacy mode", style=ft.TextStyle(
+        ft.TextSpan("Anonymized CSV", style=ft.TextStyle(
             weight=ft.FontWeight.BOLD)),
         ft.TextSpan(" removes the "),
         ft.TextSpan("Name", style=ft.TextStyle(weight=ft.FontWeight.BOLD)),
@@ -625,14 +626,14 @@ def main(page: ft.Page):
             " instead of the real sample ID, making it impossible to recover the original ID.\n\n"),
         ft.TextSpan("The exported CSV filename will use the most common journey name in your data, instead of the test name, to further protect privacy.\n\n",
                     style=ft.TextStyle(italic=True)),
-        ft.TextSpan("This helps protect the privacy of individuals in your match list while still letting you analyze and compare matches.",
+        ft.TextSpan("The Anonymized CSV is suitable for sharing with others, as it protects the privacy of individuals in your match list.",
                     style=ft.TextStyle(italic=True)),
     ]
     from flet import FontWeight, MainAxisAlignment, TextAlign, TextOverflow
     privacy_info_modal = ft.AlertDialog(
         title=ft.Row([
             ft.Icon(name="lock", color="blue", size=28),
-            ft.Text("About Privacy Mode", weight=FontWeight.BOLD, size=20)
+            ft.Text("About Anonymized CSV", weight=FontWeight.BOLD, size=20)
         ], alignment=MainAxisAlignment.START),
         content=ft.Container(
             ft.Text(
@@ -669,7 +670,7 @@ def main(page: ft.Page):
 
     privacy_info_icon = ft.IconButton(
         icon="info_outline",
-        tooltip="What is Privacy mode?",
+        tooltip="What is the Anonymized CSV?",
         on_click=show_privacy_info_modal,
         style=ft.ButtonStyle(padding=0, shape=None, bgcolor=None)
     )
@@ -678,7 +679,7 @@ def main(page: ft.Page):
     regular_csv_row = ft.Row(
         [regular_csv_label, open_csv_btn_regular], visible=False)
     privacy_csv_row = ft.Row(
-        [privacy_csv_label, open_csv_btn_privacy, privacy_info_icon], visible=False)
+        [privacy_info_icon, privacy_csv_label, open_csv_btn_privacy], visible=False)
 
     # --- UI logic split into helpers ---
     def enforce_cm_bounds(e):
@@ -1224,9 +1225,9 @@ def main(page: ft.Page):
             save_csv(matches, filename_privacy, region_keys, region_names,
                      paternal_code, state["test_list"], idx, privacy_mode=True)
             status.value = f"Saved {len(matches)} matches."
-            regular_csv_label.value = f"Regular CSV: {filename_regular}"
+            regular_csv_label.value = f"Full Data CSV: {filename_regular}"
             regular_csv_label.visible = True
-            privacy_csv_label.value = f"Privacy Mode CSV: {filename_privacy}"
+            privacy_csv_label.value = f"Anonymized CSV: {filename_privacy}"
             privacy_csv_label.visible = True
             open_csv_btn_regular.visible = True
             open_csv_btn_privacy.visible = True

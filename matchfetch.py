@@ -602,11 +602,7 @@ def main(page: ft.Page):
     state = {"cookies": None, "test_list": [],
              "counts": (0, 0, 0), "journeys": []}
 
-    # Privacy mode checkbox and info modal
-    privacy_mode_checkbox = ft.Checkbox(
-        label="Privacy mode", value=False)
-
-    # Modal dialog must be created once and added to the page for Flet to show it
+    # Modal dialog for privacy info
     info_text_spans = [
         ft.TextSpan("Privacy mode", style=ft.TextStyle(
             weight=ft.FontWeight.BOLD)),
@@ -907,9 +903,7 @@ def main(page: ft.Page):
         status.value = f"Processing batch {batch_num}/{batch_total} ({percent:.2f}%)..."
         page.update()
 
-    def save_csv(matches, filename, region_keys, region_names, paternal_code, test_list, idx):
-        # Use privacy mode to determine columns
-        privacy_mode = privacy_mode_checkbox.value
+    def save_csv(matches, filename, region_keys, region_names, paternal_code, test_list, idx, privacy_mode):
         with open(filename, "w", newline='', encoding="utf-8-sig", errors="replace") as f:
             writer = csv.writer(f)
             if privacy_mode:
@@ -955,7 +949,6 @@ def main(page: ft.Page):
                 region_row = [region_percentages.get(
                     k, 0) for k in region_keys]
                 if privacy_mode:
-                    # Use SHA-256 hash of sample_id for anonymized ID
                     if sample_id:
                         hashed_id = hashlib.sha256(
                             str(sample_id).encode('utf-8')).hexdigest()
@@ -969,7 +962,6 @@ def main(page: ft.Page):
                 writer.writerow(row)
 
     def on_fetch_clicked(e):
-        # ...existing code from on_fetch_clicked, but split into helpers where possible...
         idx = None
         options = test_select.options or []
         fetch_btn.disabled = True
@@ -998,7 +990,6 @@ def main(page: ft.Page):
         progress_params = progress.get("params", {})
         progress_n_matches = progress_params.get("n_matches")
 
-        # --- FIX: Always use current min_cm/max_cm for custom cM, never from progress ---
         if is_custom_cm:
             minv = (min_cm.value or '').strip()
             maxv = (max_cm.value or '').strip()
@@ -1138,7 +1129,6 @@ def main(page: ft.Page):
                             remaining = n_matches - len(matches)
                             matches.extend(new_matches[:remaining])
                             total_fetched = len(matches)
-                            # Only save progress after a full page is processed without error
                             atomic_json_save(
                                 {"params": progress_key, "matches": matches}, progress_file)
                             page.update()
@@ -1171,43 +1161,48 @@ def main(page: ft.Page):
             fetch_btn.disabled = False
             page.update()
             return
-        status.value = f"Saving CSV..."
+        status.value = f"Saving CSVs..."
         page.update()
-        privacy_mode = privacy_mode_checkbox.value
-        if privacy_mode:
-            # Find the most common journey name in the data
-            from collections import Counter
-            all_journeys = []
-            for match in matches:
-                journey_names = match.get('journey_names', [])
-                if journey_names:
-                    all_journeys.extend(journey_names)
-            if all_journeys:
-                most_common_journey, _ = Counter(
-                    all_journeys).most_common(1)[0]
-                journey_name = most_common_journey
-            else:
-                journey_name = "journey"
-            safe_name = sanitize_filename("_".join(str(journey_name).split()))
+        # Always export both regular and privacy mode CSVs
+        from collections import Counter
+        all_journeys = []
+        for match in matches:
+            journey_names = match.get('journey_names', [])
+            if journey_names:
+                all_journeys.extend(journey_names)
+        if all_journeys:
+            most_common_journey, _ = Counter(all_journeys).most_common(1)[0]
+            journey_name = most_common_journey
         else:
-            person_name = "person"
-            if idx is not None and idx >= 0:
-                person_name = state["test_list"][idx][0] or "person"
-            safe_name = sanitize_filename("_".join(person_name.split()))
+            journey_name = "journey"
+        safe_priv_name = sanitize_filename("_".join(str(journey_name).split()))
+        person_name = "person"
+        if idx is not None and idx >= 0:
+            person_name = state["test_list"][idx][0] or "person"
+        safe_name = sanitize_filename("_".join(person_name.split()))
         date_str = datetime.datetime.now().strftime("%Y%m%d")
         match_count = len(matches)
-        filename = f"{safe_name}_{date_str}_{match_count}.csv"
+        filename_regular = f"{safe_name}_{date_str}_{match_count}.csv"
+        filename_privacy = f"{safe_priv_name}_{date_str}_{match_count}.csv"
         try:
             region_keys = list(REGIONS.keys())
             region_names = [REGIONS[k] for k in region_keys]
             paternal_code = state.get("paternal_cluster_code", "")
-            save_csv(matches, filename, region_keys, region_names,
-                     paternal_code, state["test_list"], idx)
+            save_csv(matches, filename_regular, region_keys, region_names,
+                     paternal_code, state["test_list"], idx, privacy_mode=False)
+            save_csv(matches, filename_privacy, region_keys, region_names,
+                     paternal_code, state["test_list"], idx, privacy_mode=True)
             status.value = f"Saved {len(matches)} matches."
-            csv_file_label.value = f"{filename}"
+            # Show both filenames, privacy info icon next to privacy mode CSV
+            csv_file_label.value = f"Regular CSV: {filename_regular}\nPrivacy Mode CSV: {filename_privacy} "
             csv_file_label.visible = True
             open_csv_btn.visible = True
-            last_csv_filename["filename"] = filename
+            last_csv_filename["filename"] = filename_regular
+            # Show privacy info icon next to privacy mode CSV label
+            page.add(ft.Row([
+                ft.Text(
+                    f"Privacy Mode CSV: {filename_privacy}"), privacy_info_icon
+            ]))
             if os.path.exists(progress_file):
                 try:
                     os.remove(progress_file)
@@ -1241,7 +1236,6 @@ def main(page: ft.Page):
     load_tests()
     page.add(
         privacy_info_modal,
-        ft.Row([privacy_mode_checkbox, privacy_info_icon]),
         resume_label,
         resume_btn,
         test_select,

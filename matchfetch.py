@@ -685,10 +685,10 @@ def main(page: ft.Page):
             open_csv_btn_regular
         ], spacing=16, alignment=ft.MainAxisAlignment.START),
         bgcolor="#23272f",
-        border_radius=12,
+        border_radius=4,
         border=ft.border.all(1, "#374151"),
-        padding=ft.padding.symmetric(horizontal=16, vertical=12),
-        margin=ft.margin.only(bottom=10),
+        padding=ft.padding.symmetric(horizontal=8, vertical=4),
+        margin=ft.margin.only(bottom=6),
         visible=False
     )
 
@@ -701,10 +701,10 @@ def main(page: ft.Page):
             open_csv_btn_privacy
         ], spacing=16, alignment=ft.MainAxisAlignment.START),
         bgcolor="#23272f",
-        border_radius=12,
+        border_radius=4,
         border=ft.border.all(1, "#374151"),
-        padding=ft.padding.symmetric(horizontal=16, vertical=12),
-        margin=ft.margin.only(bottom=10),
+        padding=ft.padding.symmetric(horizontal=8, vertical=4),
+        margin=ft.margin.only(bottom=6),
         visible=False
     )
 

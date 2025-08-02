@@ -14,7 +14,7 @@ import flet as ft
 import requests
 from flet import FontWeight
 
-APP_VERSION = "1.0.3"
+APP_VERSION = "1.0.4"
 
 
 def atomic_json_save(data, filename):
@@ -946,7 +946,7 @@ def main(page: ft.Page):
             if privacy_mode:
                 header = ["ID", "Journeys", "Sub Journeys"] + region_names
             else:
-                header = ["Name", "ID", "Parent", "cM",
+                header = ["Name", "URL", "Parent", "cM",
                           "Journeys", "Sub Journeys"] + region_names
             writer.writerow(header)
             for match in matches:
@@ -994,7 +994,12 @@ def main(page: ft.Page):
                     row = [hashed_id, journeys_str,
                            subjourneys_str] + region_row
                 else:
-                    row = [display_name or '', sample_id or '', cluster_val,
+                    # Build compare URL using test_guid and sample_id
+                    url_val = ""
+                    if sample_id and test_list and idx is not None and idx >= 0:
+                        test_guid = test_list[idx][1]
+                        url_val = f"https://www.ancestry.com/discoveryui-matches/compare/{test_guid}/with/{str(sample_id).lower()}"
+                    row = [display_name or '', url_val, cluster_val,
                            cm_val, journeys_str, subjourneys_str] + region_row
                 writer.writerow(row)
 

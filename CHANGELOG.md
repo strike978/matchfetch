@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 #
 
+## [1.0.6] - 2025-08-02
+
+### Changed
+
+- A single space is now added after each exported URL in the CSV for improved compatibility and clarity.
+
 ## [1.0.5] - 2025-08-02
 
 ### Changed

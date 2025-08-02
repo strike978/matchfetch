@@ -8,9 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [1.0.5] - 2025-08-02
 
-### Fixed
+### Changed
 
-- Exported compare URLs in the CSV are now always lowercase for both test GUID and sample ID, ensuring consistent and clickable links.
+- Exported URLs in the CSV are now always lowercase for both test GUID and sample ID, ensuring consistent and clickable links.
 
 ## [1.0.4] - 2025-08-02
 

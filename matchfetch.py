@@ -675,11 +675,38 @@ def main(page: ft.Page):
         style=ft.ButtonStyle(padding=0, shape=None, bgcolor=None)
     )
 
-    # Create rows for each CSV: filename + open button (+ info icon for privacy)
-    regular_csv_row = ft.Row(
-        [regular_csv_label, open_csv_btn_regular], visible=False)
-    privacy_csv_row = ft.Row(
-        [privacy_info_icon, privacy_csv_label, open_csv_btn_privacy], visible=False)
+    # Create styled containers for each CSV row
+    regular_csv_row = ft.Container(
+        content=ft.Row([
+            ft.Icon(name="description", color="#60a5fa", size=24),
+            ft.Text("Full Data CSV:", weight=FontWeight.BOLD,
+                    size=16, color="white"),
+            regular_csv_label,
+            open_csv_btn_regular
+        ], spacing=16, alignment=ft.MainAxisAlignment.START),
+        bgcolor="#23272f",
+        border_radius=12,
+        border=ft.border.all(1, "#374151"),
+        padding=ft.padding.symmetric(horizontal=16, vertical=12),
+        margin=ft.margin.only(bottom=10),
+        visible=False
+    )
+
+    privacy_csv_row = ft.Container(
+        content=ft.Row([
+            privacy_info_icon,
+            ft.Text("Anonymized CSV:", weight=FontWeight.BOLD,
+                    size=16, color="white"),
+            privacy_csv_label,
+            open_csv_btn_privacy
+        ], spacing=16, alignment=ft.MainAxisAlignment.START),
+        bgcolor="#23272f",
+        border_radius=12,
+        border=ft.border.all(1, "#374151"),
+        padding=ft.padding.symmetric(horizontal=16, vertical=12),
+        margin=ft.margin.only(bottom=10),
+        visible=False
+    )
 
     # --- UI logic split into helpers ---
     def enforce_cm_bounds(e):
@@ -1225,9 +1252,9 @@ def main(page: ft.Page):
             save_csv(matches, filename_privacy, region_keys, region_names,
                      paternal_code, state["test_list"], idx, privacy_mode=True)
             status.value = f"Saved {len(matches)} matches."
-            regular_csv_label.value = f"Full Data CSV: {filename_regular}"
+            regular_csv_label.value = filename_regular
             regular_csv_label.visible = True
-            privacy_csv_label.value = f"Anonymized CSV: {filename_privacy}"
+            privacy_csv_label.value = filename_privacy
             privacy_csv_label.visible = True
             open_csv_btn_regular.visible = True
             open_csv_btn_privacy.visible = True

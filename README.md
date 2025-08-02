@@ -77,10 +77,9 @@ This will open the MatchFetch UI.
    - (Optional) Set minimum/maximum cM for custom filtering.
    - (Optional) Select specific communities (journeys) or parental side.
 
-5. **Enable Privacy Mode (optional)**
+5. **Privacy Mode**
 
-   - Check the "Privacy mode" box to anonymize IDs and remove sensitive columns in the export.
-   - Click the info icon for details about privacy mode.
+   Privacy mode is now always enabled. IDs are anonymized and sensitive columns are removed automatically in the export. See the info icon in the app for details.
 
 6. **Fetch matches**
 

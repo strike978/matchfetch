@@ -1,19 +1,19 @@
 # MatchFetch
 
 <p align="center">
-  <img src="icon.png" alt="MatchFetch icon" width="120" style="margin-bottom:1em;" />
+   <img src="icon.png" alt="MatchFetch icon" width="120" style="margin-bottom:1em;" />
 </p>
 <p align="center">
-  <img src="Animation.gif" alt="MatchFetch demo animation" style="max-width:480px; border-radius:10px; box-shadow:0 2px 12px rgba(0,0,0,0.10); background:#222;" />
+   <img src="Animation.gif" alt="MatchFetch demo animation" style="max-width:480px; border-radius:10px; box-shadow:0 2px 12px rgba(0,0,0,0.10); background:#222;" />
 </p>
 
 <p align="center" style="font-size:1.08em; color:#444; margin-top:0.5em;">
-  <strong>MatchFetch is a desktop application for downloading and exporting DNA match data from Ancestry.com.</strong><br>
-  It provides privacy features and flexible filtering to help you analyze your match list securely and efficiently.
+   <strong>MatchFetch is a desktop application for downloading and exporting DNA match data from Ancestry.com.</strong><br>
+    It provides advanced privacy features and flexible filtering to help you analyze your match list securely and efficiently.
 </p>
 
 <p align="center" style="color:#2b7a2b; font-size:1.05em; margin-top:0.5em;">
-  <strong>Your data stays private: all processing happens locally on your computer.</strong>
+   <strong>Your data stays private: all processing happens locally on your computer.</strong>
 </p>
 
 **For help on how to use MatchFetch, see the online guide:**
@@ -23,9 +23,9 @@
 
 - Fetches DNA matches from Ancestry.com using your account cookies
 - Adds community (journey) and ethnicity information to your matches
-- Flexible filtering by cM, parental side, and community
-- Privacy mode: anonymizes IDs and removes sensitive columns in exports
-- Exports results to CSV for further analysis
+- Flexible filtering by cM and cluster
+- Exports both **Full Data CSV** and **Anonymized CSV** for privacy and sharing
+- Resume feature: automatically saves progress and allows you to continue interrupted sessions
 
 ## Requirements
 
@@ -75,27 +75,34 @@ This will open the MatchFetch UI.
 
    - Select match type: All, Close, Distant, or Custom cM range.
    - (Optional) Set minimum/maximum cM for custom filtering.
-   - (Optional) Select specific communities (journeys) or parental side.
+   - (Optional) Select cluster.
 
-5. **Privacy Mode**
-
-   Privacy mode is now always enabled. IDs are anonymized and sensitive columns are removed automatically in the export. See the info icon in the app for details.
-
-6. **Fetch matches**
+5. **Fetch matches**
 
    - Click "Fetch Matches". The app will download your matches in batches.
-   - Progress is saved automatically. If interrupted, you can resume later.
+   - Progress is saved automatically. If interrupted, you can resume later using the "Resume previous session" button.
 
-7. **Export and open CSV**
-   - When finished, the app saves a CSV file in the project folder.
-   - Click "Open CSV file" to view the results.
+6. **Export and open CSV**
+   - When finished, the app saves two CSV files in the project folder:
+     - **Full Data CSV**: Contains all columns, including names and IDs.
+     - **Anonymized CSV**: Removes sensitive columns and anonymizes IDs for privacy.
+   - Click "Open" next to either CSV row to view the results.
+   - Click the info icon next to "Anonymized CSV" for details about privacy features.
 
-## Privacy Mode
+## Privacy Features
 
-- Removes Name, Parent, and cM columns from the export
-- Replaces IDs with SHA-256 hashes
-- Uses the most common journey name as the filename (instead of the test name)
-- See the in-app info dialog for more details
+- **Anonymized CSV**:
+  - Removes Name, Cluster, and cM columns from the export
+  - Replaces IDs with SHA-256 hashes (not reversible)
+  - Uses the most common journey name as the filename (instead of the test name)
+  - See the in-app info dialog (info icon) for a full explanation
+- **Full Data CSV**:
+  - Contains all columns for your own analysis (not for sharing)
+
+## Resume Feature
+
+- If the app is closed or interrupted, your progress is saved automatically.
+- When you restart, you can resume from where you left off using the "Resume previous session" button.
 
 ## Troubleshooting
 

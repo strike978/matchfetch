@@ -586,7 +586,11 @@ def main(page: ft.Page):
     for val, label in parent_options:
         cb = ft.Checkbox(label=label, key=val, value=False)
         parent_checkboxes.append(cb)
-    parent_label = ft.Text("👪 Parent", visible=False)
+        # Use a "family tree" icon and a more descriptive label for cluster/parental side
+        parent_label = ft.Row([
+            ft.Icon(name="GRID_VIEW", color="#60a5fa", size=22),
+            ft.Text("Clusters", visible=True)
+        ], visible=False)
     parent_row = ft.Row(parent_checkboxes, visible=False)
     parent_container = ft.Container(
         content=ft.Column([

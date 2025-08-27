@@ -960,8 +960,8 @@ def main(page: ft.Page):
             if privacy_mode:
                 header = ["ID", "Journeys", "Sub Journeys"] + region_names
             else:
-                header = ["Name", "URL", "Cluster", "cM", "Segments", "Meiosis",
-                          "Journeys", "Sub Journeys"] + region_names
+                header = ["Name", "URL", "Cluster", "cM", "Segments",
+                          "Journeys", "Sub Journeys"] + region_names  # Removed "Meiosis"
             writer.writerow(header)
             for match in matches:
                 match_profile = match.get('matchProfile', {})
@@ -984,12 +984,12 @@ def main(page: ft.Page):
                     cluster_val = ""
                 cm_val = None
                 segments_val = ""
-                meiosis_val = ""
+                # meiosis_val = ""  # Removed
                 rel = match.get('relationship', {})
                 if isinstance(rel, dict):
                     cm_val = rel.get('sharedCentimorgans')
                     segments_val = rel.get('numSharedSegments', "")
-                    meiosis_val = rel.get('meiosis', "")
+                    # meiosis_val = rel.get('meiosis', "")  # Removed
                 if cm_val is None:
                     cm_val = match.get('cM', '')
                 journey_names = match.get('journey_names', [])
@@ -1031,7 +1031,7 @@ def main(page: ft.Page):
                         test_guid = test_list[idx][1]
                         url_val = f"https://www.ancestry.com/discoveryui-matches/compare/{str(test_guid).lower()}/with/{str(sample_id).lower()} "
                     row = [display_name or '', url_val, cluster_val,
-                           cm_val, segments_val, meiosis_val, journeys_str, subjourneys_str] + region_row
+                           cm_val, segments_val, journeys_str, subjourneys_str] + region_row  # Removed meiosis_val
                 writer.writerow(row)
 
     def on_open_csv_regular_clicked(e):

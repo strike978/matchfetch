@@ -904,7 +904,11 @@ def main(page: ft.Page):
         journey_container.visible = False
         parent_label.visible = True
         parent_row.visible = True
-        parent_container.visible = True
+        # Hide Clusters container if no clusterCode
+        if not paternal_code:
+            parent_container.visible = False
+        else:
+            parent_container.visible = True
         status.visible = True
         radio_group.content = ft.Row([
             ft.Radio(value="all", label=f"All matches ({counts[0]})"),

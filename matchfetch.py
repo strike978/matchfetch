@@ -574,7 +574,7 @@ def main(page: ft.Page):
         border_radius=8,
         padding=10,
         margin=10,
-        visible=False
+        visible=False  # Always hidden
     )
     parent_options = [
         ("maternal", "Maternal"),
@@ -898,9 +898,10 @@ def main(page: ft.Page):
         state["journeys"] = journeys
         loading_spinner.visible = False
         radio_group.visible = True
-        journey_label.visible = True
-        journey_checkboxes.visible = True
-        journey_container.visible = True
+        # Hide journeys controls
+        journey_label.visible = False
+        journey_checkboxes.visible = False
+        journey_container.visible = False
         parent_label.visible = True
         parent_row.visible = True
         parent_container.visible = True
@@ -915,9 +916,10 @@ def main(page: ft.Page):
         num_matches.value = str(counts[0])
         num_matches.visible = True
         journey_checkboxes.controls.clear()
-        for jid, jname in journeys:
-            journey_checkboxes.controls.append(
-                ft.Checkbox(label=jname, key=jid))
+        # for jid, jname in journeys:
+        #     journey_checkboxes.controls.append(
+        #         ft.Checkbox(label=jname, key=jid))
+        # (Commented out: journey selection is currently hidden)
         fetch_btn.visible = True
         page.update()
 

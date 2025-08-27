@@ -274,8 +274,12 @@ def enrich_matches_with_journeys_ethnicities(test_guid, matches, cookies, batch_
                     eth = eth_result.get(sid, {})
                     regions = eth.get('regions', [])
                     m['regions'] = [
-                        {'key': r.get('key'), 'percentage': r.get(
-                            'percentage')}
+                        {
+                            'key': r.get('key'),
+                            'percentage': r.get('percentage'),
+                            'lowerConfidence': r.get('lowerConfidence'),
+                            'upperConfidence': r.get('upperConfidence')
+                        }
                         for r in regions if 'key' in r and 'percentage' in r
                     ]
             journey_names = resolve_journey_names(
@@ -981,10 +985,23 @@ def main(page: ft.Page):
                     journey_names_strs) if journey_names_strs else ""
                 subjourneys_str = ";".join(
                     [str(sj) for sj in subjourneys]) if subjourneys else ""
-                region_percentages = {r['key']: r['percentage'] for r in match.get(
+                # Build a dict of region info for easy lookup
+                region_info = {r['key']: r for r in match.get(
                     'regions', []) if 'key' in r and 'percentage' in r}
-                region_row = [region_percentages.get(
-                    k, 0) for k in region_keys]
+                region_row = []
+                for k in region_keys:
+                    r = region_info.get(k)
+                    if r is not None:
+                        pct = r.get('percentage')
+                        low = r.get('lowerConfidence')
+                        high = r.get('upperConfidence')
+                        if low is not None and high is not None:
+                            val = f"{pct} ({low}-{high})"
+                        else:
+                            val = pct
+                    else:
+                        val = 0
+                    region_row.append(val)
                 if privacy_mode:
                     if sample_id:
                         hashed_id = hashlib.sha256(

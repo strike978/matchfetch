@@ -950,7 +950,7 @@ def main(page: ft.Page):
             if privacy_mode:
                 header = ["ID", "Journeys", "Sub Journeys"] + region_names
             else:
-                header = ["Name", "URL", "Parent", "cM",
+                header = ["Name", "URL", "Cluster", "cM",
                           "Journeys", "Sub Journeys"] + region_names
             writer.writerow(header)
             for match in matches:

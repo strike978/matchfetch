@@ -24,7 +24,7 @@
 - Fetches DNA matches from Ancestry.com using your account cookies
 - Adds community (journey) and ethnicity information to your matches
 - Flexible filtering by cM and cluster
-- Exports both **Full Data JSON** and **Anonymized JSON** for privacy and sharing
+- Exports both **Full Data** and **Anonymized** results in both JSON and SQLite DB formats
 - Resume feature: automatically saves progress and allows you to continue interrupted sessions
 
 ## Requirements
@@ -82,35 +82,36 @@ This will open the MatchFetch UI.
    - Click "Fetch Matches". The app will download your matches in batches.
    - Progress is saved automatically. If interrupted, you can resume later using the "Resume previous session" button.
 
-6. **Export and open JSON**
-   - When finished, the app saves two JSON files in the project folder:
-     - **Full Data JSON**: Contains all fields, including names and IDs.
-     - **Anonymized JSON**: Removes sensitive fields and anonymizes IDs for privacy.
-   - Click "Open" next to either JSON row to view the results.
-   - Click the info icon next to "Anonymized JSON" for details about privacy features.
+6. **Exported Files**
+   - When finished, the app saves two sets of files in the project folder:
+     - **Full Data**: Contains all fields, including names and IDs, as both a `.json` and `.db` (SQLite) file.
+     - **Anonymized**: Removes sensitive fields and anonymizes IDs for privacy, as both a `.json` and `.db` (SQLite) file.
+   - The UI will show both file types for each export, with clear icons and labels.
+   - Click the info icon next to "Anonymized" for details about privacy features.
 
 ## Privacy Features
 
-- **Anonymized JSON**:
-  - Removes Name, Cluster, and cM fields from the export
+- **Anonymized Export**:
+  - Removes Name, Cluster, and cM fields from both JSON and DB exports
   - Replaces IDs with SHA-256 hashes (not reversible)
   - Uses the most common journey name as the filename (instead of the test name)
   - See the in-app info dialog (info icon) for a full explanation
-- **Full Data JSON**:
+- **Full Data Export**:
   - Contains all fields for your own analysis (not for sharing)
 
 ## Region Data Format
 
-- Each match's `Regions` field is a dictionary sorted from highest to lowest percentage.
+- Each match's `Regions` field (in JSON) is a dictionary sorted from highest to lowest percentage.
 - Each region entry looks like:
   ```json
   "Senegal": {
-    "percentage": 4,
-    "lowerConfidence": 2,
-    "upperConfidence": 4
+     "percentage": 4,
+     "lowerConfidence": 2,
+     "upperConfidence": 4
   }
   ```
 - Only regions with nonzero percentages are included.
+- In the DB export, regions are stored in a separate table and can be joined by match ID.
 
 ## Resume Feature
 

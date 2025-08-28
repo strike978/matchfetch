@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.8] - 2025-08-28
+
+### Changed
+
+- Export format now includes both JSON and SQLite DB for both full data and anonymized exports.
+- UI now displays both file types with icons and clear labels, each on its own line.
+- Privacy info dialog and all UI/labels updated to reference both JSON and DB formats.
+- Removed file open buttons for exported files; now only filenames are shown.
+- Minor UI and privacy dialog improvements for clarity and consistency.
+
 ## [1.0.7] - 2025-08-27
 
 ### Changed

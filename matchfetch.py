@@ -616,7 +616,7 @@ def main(page: ft.Page):
 
     # Modal dialog for privacy info
     info_text_spans = [
-        ft.TextSpan("Anonymized CSV", style=ft.TextStyle(
+        ft.TextSpan("Anonymized JSON", style=ft.TextStyle(
             weight=ft.FontWeight.BOLD)),
         ft.TextSpan(" removes the "),
         ft.TextSpan("Name", style=ft.TextStyle(weight=ft.FontWeight.BOLD)),
@@ -624,24 +624,24 @@ def main(page: ft.Page):
         ft.TextSpan("Parent", style=ft.TextStyle(weight=ft.FontWeight.BOLD)),
         ft.TextSpan(", and "),
         ft.TextSpan("cM", style=ft.TextStyle(weight=ft.FontWeight.BOLD)),
-        ft.TextSpan(" columns from the exported CSV.\n\n"),
+        ft.TextSpan(" fields from the exported JSON.\n\n"),
         ft.TextSpan("The "),
         ft.TextSpan("ID", style=ft.TextStyle(weight=ft.FontWeight.BOLD)),
-        ft.TextSpan(" column will show a unique "),
+        ft.TextSpan(" field will show a unique "),
         ft.TextSpan("SHA-256 hash",
                     style=ft.TextStyle(weight=ft.FontWeight.BOLD)),
         ft.TextSpan(
             " instead of the real sample ID, making it impossible to recover the original ID.\n\n"),
-        ft.TextSpan("The exported CSV filename will use the most common journey name in your data, instead of the test name, to further protect privacy.\n\n",
+        ft.TextSpan("The exported JSON filename will use the most common journey name in your data, instead of the test name, to further protect privacy.\n\n",
                     style=ft.TextStyle(italic=True)),
-        ft.TextSpan("The Anonymized CSV is suitable for sharing with others, as it protects the privacy of individuals in your match list.",
+        ft.TextSpan("The Anonymized JSON is suitable for sharing with others, as it protects the privacy of individuals in your match list.",
                     style=ft.TextStyle(italic=True)),
     ]
     from flet import FontWeight, MainAxisAlignment, TextAlign, TextOverflow
     privacy_info_modal = ft.AlertDialog(
         title=ft.Row([
             ft.Icon(name="lock", color="blue", size=28),
-            ft.Text("About Anonymized CSV", weight=FontWeight.BOLD, size=20)
+            ft.Text("About Anonymized JSON", weight=FontWeight.BOLD, size=20)
         ], alignment=MainAxisAlignment.START),
         content=ft.Container(
             ft.Text(

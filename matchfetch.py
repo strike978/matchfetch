@@ -687,7 +687,7 @@ def main(page: ft.Page):
     regular_csv_row = ft.Container(
         content=ft.Row([
             ft.Icon(name="description", color="#60a5fa", size=24),
-            ft.Text("Full Data CSV:", weight=FontWeight.BOLD,
+            ft.Text("Full Data JSON:", weight=FontWeight.BOLD,
                     size=16, color="white"),
             regular_csv_label,
             open_csv_btn_regular
@@ -703,7 +703,7 @@ def main(page: ft.Page):
     privacy_csv_row = ft.Container(
         content=ft.Row([
             privacy_info_icon,
-            ft.Text("Anonymized CSV:", weight=FontWeight.BOLD,
+            ft.Text("Anonymized JSON:", weight=FontWeight.BOLD,
                     size=16, color="white"),
             privacy_csv_label,
             open_csv_btn_privacy
@@ -954,100 +954,106 @@ def main(page: ft.Page):
         status.value = f"Processing batch {batch_num}/{batch_total} ({percent:.2f}%)..."
         page.update()
 
-    def save_csv(matches, filename, region_keys, region_names, paternal_code, test_list, idx, privacy_mode):
-        with open(filename, "w", newline='', encoding="utf-8-sig", errors="replace") as f:
-            writer = csv.writer(f)
-            if privacy_mode:
-                header = ["ID", "Journeys", "Sub Journeys"] + region_names
-            else:
-                header = ["Name", "URL", "Cluster", "cM", "Segments",
-                          "Journeys", "Sub Journeys"] + region_names  # Removed "Meiosis"
-            writer.writerow(header)
-            for match in matches:
-                match_profile = match.get('matchProfile', {})
-                display_name = match_profile.get('displayName')
-                sample_id = match.get('sampleId')
-                match_cluster_code = match.get('matchClusterCode', '')
-                cluster_val = ""
-                if paternal_code in ("p1", "p2"):
-                    if match_cluster_code == paternal_code:
-                        cluster_val = "Paternal side"
-                    elif match_cluster_code in ("p1", "p2"):
-                        cluster_val = "Maternal side"
-                    elif match_cluster_code == "both":
-                        cluster_val = "Both sides"
-                    elif match_cluster_code == "no_call":
-                        cluster_val = "Unassigned"
-                    else:
-                        cluster_val = ""
+    def save_json(matches, filename, region_keys, region_names, paternal_code, test_list, idx, privacy_mode):
+        """
+        Save matches to a JSON file. If privacy_mode is True, anonymize sensitive fields.
+        """
+        output = []
+        for match in matches:
+            match_profile = match.get('matchProfile', {})
+            display_name = match_profile.get('displayName')
+            sample_id = match.get('sampleId')
+            match_cluster_code = match.get('matchClusterCode', '')
+            cluster_val = ""
+            if paternal_code in ("p1", "p2"):
+                if match_cluster_code == paternal_code:
+                    cluster_val = "Paternal side"
+                elif match_cluster_code in ("p1", "p2"):
+                    cluster_val = "Maternal side"
+                elif match_cluster_code == "both":
+                    cluster_val = "Both sides"
+                elif match_cluster_code == "no_call":
+                    cluster_val = "Unassigned"
                 else:
                     cluster_val = ""
-                cm_val = None
-                segments_val = ""
-                # meiosis_val = ""  # Removed
-                rel = match.get('relationship', {})
-                if isinstance(rel, dict):
-                    cm_val = rel.get('sharedCentimorgans')
-                    segments_val = rel.get('numSharedSegments', "")
-                    # meiosis_val = rel.get('meiosis', "")  # Removed
-                if cm_val is None:
-                    cm_val = match.get('cM', '')
-                journey_names = match.get('journey_names', [])
-                subjourneys = match.get('subjourneys', [])
-                journey_names_strs = [str(j) for j in journey_names]
-                journeys_str = ";".join(
-                    journey_names_strs) if journey_names_strs else ""
-                subjourneys_str = ";".join(
-                    [str(sj) for sj in subjourneys]) if subjourneys else ""
-                # Build a dict of region info for easy lookup
-                region_info = {r['key']: r for r in match.get(
-                    'regions', []) if 'key' in r and 'percentage' in r}
-                region_row = []
-                for k in region_keys:
-                    r = region_info.get(k)
-                    if r is not None:
-                        pct = r.get('percentage')
-                        low = r.get('lowerConfidence')
-                        high = r.get('upperConfidence')
-                        if low is not None and high is not None:
-                            val = f"{pct} ({low}-{high})"
-                        else:
-                            val = pct
-                    else:
-                        val = 0
-                    region_row.append(val)
-                if privacy_mode:
-                    if sample_id:
-                        hashed_id = hashlib.sha256(
-                            str(sample_id).encode('utf-8')).hexdigest()
-                    else:
-                        hashed_id = ''
-                    row = [hashed_id, journeys_str,
-                           subjourneys_str] + region_row
+            else:
+                cluster_val = ""
+            cm_val = None
+            segments_val = ""
+            rel = match.get('relationship', {})
+            if isinstance(rel, dict):
+                cm_val = rel.get('sharedCentimorgans')
+                segments_val = rel.get('numSharedSegments', "")
+            if cm_val is None:
+                cm_val = match.get('cM', '')
+            journey_names = match.get('journey_names', [])
+            subjourneys = match.get('subjourneys', [])
+            # Build a dict of region info for easy lookup
+            region_info = {r['key']: r for r in match.get(
+                'regions', []) if 'key' in r and 'percentage' in r}
+            region_items = []
+            for k, name in zip(region_keys, region_names):
+                r = region_info.get(k)
+                if r is not None:
+                    pct = r.get('percentage')
+                    if pct == 0 or pct == 0.0:
+                        continue  # skip zero-percentage regions
+                    low = r.get('lowerConfidence')
+                    high = r.get('upperConfidence')
+                    val = {"percentage": pct}
+                    if low is not None:
+                        val["lowerConfidence"] = low
+                    if high is not None:
+                        val["upperConfidence"] = high
+                    region_items.append((name, val, pct))
+            # Sort by percentage descending
+            region_items.sort(key=lambda x: x[2], reverse=True)
+            region_row = {name: val for name, val, pct in region_items}
+            if privacy_mode:
+                if sample_id:
+                    hashed_id = hashlib.sha256(
+                        str(sample_id).encode('utf-8')).hexdigest()
                 else:
-                    # Build compare URL using test_guid and sample_id
-                    url_val = ""
-                    if sample_id and test_list and idx is not None and idx >= 0:
-                        test_guid = test_list[idx][1]
-                        url_val = f"https://www.ancestry.com/discoveryui-matches/compare/{str(test_guid).lower()}/with/{str(sample_id).lower()} "
-                    row = [display_name or '', url_val, cluster_val,
-                           cm_val, segments_val, journeys_str, subjourneys_str] + region_row  # Removed meiosis_val
-                writer.writerow(row)
+                    hashed_id = ''
+                entry = {
+                    "ID": hashed_id,
+                    "Journeys": journey_names,
+                    "Sub Journeys": subjourneys,
+                    "Regions": region_row
+                }
+            else:
+                url_val = ""
+                if sample_id and test_list and idx is not None and idx >= 0:
+                    test_guid = test_list[idx][1]
+                    url_val = f"https://www.ancestry.com/discoveryui-matches/compare/{str(test_guid).lower()}/with/{str(sample_id).lower()}"
+                entry = {
+                    "Name": display_name or '',
+                    "URL": url_val,
+                    "Cluster": cluster_val,
+                    "cM": cm_val,
+                    "Segments": segments_val,
+                    "Journeys": journey_names,
+                    "Sub Journeys": subjourneys,
+                    "Regions": region_row
+                }
+            output.append(entry)
+        with open(filename, "w", encoding="utf-8") as f:
+            json.dump(output, f, ensure_ascii=False, indent=2)
 
     def on_open_csv_regular_clicked(e):
-        filename = last_csv_filename["regular"] or "matches.csv"
+        filename = last_csv_filename["regular"] or "matches.json"
         try:
             os.startfile(filename)
         except Exception as ex:
-            status.value = f"Could not open regular CSV file: {ex}"
+            status.value = f"Could not open regular JSON file: {ex}"
         page.update()
 
     def on_open_csv_privacy_clicked(e):
-        filename = last_csv_filename["privacy"] or "matches.csv"
+        filename = last_csv_filename["privacy"] or "matches.json"
         try:
             os.startfile(filename)
         except Exception as ex:
-            status.value = f"Could not open privacy mode CSV file: {ex}"
+            status.value = f"Could not open privacy mode JSON file: {ex}"
         page.update()
 
     def on_fetch_clicked(e):
@@ -1277,16 +1283,16 @@ def main(page: ft.Page):
         safe_name = sanitize_filename("_".join(person_name.split()))
         date_str = datetime.datetime.now().strftime("%Y%m%d")
         match_count = len(matches)
-        filename_regular = f"{safe_name}_{date_str}_{match_count}.csv"
-        filename_privacy = f"{safe_priv_name}_{date_str}_{match_count}.csv"
+        filename_regular = f"{safe_name}_{date_str}_{match_count}.json"
+        filename_privacy = f"{safe_priv_name}_{date_str}_{match_count}.json"
         try:
             region_keys = list(REGIONS.keys())
             region_names = [REGIONS[k] for k in region_keys]
             paternal_code = state.get("paternal_cluster_code", "")
-            save_csv(matches, filename_regular, region_keys, region_names,
-                     paternal_code, state["test_list"], idx, privacy_mode=False)
-            save_csv(matches, filename_privacy, region_keys, region_names,
-                     paternal_code, state["test_list"], idx, privacy_mode=True)
+            save_json(matches, filename_regular, region_keys, region_names,
+                      paternal_code, state["test_list"], idx, privacy_mode=False)
+            save_json(matches, filename_privacy, region_keys, region_names,
+                      paternal_code, state["test_list"], idx, privacy_mode=True)
             status.value = f"Saved {len(matches)} matches."
             regular_csv_label.value = filename_regular
             regular_csv_label.visible = True
@@ -1304,8 +1310,7 @@ def main(page: ft.Page):
                 except Exception:
                     pass
         except Exception as ex:
-            status.value = f"Error saving CSV: {ex}"
-            # csv_file_label removed: now using regular_csv_label and privacy_csv_label
+            status.value = f"Error saving JSON: {ex}"
             open_csv_btn_regular.visible = False
             open_csv_btn_privacy.visible = False
             last_csv_filename["regular"] = ""

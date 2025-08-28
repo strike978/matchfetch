@@ -8,9 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Changed
 
+- Export format switched from CSV to JSON for both full data and anonymized exports.
+- Region data in each match is now a dictionary sorted from highest to lowest percentage, and only includes regions with nonzero percentages.
+- Each region entry now uses `percentage`, `lowerConfidence`, and `upperConfidence` fields for clarity.
+- Privacy info dialog and all UI/labels updated to reference JSON instead of CSV.
 - Removed the filter for journeys/community selection to improve speed and reliability.
 - Renamed the parental side filter to "cluster"; this filter now only appears if you have matches assigned as maternal or paternal side.
-- The exported CSV data now includes each match's region ranges and shared segments.
 - Minor UI and wording updates for clarity and consistency.
 
 ## [1.0.6] - 2025-08-02

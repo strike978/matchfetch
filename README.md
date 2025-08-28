@@ -24,7 +24,7 @@
 - Fetches DNA matches from Ancestry.com using your account cookies
 - Adds community (journey) and ethnicity information to your matches
 - Flexible filtering by cM and cluster
-- Exports both **Full Data CSV** and **Anonymized CSV** for privacy and sharing
+- Exports both **Full Data JSON** and **Anonymized JSON** for privacy and sharing
 - Resume feature: automatically saves progress and allows you to continue interrupted sessions
 
 ## Requirements
@@ -82,22 +82,35 @@ This will open the MatchFetch UI.
    - Click "Fetch Matches". The app will download your matches in batches.
    - Progress is saved automatically. If interrupted, you can resume later using the "Resume previous session" button.
 
-6. **Export and open CSV**
-   - When finished, the app saves two CSV files in the project folder:
-     - **Full Data CSV**: Contains all columns, including names and IDs.
-     - **Anonymized CSV**: Removes sensitive columns and anonymizes IDs for privacy.
-   - Click "Open" next to either CSV row to view the results.
-   - Click the info icon next to "Anonymized CSV" for details about privacy features.
+6. **Export and open JSON**
+   - When finished, the app saves two JSON files in the project folder:
+     - **Full Data JSON**: Contains all fields, including names and IDs.
+     - **Anonymized JSON**: Removes sensitive fields and anonymizes IDs for privacy.
+   - Click "Open" next to either JSON row to view the results.
+   - Click the info icon next to "Anonymized JSON" for details about privacy features.
 
 ## Privacy Features
 
-- **Anonymized CSV**:
-  - Removes Name, Cluster, and cM columns from the export
+- **Anonymized JSON**:
+  - Removes Name, Cluster, and cM fields from the export
   - Replaces IDs with SHA-256 hashes (not reversible)
   - Uses the most common journey name as the filename (instead of the test name)
   - See the in-app info dialog (info icon) for a full explanation
-- **Full Data CSV**:
-  - Contains all columns for your own analysis (not for sharing)
+- **Full Data JSON**:
+  - Contains all fields for your own analysis (not for sharing)
+
+## Region Data Format
+
+- Each match's `Regions` field is a dictionary sorted from highest to lowest percentage.
+- Each region entry looks like:
+  ```json
+  "Senegal": {
+    "percentage": 4,
+    "lowerConfidence": 2,
+    "upperConfidence": 4
+  }
+  ```
+- Only regions with nonzero percentages are included.
 
 ## Resume Feature
 

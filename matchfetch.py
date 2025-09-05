@@ -14,7 +14,7 @@ import flet as ft
 import requests
 from flet import FontWeight
 
-APP_VERSION = "1.0.8"
+APP_VERSION = "1.0.9"
 
 
 def atomic_json_save(data, filename):
@@ -620,7 +620,7 @@ def main(page: ft.Page):
         ft.TextSpan("Parent", style=ft.TextStyle(weight=ft.FontWeight.BOLD)),
         ft.TextSpan(", and "),
         ft.TextSpan("cM", style=ft.TextStyle(weight=ft.FontWeight.BOLD)),
-        ft.TextSpan(" fields from the exported files (both JSON and DB).\n\n"),
+        ft.TextSpan(" fields from the exported files (JSON, DB, and CSV).\n\n"),
         ft.TextSpan("The "),
         ft.TextSpan("ID", style=ft.TextStyle(weight=ft.FontWeight.BOLD)),
         ft.TextSpan(" field will show a unique "),
@@ -630,8 +630,7 @@ def main(page: ft.Page):
             " instead of the real sample ID, making it impossible to recover the original ID.\n\n"),
         ft.TextSpan("The exported anonymized filenames will use the most common journey name in your data, instead of the test name, to further protect privacy.\n\n",
                     style=ft.TextStyle(italic=True)),
-        ft.TextSpan("The Anonymized export is suitable for sharing with others, as it protects the privacy of individuals in your match list. Both JSON and DB formats are created.",
-                    style=ft.TextStyle(italic=True)),
+        ft.TextSpan("The Anonymized export is suitable for sharing with others, as it protects the privacy of individuals in your match list. JSON, DB, and CSV formats are created.", style=ft.TextStyle(italic=True)),
     ]
     from flet import FontWeight, MainAxisAlignment, TextAlign, TextOverflow
     privacy_info_modal = ft.AlertDialog(
@@ -1455,7 +1454,99 @@ def main(page: ft.Page):
                              paternal_code, state["test_list"], idx, privacy_mode=False)
             save_json_export(matches, json_filename_privacy, region_keys, region_names,
                              paternal_code, state["test_list"], idx, privacy_mode=True)
-            status.value = f"Saved {len(matches)} matches to SQL and JSON files."
+
+            # --- CSV Export Functions ---
+            import csv
+
+            def save_csv_export(matches, filename, region_keys, region_names, paternal_code, test_list, idx, privacy_mode):
+                # Use utf-8-sig encoding for Excel compatibility
+                with open(filename, "w", encoding="utf-8-sig", newline='') as f:
+                    writer = csv.writer(f)
+                    if privacy_mode:
+                        header = ["ID", "Journeys",
+                                  "Sub Journeys"] + region_names
+                    else:
+                        header = ["Name", "URL", "Cluster", "cM", "Segments",
+                                  "Journeys", "Sub Journeys"] + region_names
+                    writer.writerow(header)
+                    for match in matches:
+                        match_profile = match.get('matchProfile', {})
+                        display_name = match_profile.get('displayName')
+                        sample_id = match.get('sampleId')
+                        match_cluster_code = match.get('matchClusterCode', '')
+                        cluster_val = ""
+                        if paternal_code in ("p1", "p2"):
+                            if match_cluster_code == paternal_code:
+                                cluster_val = "Paternal side"
+                            elif match_cluster_code in ("p1", "p2"):
+                                cluster_val = "Maternal side"
+                            elif match_cluster_code == "both":
+                                cluster_val = "Both sides"
+                            elif match_cluster_code == "no_call":
+                                cluster_val = "Unassigned"
+                            else:
+                                cluster_val = ""
+                        else:
+                            cluster_val = ""
+                        cm_val = None
+                        segments_val = ""
+                        rel = match.get('relationship', {})
+                        if isinstance(rel, dict):
+                            cm_val = rel.get('sharedCentimorgans')
+                            segments_val = rel.get('numSharedSegments', "")
+                        if cm_val is None:
+                            cm_val = match.get('cM', '')
+                        journey_names = match.get('journey_names', [])
+                        subjourneys = match.get('subjourneys', [])
+                        region_info = {r['key']: r for r in match.get(
+                            'regions', []) if 'key' in r and 'percentage' in r}
+                        region_items = []
+                        for k, name in zip(region_keys, region_names):
+                            r = region_info.get(k)
+                            if r is not None:
+                                pct = r.get('percentage')
+                                # Fill with 0 if pct is 0 or missing
+                                if pct == 0 or pct == 0.0:
+                                    region_items.append("0")
+                                else:
+                                    region_items.append(str(pct))
+                            else:
+                                region_items.append("0")
+                        if privacy_mode:
+                            if sample_id:
+                                hashed_id = hashlib.sha256(
+                                    str(sample_id).encode('utf-8')).hexdigest()
+                            else:
+                                hashed_id = ''
+                            row = [
+                                hashed_id,
+                                "; ".join(journey_names),
+                                "; ".join(subjourneys)
+                            ] + region_items
+                        else:
+                            url_val = ""
+                            if sample_id and test_list and idx is not None and idx >= 0:
+                                test_guid = test_list[idx][1]
+                                url_val = f"https://www.ancestry.com/discoveryui-matches/compare/{str(test_guid).lower()}/with/{str(sample_id).lower()}"
+                            row = [
+                                display_name or '',
+                                url_val,
+                                cluster_val,
+                                cm_val,
+                                segments_val,
+                                "; ".join(journey_names),
+                                "; ".join(subjourneys)
+                            ] + region_items
+                        writer.writerow(row)
+
+            csv_filename_regular = f"{safe_name}_{date_str}_{match_count}.csv"
+            csv_filename_privacy = f"{safe_priv_name}_{date_str}_{match_count}.csv"
+            save_csv_export(matches, csv_filename_regular, region_keys, region_names,
+                            paternal_code, state["test_list"], idx, privacy_mode=False)
+            save_csv_export(matches, csv_filename_privacy, region_keys, region_names,
+                            paternal_code, state["test_list"], idx, privacy_mode=True)
+
+            status.value = f"Saved {len(matches)} matches to SQL, JSON, and CSV files."
             regular_csv_label.controls.clear()
             regular_csv_label.controls.append(ft.Row([
                 ft.Text("🗄️", size=18),
@@ -1464,6 +1555,10 @@ def main(page: ft.Page):
             regular_csv_label.controls.append(ft.Row([
                 ft.Text("📄", size=18),
                 ft.Text(json_filename_regular, size=15, color="white")
+            ], spacing=8))
+            regular_csv_label.controls.append(ft.Row([
+                ft.Text("📊", size=18),
+                ft.Text(csv_filename_regular, size=15, color="white")
             ], spacing=8))
             regular_csv_label.visible = True
             privacy_csv_label.controls.clear()
@@ -1475,9 +1570,11 @@ def main(page: ft.Page):
                 ft.Text("📄", size=18),
                 ft.Text(json_filename_privacy, size=15, color="white")
             ], spacing=8))
+            privacy_csv_label.controls.append(ft.Row([
+                ft.Text("📊", size=18),
+                ft.Text(csv_filename_privacy, size=15, color="white")
+            ], spacing=8))
             privacy_csv_label.visible = True
-            # open_csv_btn_regular.visible = True
-            # open_csv_btn_privacy.visible = True
             regular_csv_row.visible = True
             privacy_csv_row.visible = True
             last_csv_filename["regular"] = db_filename_regular
@@ -1488,7 +1585,7 @@ def main(page: ft.Page):
                 except Exception:
                     pass
         except Exception as ex:
-            status.value = f"Error saving to SQL/JSON: {ex}"
+            status.value = f"Error saving to SQL/JSON/CSV: {ex}"
             pass
             last_csv_filename["regular"] = ""
             last_csv_filename["privacy"] = ""

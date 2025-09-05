@@ -21,10 +21,11 @@
 
 ## Features
 
-- Fetches DNA matches from Ancestry.com using your account cookies
-- Adds community (journey) and ethnicity information to your matches
-- Flexible filtering by cM and cluster
-- Exports both **Full Data** and **Anonymized** results in both JSON and SQLite DB formats
+- CSV files use UTF-8 with BOM encoding for best compatibility
+- Region columns in CSV are always filled with 0 if no data is available
+- CSV files use UTF-8 with BOM encoding for best compatibility with Excel and other spreadsheet programs
+- Region columns in CSV are always filled with 0 if no data is available, ensuring consistent columns for all rows
+- Privacy modal and UI updated for clarity and consistency; technical details about region columns and encoding are not shown to users
 - Resume feature: automatically saves progress and allows you to continue interrupted sessions
 
 ## Requirements
@@ -84,34 +85,32 @@ This will open the MatchFetch UI.
 
 6. **Exported Files**
    - When finished, the app saves two sets of files in the project folder:
-     - **Full Data**: Contains all fields, including names and IDs, as both a `.json` and `.db` (SQLite) file.
-     - **Anonymized**: Removes sensitive fields and anonymizes IDs for privacy, as both a `.json` and `.db` (SQLite) file.
-   - The UI will show both file types for each export, with clear icons and labels.
+   - **Full Data**: Contains all fields, including names and IDs, as `.json`, `.db` (SQLite), and `.csv` files.
+   - **Anonymized**: Removes sensitive fields and anonymizes IDs for privacy, as `.json`, `.db` (SQLite), and `.csv` files.
+   - The UI will show all file types for each export, with clear icons and labels.
    - Click the info icon next to "Anonymized" for details about privacy features.
 
 ## Privacy Features
 
-- **Anonymized Export**:
-  - Removes Name, Cluster, and cM fields from both JSON and DB exports
-  - Replaces IDs with SHA-256 hashes (not reversible)
-  - Uses the most common journey name as the filename (instead of the test name)
-  - See the in-app info dialog (info icon) for a full explanation
+- Removes Name, Parent, Cluster, and cM fields from all exported files
+- Replaces IDs with a SHA-256 hash for privacy (not reversible)
+- Filenames for anonymized exports use the most common journey name in your data
+- Applies to JSON, DB, and CSV exports
+- See the in-app info dialog (info icon) for a full explanation
 - **Full Data Export**:
   - Contains all fields for your own analysis (not for sharing)
 
 ## Region Data Format
 
-- Each match's `Regions` field (in JSON) is a dictionary sorted from highest to lowest percentage.
-- Each region entry looks like:
-  ```json
-  "Senegal": {
-     "percentage": 4,
-     "lowerConfidence": 2,
-     "upperConfidence": 4
-  }
-  ```
-- Only regions with nonzero percentages are included.
-- In the DB export, regions are stored in a separate table and can be joined by match ID.
+```json
+"Senegal": {
+   "percentage": 4,
+   "lowerConfidence": 2,
+   "upperConfidence": 4
+}
+```
+
+- In CSV exports, region columns are always present and filled with 0 if no data is available, ensuring consistent columns for all rows.
 
 ## Resume Feature
 

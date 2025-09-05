@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.9] - 2025-09-05
+
+### Changed
+
+- CSV export reintroduced for both full and anonymized data, alongside JSON and SQLite DB formats.
+- CSV files use UTF-8 with BOM encoding for best compatibility with Excel and other spreadsheet programs.
+- Region columns in CSV are always filled with 0 if no data is available, ensuring consistent columns for all rows.
+- Privacy modal and UI updated for clarity and consistency; technical details about region columns and encoding are not shown to users.
+- Minor UI and privacy dialog improvements for clarity and consistency.
+
 ## [1.0.8] - 2025-08-28
 
 ### Changed
@@ -27,12 +37,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Minor UI and wording updates for clarity and consistency.
 
 ## [1.0.6] - 2025-08-02
-
-### Changed
-
-- A single space is now added after each exported URL in the CSV for improved compatibility and clarity.
-
-## [1.0.5] - 2025-08-02
 
 ### Changed
 

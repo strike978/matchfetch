@@ -44,7 +44,7 @@ MatchFetch is a powerful desktop application that allows you to securely export 
 
 ### Download
 
-1. Download the latest release: `matchfetch-v1.0.0-win64.exe`
+1. Download the latest release: `matchfetch-win64.exe`
 2. Run the installer and follow the setup wizard
 3. Install the MatchFetch Chrome extension from the Chrome Web Store
 

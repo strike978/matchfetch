@@ -18,7 +18,7 @@ MatchFetch is a Windows application for fetching and managing your Ancestry DNA 
 
 ## Installation
 
-1. Download the latest `matchfetch-v1.5.0-win64.exe` installer from the [Releases](https://github.com/strike978/matchfetch/releases) page.
+1. Download the latest installer from the [Releases](https://github.com/strike978/matchfetch/releases) page.
 2. Run the installer and follow the setup wizard.
 3. The app will be installed to `%LOCALAPPDATA%\MatchFetch`.
 4. Optionally create a desktop shortcut during installation.
@@ -26,7 +26,7 @@ MatchFetch is a Windows application for fetching and managing your Ancestry DNA 
 ## Usage
 
 1. Launch MatchFetch from the Start menu or desktop shortcut.
-2. Click "Login to Ancestry" to authenticate with your Ancestry.com account.
+2. Click "Open Ancestry Window" to authenticate with your Ancestry.com account.
 3. Select a DNA test from the dropdown.
 4. Click "Fetch Matches" to start retrieving your DNA matches.
 5. View match details, including shared DNA segments, genetic communities, and ethnicity regions.

@@ -29,7 +29,7 @@ MatchFetch is a Windows application for fetching and managing your Ancestry DNA 
 2. Click "Open Ancestry Window" to authenticate with your Ancestry.com account.
 3. Select a DNA test from the dropdown.
 4. Click "Fetch Matches" to start retrieving your DNA matches.
-5. View match details, including shared DNA segments, genetic communities, and ethnicity regions.
+5. View match details, including genetic communities, and ethnicity regions.
 6. Data is automatically saved to the local database for future reference.
 
 ## Disclaimer

@@ -1,14 +1,13 @@
 # MatchFetch
 
-MatchFetch is a Windows application for fetching and managing your Ancestry DNA matches. It uses a built-in browser to securely access Ancestry.com, retrieving your DNA match data and storing it locally in a SQLite database.
+MatchFetch is a Windows application for fetching and managing your Ancestry DNA matches. It uses a built-in browser to securely access Ancestry.com, retrieving your DNA match data and storing it locally in a LiteDB database.
 
 ## Features
 
 - **Secure Login**: Authenticate with your Ancestry.com account through a secure browser interface without storing any credentials locally.
-- **Match Fetching**: Automatically retrieve all your DNA matches with comprehensive details including shared DNA segments, genetic communities, and ethnicity regions.
-- **Data Storage**: Store match data in a local SQLite database for fast access and offline viewing.
+- **Data Storage**: Store match data in a local LiteDB database for fast access and offline viewing.
 - **Progress Tracking**: Monitor real-time progress during data fetching with detailed status updates.
-- **Match Details**: View in-depth information about each match, including shared DNA segments, genetic communities, and ethnicity regions.
+- **Match Details**: View in-depth information about each match, including number of shared DNA segments, genetic communities, and ethnicity regions.
 - **Database Management**: Clear and refresh match data for specific tests as needed.
 
 ## Requirements

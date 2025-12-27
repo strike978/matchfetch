@@ -1,0 +1,24 @@
+{
+    "appName": "MatchFetch",
+    "description": "A desktop application for fetching, filtering, and managing Ancestry DNA match data with advanced analysis tools",
+    "items": [
+        {
+            "version": "1.9.90",
+            "shortVersion": 1,
+            "changes": [
+                {
+                    "type": "feat",
+                    "message": "Added auto-updater functionality"
+                },
+                {
+                    "type": "improvement", 
+                    "message": "Enhanced user interface and stability"
+                }
+            ],
+            "date": "2025-12-27",
+            "mandatory": false,
+            "url": "https://github.com/your-username/your-repo/releases/download/v1.9.90/1.9.90+1-windows",
+            "platform": "windows"
+        }
+    ]
+}

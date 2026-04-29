@@ -18,7 +18,7 @@ MatchFetch is a Windows application for fetching and managing your Ancestry and 
 
 ## Installation
 
-1. Download the latest version (v2.0.0) from the [Releases](https://github.com/strike978/matchfetch/releases) page.
+1. Download the latest version from the [Releases](https://github.com/strike978/matchfetch/releases) page.
 2. Run the installer.
 3. Launch MatchFetch from the Start menu.
 

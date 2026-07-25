@@ -70,16 +70,16 @@
             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
             body: JSON.stringify({ lower: 0, upper: 10 })
         };
-        var el = document.getElementById('matchCountResult');
-        if (el) el.innerHTML = '<div class="spinner" style="padding:24px"><div class="spinner-ring"></div></div>';
+        var el = document.getElementById('matchCountBadge');
+        if (el) el.innerHTML = '<span class="spinner-ring" style="width:12px;height:12px;border-width:2px;display:inline-block;vertical-align:middle"></span>';
         apiFetch(url, opts)
             .then(function(data) {
-                var el = document.getElementById('matchCountResult');
-                if (el) el.innerHTML = '<div class="match-row"><div class="match-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="32" height="32"><circle cx="14" cy="13" r="4.5" fill="none" stroke="#3b82f6" stroke-width="2.5"/><circle cx="26" cy="13" r="4.5" fill="none" stroke="#60a5fa" stroke-width="2.5"/><path d="M8 32c0-5 2.7-9 6-9s6 4 6 9" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/><path d="M20 32c0-5 2.7-9 6-9s6 4 6 9" fill="none" stroke="#60a5fa" stroke-width="2.5" stroke-linecap="round"/></svg></div><div class="count-big">' + data.count.toLocaleString() + '</div></div>';
+                var el = document.getElementById('matchCountBadge');
+                if (el) el.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28" width="16" height="16" fill="none"><circle cx="10" cy="9" r="3.5" stroke="#94a3b8" stroke-width="2"/><circle cx="18" cy="9" r="3.5" stroke="#94a3b8" stroke-width="2"/><path d="M4 23c0-4 2-6.5 6-6.5s6 2.5 6 6.5" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/><path d="M14 23c0-4 2-6.5 6-6.5s6 2.5 6 6.5" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/></svg><span class="count">' + data.count.toLocaleString() + '</span> MATCHES';
             })
             .catch(function(err) {
-                var el = document.getElementById('matchCountResult');
-                if (el) el.innerHTML = '<div class="error">' + friendlyError(err.message) + '</div>';
+                var el = document.getElementById('matchCountBadge');
+                if (el) el.innerHTML = '<span style="color:#f87171">' + friendlyError(err.message) + '</span>';
             });
     }
 
@@ -296,7 +296,7 @@
             return;
         }
 
-        var html = '<div class="label">Select a kit</div>';
+        var html = '<div class="label">Select a kit <span id="matchCountBadge" class="badge"></span></div>';
         html += '<select id="testSelect">';
         html += '<option value="">Choose a kit...</option>';
         for (var i = 0; i < data.length; i++) {
@@ -306,7 +306,6 @@
             html += '<option value="' + guid + '">' + name + '</option>';
         }
         html += '</select>';
-        html += '<div id="matchCountResult"></div>';
         html += '<button class="btn fetch-list-btn" id="fetchListBtn" disabled><span>&#x25B6;</span> Fetch</button>';
         html += '<div id="matchListResult"></div>';
 
@@ -359,7 +358,7 @@
                     }
                 });
             } else {
-                document.getElementById('matchCountResult').innerHTML = '';
+                document.getElementById('matchCountBadge').textContent = '';
                 listBtn.disabled = true;
             }
         });

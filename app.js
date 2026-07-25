@@ -29,7 +29,7 @@
         overlay.onclick = function(e) { if (e.target === overlay) overlay.classList.remove('open'); };
         document.getElementById('modalLater').onclick = function() { overlay.classList.remove('open'); };
         document.getElementById('modalUpdate').onclick = function() {
-            chrome.tabs.create({ url: response.url });
+            chrome.tabs.create({ url: 'https://github.com/' + REPO + '/archive/refs/heads/main.zip' });
             overlay.classList.remove('open');
         };
     }

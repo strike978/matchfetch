@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "MatchFetch",
-  "version": "2.5",
+  "version": "0.01",
   "description": "Fetch and view AncestryDNA test data",
   "author": "Omar Nunez",
   "icons": {
@@ -24,6 +24,7 @@
   },
   "permissions": ["scripting", "unlimitedStorage"],
   "host_permissions": [
-    "https://www.ancestry.com/*"
+    "https://www.ancestry.com/*",
+    "https://raw.githubusercontent.com/*"
   ]
 }

@@ -1,4 +1,22 @@
 (function() {
+    var REPO = 'strike978/matchfetch_ext';
+
+    function checkUpdate() {
+        chrome.runtime.sendMessage({ action: 'checkUpdate', repo: REPO }, function(response) {
+            if (!response || !response.latest) return;
+            var current = chrome.runtime.getManifest().version;
+            if (response.latest > current) {
+                var btn = document.getElementById('updateBtn');
+                btn.style.display = 'flex';
+                btn.onclick = function() { chrome.tabs.create({ url: response.url }); };
+                var badge = document.getElementById('versionBadge');
+                badge.textContent = 'v' + current;
+                badge.style.background = '#3b82f6';
+                badge.style.color = '#fff';
+            }
+        });
+    }
+
     var fetchBtn = document.getElementById('fetchBtn');
     var results = document.getElementById('results');
 
@@ -241,6 +259,7 @@
         });
     }
 
+    checkUpdate();
     fetchBtn.addEventListener('click', fetchTests);
     fetchTests();
 

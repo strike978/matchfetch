@@ -38,6 +38,15 @@ function injectFetch(tabId, url, opts, sendResponse) {
 }
 
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+    if (request.action === 'checkUpdate') {
+        fetch('https://raw.githubusercontent.com/' + request.repo + '/main/version.json', { cache: 'no-cache' })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                sendResponse({ latest: data.version, url: data.url });
+            })
+            .catch(function() { sendResponse({ latest: null }); });
+        return true;
+    }
     if (request.action !== 'apiFetch') return;
     var pattern = '*://www.' + request.domain + '/*';
     chrome.tabs.query({ url: pattern }, function(tabs) {

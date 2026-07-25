@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Match Detail</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
+    background: #0f1724; color: #f1f5f9; min-height: 100vh;
+}
+.topbar {
+    display: flex; align-items: center; gap: 12px;
+    padding: 16px 24px; background: #1a2332; border-bottom: 1px solid #253044;
+}
+.topbar-icon { width: 28px; height: 28px; border-radius: 6px; overflow: hidden; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.topbar-title { font-size: 15px; font-weight: 600; color: #f1f5f9; }
+.topbar-sub { font-size: 11px; font-weight: 600; color: #94a3b8; margin-left: auto; background: #253044; padding: 3px 10px; border-radius: 8px; }
+.main { max-width: 600px; margin: 32px auto; padding: 0 16px; }
+.card { background: #1a2332; border-radius: 12px; padding: 20px; border: 1px solid #253044; margin-bottom: 16px; }
+.label { font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 10px; }
+.detail { display: inline-flex; align-items: center; gap: 6px; background: #0f1724; padding: 4px 10px; border-radius: 6px; margin: 3px; }
+.card-details { display: flex; flex-wrap: wrap; gap: 8px; }
+.detail-label { font-size: 10px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: .4px; }
+.detail-value { font-size: 13px; font-weight: 500; color: #e2e8f0; }
+.detail.ethnicity { border-left: 3px solid #75cd00; }
+.detail.community { background: #0f1724; }
+.rel-text { font-size: 16px; font-weight: 500; color: #e2e8f0; padding: 6px 0; letter-spacing: .2px; }
+.rel-text .num { font-weight: 700; color: #60a5fa; font-variant-numeric: tabular-nums; }
+.profile-card { padding-bottom: 12px; }
+.journey-item { padding: 5px 0; display: flex; align-items: center; gap: 8px; font-size: 13px; border-left: 2px solid transparent; }
+.journey-item:first-child { padding-top: 2px; }
+.journey-item:last-child { padding-bottom: 2px; }
+.journey-item + .journey-item { border-top: 1px solid rgba(37,48,68,.5); }
+.journey-name { color: #e2e8f0; font-weight: 500; }
+.journey-strength { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; }
+.journey-strength:empty { display: none; }
+.strength-very_likely { background: rgba(34,197,94,.15); color: #4ade80; }
+.strength-likely { background: rgba(59,130,246,.15); color: #60a5fa; }
+.strength-possible { background: rgba(234,179,8,.15); color: #facc15; }
+.strength-unlikely { background: rgba(239,68,68,.15); color: #f87171; }
+.section-title { font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: .5px; padding: 12px 0 6px; }
+.ethnicity-group { margin-bottom: 10px; }
+.ethnicity-group:last-child { margin-bottom: 0; }
+.ethnicity-group .section-title { padding-top: 0; }
+.region-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.spinner { display: flex; flex-direction: column; align-items: center; padding: 48px; color: #64748b; gap: 12px; }
+.spinner-ring { width: 24px; height: 24px; border: 3px solid #253044; border-top-color: #3b82f6; border-radius: 50%; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.error { padding: 14px; background: rgba(239,68,68,.1); color: #f87171; border-radius: 10px; font-size: 13px; border: 1px solid rgba(239,68,68,.2); }
+.match-name { font-size: 20px; font-weight: 700; color: #f1f5f9; display: flex; align-items: center; gap: 12px; }
+.avatar { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.avatar-initials { display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700; color: #fff; }
+.gender-m { background: #3b82f6; }
+.gender-f { background: #ec4899; }
+.gender-n { background: #64748b; }
+.tabs { display: flex; gap: 4px; margin-bottom: 16px; background: #1a2332; border-radius: 10px; padding: 4px; border: 1px solid #253044; }
+.tab { flex: 1; padding: 8px; border: none; background: transparent; color: #94a3b8; font-size: 13px; font-weight: 600; cursor: pointer; border-radius: 8px; transition: all .15s; }
+.tab:hover { color: #e2e8f0; background: rgba(255,255,255,.04); }
+.tab.active { background: #3b82f6; color: #fff; }
+.range { font-size: 11px; color: #64748b; font-weight: 400; }
+.total-pct { font-weight: 600; color: #94a3b8; }
+</style>
+</head>
+<body>
+<div class="topbar">
+    <div class="topbar-icon"><img src="icons/icon32.png" width="28" height="28" alt="M"></div>
+    <div class="topbar-title">MatchFetch</div>
+    <div class="topbar-sub" id="sampleId"></div>
+</div>
+<div class="main" id="content">
+    <div class="spinner"><div class="spinner-ring"></div><div>Loading...</div></div>
+</div>
+<script src="db.js"></script>
+<script src="match.js"></script>
+</body>
+</html>

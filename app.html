@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MatchFetch</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
+    background: #0f1724; color: #f1f5f9; min-height: 100vh;
+}
+.topbar {
+    display: flex; align-items: center; gap: 12px;
+    padding: 16px 24px; background: #1a2332; border-bottom: 1px solid #253044;
+}
+.topbar-icon {
+    width: 28px; height: 28px; border-radius: 6px; overflow: hidden; display: flex;
+    align-items: center; justify-content: center;
+}
+.topbar-title { font-size: 15px; font-weight: 600; color: #f1f5f9; }
+.topbar-sub { font-size: 11px; font-weight: 600; color: #94a3b8; background: #253044; padding: 3px 10px; border-radius: 8px; letter-spacing: .3px; }
+.topbar-btn {
+    margin-left: auto; background: none; border: 1px solid #253044; color: #94a3b8; cursor: pointer;
+    font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 8px;
+    display: flex; align-items: center; gap: 4px;
+    transition: background .2s, color .2s, border-color .2s; font-family: inherit;
+}
+.topbar-btn:hover { background: #253044; color: #f1f5f9; border-color: #475569; }
+.main { max-width: 480px; margin: 32px auto; padding: 0 16px; }
+.card {
+    background: #1a2332; border-radius: 12px; padding: 20px;
+    border: 1px solid #253044; transition: border-color .2s;
+}
+.card:has(select:focus) { border-color: #3b82f6; }
+.btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; padding: 12px; border: none; border-radius: 10px;
+    font-size: 14px; font-weight: 600; font-family: inherit;
+    background: #3b82f6; color: #fff; cursor: pointer;
+    transition: background .2s, transform .1s;
+}
+.btn:hover { background: #2563eb; }
+.btn:active { transform: scale(.98); }
+.btn:disabled { background: #1e293b; color: #475569; cursor: default; transform: none; }
+.fetch-list-btn { margin-top: 16px; }
+select {
+    width: 100%; padding: 12px; margin-top: 16px;
+    background: #0f1724; color: #f1f5f9; border: 1px solid #253044;
+    border-radius: 10px; font-size: 14px; font-family: inherit;
+    outline: none; cursor: pointer; transition: border-color .2s;
+    appearance: none; -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%2364748b' d='M1.41.59 6 5.17 10.59.59 12 2l-6 6-6-6z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 12px center; background-size: 12px;
+    padding-right: 36px;
+}
+select:hover { border-color: #475569; }
+select:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.15); }
+.label {
+    font-size: 11px; font-weight: 600; color: #64748b;
+    text-transform: uppercase; letter-spacing: .6px; margin-bottom: 6px;
+}
+.guid-box {
+    margin-top: 16px; padding: 14px; background: #0f1724;
+    border-radius: 10px; border: 1px solid #253044;
+    display: none;
+}
+.guid-box.visible { display: block; }
+.guid-label { font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+.guid-value {
+    font-size: 14px; font-weight: 500; color: #60a5fa;
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    word-break: break-all;
+}
+.spinner {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 48px 20px; color: #64748b; gap: 12px;
+}
+.spinner-ring { width: 24px; height: 24px; border: 3px solid #253044; border-top-color: #3b82f6; border-radius: 50%; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner-text { font-size: 13px; }
+.empty { padding: 24px; text-align: center; color: #64748b; font-size: 14px; }
+.response-json { background: #0f1724; border-radius: 8px; padding: 14px; font-size: 13px; overflow-x: auto; white-space: pre-wrap; word-break: break-all; color: #e2e8f0; font-family: 'SF Mono', 'Fira Code', monospace; margin-top: 8px; }
+.error { padding: 14px; background: rgba(239,68,68,.1); color: #f87171; border-radius: 10px; font-size: 13px; border: 1px solid rgba(239,68,68,.2); }
+.match-row { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 16px 0 8px; }
+.match-icon { display: flex; }
+.count-big { font-size: 42px; font-weight: 800; color: #3b82f6; font-variant-numeric: tabular-nums; }
+.cards { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+.match-card { padding: 14px; cursor: pointer; transition: border-color .2s, background .2s; }
+.match-card:hover { border-color: #3b82f6; background: #1e2a3a; }
+.card-top { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.avatar-initials { display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: #fff; }
+.gender-m { background: #3b82f6; }
+.gender-f { background: #ec4899; }
+.gender-n { background: #64748b; }
+.card-name { font-size: 15px; font-weight: 600; color: #f1f5f9; margin-right: auto; }
+.card-initials { font-size: 11px; font-weight: 600; color: #60a5fa; background: #0f1724; padding: 2px 8px; border-radius: 6px; }
+.card-details { display: flex; flex-wrap: wrap; gap: 8px; }
+.detail { display: flex; align-items: center; gap: 6px; background: #0f1724; padding: 4px 10px; border-radius: 6px; }
+.detail-label { font-size: 10px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: .4px; }
+.detail-value { font-size: 13px; font-weight: 500; color: #e2e8f0; }
+.rel-text { font-size: 13px; font-weight: 500; color: #e2e8f0; padding: 2px 0; }
+.rel-text .num { font-weight: 700; color: #60a5fa; }
+.detail.ethnicity { border-left: 3px solid #75cd00; }
+.detail.community { background: #0f1724; }
+</style>
+</head>
+<body>
+<div class="topbar">
+    <div class="topbar-icon"><img src="icons/icon32.png" width="28" height="28" alt="M"></div>
+    <div class="topbar-title">MatchFetch</div>
+    <div class="topbar-sub">v2.5</div>
+    <button class="topbar-btn" id="exportBtn" title="Export database"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export</button>
+</div>
+<div class="main">
+    <div class="card">
+        <button class="btn" id="fetchBtn"><span>&#x21bb;</span> Fetch Tests</button>
+        <div id="results"></div>
+    </div>
+</div>
+<script src="db.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

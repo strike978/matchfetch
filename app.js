@@ -327,6 +327,14 @@
 
         fetchPage().then(function() {
             setStatus('');
+            if (typeof chrome !== 'undefined' && chrome.notifications) {
+                chrome.notifications.create({
+                    type: 'basic',
+                    iconUrl: chrome.runtime.getURL('icons/icon48.png'),
+                    title: 'MatchFetch',
+                    message: 'Finished fetching ' + allMatches.length + ' matches'
+                });
+            }
         }).catch(function(err) {
             var el = document.getElementById('matchListResult');
             if (el) el.innerHTML = '<div class="error">' + friendlyError(err.message) + '</div>';

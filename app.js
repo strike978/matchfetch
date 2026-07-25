@@ -26,8 +26,19 @@
         results.innerHTML = '<div class="spinner"><div class="spinner-ring"></div><div class="spinner-text">Loading...</div></div>';
     }
 
+    function friendlyError(msg) {
+        if (/Status 30[137]/.test(msg)) return 'Make sure you are logged into Ancestry.com, then try again.';
+        if (/Status 40[13]/.test(msg)) return 'Access denied. Make sure you are logged into Ancestry.com.';
+        if (/Status 403/.test(msg)) return 'Access denied. You may not have permission to view this data.';
+        if (/Status 404/.test(msg)) return 'Data not found. The test or match may no longer be available.';
+        if (/Status 429/.test(msg)) return 'Too many requests. Please wait a moment and try again.';
+        if (/Status 5\d\d/.test(msg)) return 'Ancestry server error. Please try again later.';
+        if (/Fetch failed/.test(msg)) return 'Could not reach Ancestry. Check your internet connection.';
+        return msg;
+    }
+
     function showError(msg) {
-        results.innerHTML = '<div class="error">' + msg + '</div>';
+        results.innerHTML = '<div class="error">' + friendlyError(msg) + '</div>';
     }
 
     function apiFetch(url, options) {
@@ -68,7 +79,7 @@
             })
             .catch(function(err) {
                 var el = document.getElementById('matchCountResult');
-                if (el) el.innerHTML = '<div class="error">' + err.message + '</div>';
+                if (el) el.innerHTML = '<div class="error">' + friendlyError(err.message) + '</div>';
             });
     }
 
@@ -164,7 +175,7 @@
             })
             .catch(function(err) {
                 var el = document.getElementById('matchListResult');
-                if (el) el.innerHTML = '<div class="error">' + err.message + '</div>';
+                if (el) el.innerHTML = '<div class="error">' + friendlyError(err.message) + '</div>';
             });
     }
 
@@ -188,7 +199,7 @@
             })
             .catch(function(err) {
                 var el = document.getElementById('matchListResult');
-                if (el) el.innerHTML = '<div class="error">' + err.message + '</div>';
+                if (el) el.innerHTML = '<div class="error">' + friendlyError(err.message) + '</div>';
             });
     }
 
@@ -304,6 +315,11 @@
         document.getElementById('testSelect').addEventListener('change', function() {
             var listBtn = document.getElementById('fetchListBtn');
             var selectedGuid = this.value;
+            var matchListEl = document.getElementById('matchListResult');
+            _matchListData = null;
+            _batchCommunitiesData = null;
+            _profileData = null;
+            if (matchListEl) matchListEl.innerHTML = '';
             if (selectedGuid) {
                 listBtn.disabled = false;
                 fetchMatchCount(selectedGuid);

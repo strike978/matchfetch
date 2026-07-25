@@ -155,6 +155,8 @@
         };
     }
 
+    function delay(ms) { return new Promise(function(resolve) { setTimeout(resolve, ms); }); }
+
     function fetchMatchList(guid, desiredCount) {
         var el = document.getElementById('matchListResult');
         if (el) el.innerHTML = '<div class="spinner" style="padding:24px"><div class="spinner-ring"></div></div>';
@@ -175,7 +177,7 @@
                     startIndex += pageSize;
                     var remaining = desiredCount - allMatches.length;
                     if (remaining > 0 && data.matchList && data.matchList.length === pageSize) {
-                        return fetchPage();
+                        return delay(500).then(fetchPage);
                     }
                     if (allMatches.length > desiredCount) allMatches = allMatches.slice(0, desiredCount);
                     _matchListData = { matchList: allMatches };
@@ -183,7 +185,7 @@
                     for (var i = 0; i < allMatches.length; i++) {
                         if (allMatches[i].sampleId) sampleIds.push(allMatches[i].sampleId);
                     }
-                    if (sampleIds.length > 0) fetchProfileData(guid, sampleIds);
+                    if (sampleIds.length > 0) delay(500).then(function() { fetchProfileData(guid, sampleIds); });
                 });
         }
 
@@ -211,8 +213,7 @@
                 var list = _matchListData && _matchListData.matchList;
                 renderCards(guid);
                 storeMatchData(guid, list);
-                fetchBatchEthnicity(guid, sampleIds);
-                fetchBatchCommunities(guid, sampleIds);
+                delay(500).then(function() { fetchBatchEthnicity(guid, sampleIds); });
                 return;
             }
             var url = 'https://www.ancestry.com/discoveryui-matches/cluster/api/profileData/' + guid;
@@ -223,7 +224,7 @@
             }).then(function(profiles) {
                 for (var k in profiles) allProfiles[k] = profiles[k];
                 idx++;
-                next();
+                delay(500).then(next);
             }).catch(function(err) {
                 if (el) el.innerHTML = '<div class="error">' + friendlyError(err.message) + '</div>';
             });
@@ -251,6 +252,7 @@
                 }
                 var list = _matchListData && _matchListData.matchList;
                 storeMatchData(guid, list);
+                delay(500).then(function() { fetchBatchCommunities(guid, sampleIds); });
                 return;
             }
             var url = 'https://www.ancestry.com/dna/origins/secure/compare/' + guid + '/batchEthnicity';
@@ -263,9 +265,9 @@
                 .then(function(data) {
                     for (var k in data) allData[k] = data[k];
                     idx++;
-                    next();
+                    delay(500).then(next);
                 })
-                .catch(function(err) { idx++; next(); });
+                .catch(function(err) { idx++; delay(500).then(next); });
         }
         next();
     }
@@ -294,7 +296,8 @@
                         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                         body: JSON.stringify(allBranchIds)
                     };
-                    apiFetch(namesUrl, namesOpts).then(function(nameData) {
+                    delay(500).then(function() {
+                        apiFetch(namesUrl, namesOpts).then(function(nameData) {
                         var nameMap = {};
                         for (var ghostId in nameData) {
                             var subDict = nameData[ghostId];
@@ -311,6 +314,7 @@
                         var list = _matchListData && _matchListData.matchList;
                         storeMatchData(guid, list);
                         renderCards(guid);
+                    });
                     });
                 } else {
                     var list = _matchListData && _matchListData.matchList;
@@ -329,9 +333,9 @@
                 .then(function(data) {
                     for (var k in data) allData[k] = data[k];
                     idx++;
-                    next();
+                    delay(500).then(next);
                 })
-                .catch(function(err) { idx++; next(); });
+                .catch(function(err) { idx++; delay(500).then(next); });
         }
         next();
     }

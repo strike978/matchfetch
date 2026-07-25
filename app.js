@@ -200,13 +200,15 @@
 
     function setStatus(msg) {
         var el = document.getElementById('statusMsg');
-        if (el) el.textContent = msg;
+        if (!el) return;
+        if (!msg) { el.innerHTML = ''; return; }
+        el.innerHTML = '<span class="spinner-ring" style="width:12px;height:12px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px"></span>' + msg;
     }
 
     function fetchMatchList(guid, desiredCount) {
         _currentPage = 1;
         var el = document.getElementById('matchListResult');
-        if (el) el.innerHTML = '<div class="spinner" style="padding:24px"><div class="spinner-ring"></div></div>';
+        if (el) el.innerHTML = '';
         _profileData = {};
         _batchEthnicityData = {};
         _batchCommunitiesData = {};

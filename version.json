@@ -3,7 +3,7 @@
   "url": "https://github.com/strike978/matchfetch_ext",
   "changelog": {
     "0.0.2": [
-      "Added automatic update checker with changelog"
+      "Added automatic update checker"
     ],
     "0.0.1": [
       "Initial release"

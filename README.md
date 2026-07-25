@@ -34,6 +34,6 @@ Ancestry shows you one match at a time. MatchFetch pulls all your matches into o
 
 ---
 
-Created by Omar Nunez · Version 0.01
+Created by Omar Nunez · Version 0.0.1
 
 _23andMe support coming soon._

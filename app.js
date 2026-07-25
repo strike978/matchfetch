@@ -297,7 +297,7 @@
         }
 
         var html = '<div class="label">Select a kit <span id="matchCountBadge" class="badge"></span></div>';
-        html += '<select id="testSelect">';
+        html += '<div class="select-row"><select id="testSelect">';
         html += '<option value="">Choose a kit...</option>';
         for (var i = 0; i < data.length; i++) {
             var t = data[i];
@@ -305,7 +305,7 @@
             var guid = t.testGuid || t.testId || t.guid || t.id || '';
             html += '<option value="' + guid + '">' + name + '</option>';
         }
-        html += '</select>';
+        html += '</select><button id="clearKitBtn" class="clear-btn" title="Clear kit data" hidden><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></div>';
         html += '<button class="btn fetch-list-btn" id="fetchListBtn" disabled><span>&#x25B6;</span> Fetch</button>';
         html += '<div id="matchListResult"></div>';
 
@@ -313,6 +313,7 @@
 
         document.getElementById('testSelect').addEventListener('change', function() {
             var listBtn = document.getElementById('fetchListBtn');
+            var clearBtn = document.getElementById('clearKitBtn');
             var selectedGuid = this.value;
             var matchListEl = document.getElementById('matchListResult');
             _matchListData = null;
@@ -321,6 +322,7 @@
             if (matchListEl) matchListEl.innerHTML = '';
             if (selectedGuid) {
                 listBtn.disabled = false;
+                if (clearBtn) clearBtn.hidden = false;
                 fetchMatchCount(selectedGuid);
                 DB.getSession(selectedGuid).then(function(session) {
                     if (session && session.matches) {
@@ -360,12 +362,34 @@
             } else {
                 document.getElementById('matchCountBadge').textContent = '';
                 listBtn.disabled = true;
+                if (clearBtn) clearBtn.hidden = true;
             }
         });
 
         document.getElementById('fetchListBtn').addEventListener('click', function() {
             var sel = document.getElementById('testSelect');
             if (sel && sel.value) fetchMatchList(sel.value);
+        });
+
+        document.getElementById('clearKitBtn').addEventListener('click', function() {
+            var sel = document.getElementById('testSelect');
+            var guid = sel && sel.value;
+            if (!guid) return;
+            var overlay = document.createElement('div');
+            overlay.className = 'modal-overlay';
+            overlay.innerHTML = '<div class="modal"><div class="modal-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></div><div class="modal-title">Clear kit data?</div><div class="modal-text">This will remove all matches, regions, and journeys for this kit from local storage.</div><div class="modal-actions"><button class="modal-btn modal-cancel">Cancel</button><button class="modal-btn modal-confirm">Clear</button></div></div>';
+            document.body.appendChild(overlay);
+            overlay.querySelector('.modal-cancel').addEventListener('click', function() { overlay.remove(); });
+            overlay.querySelector('.modal-confirm').addEventListener('click', function() {
+                overlay.remove();
+                DB.deleteSession(guid).then(function() {
+                    _matchListData = null;
+                    _batchCommunitiesData = null;
+                    _profileData = null;
+                    _batchEthnicityData = null;
+                    document.getElementById('matchListResult').innerHTML = '';
+                });
+            });
         });
     }
 

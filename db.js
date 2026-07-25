@@ -161,6 +161,17 @@ var DB = (function() {
                     req.onerror = function() { reject(req.error); };
                 });
             });
+        },
+
+        deleteSession: function(guid) {
+            return _open().then(function(db) {
+                return new Promise(function(resolve, reject) {
+                    var tx = db.transaction('Ancestry', 'readwrite');
+                    tx.oncomplete = function() { resolve(); };
+                    tx.onerror = function() { reject(tx.error); };
+                    tx.objectStore('Ancestry').delete(guid);
+                });
+            });
         }
     };
 })();

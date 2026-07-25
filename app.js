@@ -1,5 +1,4 @@
 (function() {
-    var REPO = 'strike978/matchfetch_ext';
     var _regionMap = null;
 
     function loadRegionMap() {
@@ -19,55 +18,6 @@
                 resolveJourneyNames(n.communities, nameMap);
             }
         }
-    }
-
-    function showUpdateModal(response) {
-        var overlay = document.getElementById('modal');
-        document.getElementById('modalSub').textContent = 'v' + chrome.runtime.getManifest().version + ' \u2192 v' + response.latest;
-        var clEl = document.getElementById('modalChangelog');
-        clEl.innerHTML = '';
-        var versions = Object.keys(response.changelog || {}).sort();
-        for (var i = versions.length - 1; i >= 0; i--) {
-            var v = versions[i];
-            if (v <= chrome.runtime.getManifest().version) continue;
-            var changes = response.changelog[v];
-            var group = document.createElement('div');
-            group.className = 'modal-version-group';
-            var tag = document.createElement('div');
-            tag.className = 'modal-version-tag';
-            tag.textContent = 'v' + v;
-            group.appendChild(tag);
-            for (var j = 0; j < changes.length; j++) {
-                var item = document.createElement('div');
-                item.className = 'modal-change';
-                item.textContent = changes[j];
-                group.appendChild(item);
-            }
-            clEl.appendChild(group);
-        }
-        overlay.classList.add('open');
-        overlay.onclick = function(e) { if (e.target === overlay) overlay.classList.remove('open'); };
-        document.getElementById('modalLater').onclick = function() { overlay.classList.remove('open'); };
-        document.getElementById('modalUpdate').onclick = function() {
-            chrome.tabs.create({ url: 'https://github.com/' + REPO + '/archive/refs/heads/main.zip' });
-            overlay.classList.remove('open');
-        };
-    }
-
-    function checkUpdate() {
-        chrome.runtime.sendMessage({ action: 'checkUpdate', repo: REPO }, function(response) {
-            if (!response || !response.latest) return;
-            var current = chrome.runtime.getManifest().version;
-            if (response.latest > current) {
-                var btn = document.getElementById('updateBtn');
-                btn.style.display = 'flex';
-                var badge = document.getElementById('versionBadge');
-                badge.textContent = 'v' + current;
-                badge.style.background = '#3b82f6';
-                badge.style.color = '#fff';
-                btn.onclick = function() { showUpdateModal(response); };
-            }
-        });
     }
 
     var results = document.getElementById('results');
@@ -405,7 +355,6 @@
     }
 
     loadRegionMap().then(function() {
-        checkUpdate();
         fetchTests();
     });
 
@@ -413,5 +362,13 @@
         if (typeof DB !== 'undefined' && DB.exportDatabase) {
             DB.exportDatabase();
         }
+    });
+
+    document.getElementById('githubBtn').addEventListener('click', function() {
+        chrome.tabs.create({ url: 'https://github.com/strike978/matchfetch_ext' });
+    });
+
+    document.getElementById('discordBtn').addEventListener('click', function() {
+        chrome.tabs.create({ url: 'https://discord.com/invite/f5BtHTM2zZ' });
     });
 })();

@@ -145,14 +145,14 @@
         html += '</div>';
         var el = document.getElementById('matchListResult');
         if (el) el.innerHTML = html;
-        if (el) el.addEventListener('click', function(e) {
+        if (el) el.onclick = function(e) {
             var card = e.target.closest('.match-card');
             if (card) {
                 var g = card.getAttribute('data-guid');
                 var s = card.getAttribute('data-sample');
                 if (g && s) window.open('match.html?guid=' + g + '&sampleId=' + s, '_blank');
             }
-        });
+        };
     }
 
     function fetchMatchList(guid) {

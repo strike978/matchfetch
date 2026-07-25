@@ -70,7 +70,6 @@
         });
     }
 
-    var fetchBtn = document.getElementById('fetchBtn');
     var results = document.getElementById('results');
 
     function showSpinner() {
@@ -95,12 +94,10 @@
 
     function fetchTests() {
         showSpinner();
-        fetchBtn.disabled = true;
 
         apiFetch('https://www.ancestry.com/dna/insights/api/dnaSubnav/tests', { credentials: 'include', mode: 'cors' })
             .then(function(data) { displayTests(data); })
-            .catch(function(err) { showError(err.message); })
-            .finally(function() { fetchBtn.disabled = false; });
+            .catch(function(err) { showError(err.message); });
     }
 
     function fetchMatchCount(guid) {
@@ -168,7 +165,21 @@
             if (r.sharedCentimorgans && r.numSharedSegments) relStr += ' across ';
             if (r.numSharedSegments) relStr += '<span class="num">' + r.numSharedSegments + '</span> segments';
             if (relStr) html += '<div class="rel-text">' + relStr + '</div>';
-            html += '</div></div>';
+            html += '</div>';
+            var journeys = _batchCommunitiesData && _batchCommunitiesData[m.sampleId] && _batchCommunitiesData[m.sampleId].branches;
+            if (journeys && journeys.length > 0) {
+                var sorted = journeys.slice().sort(function(a, b) { return (b.connectionPercent || 0) - (a.connectionPercent || 0); });
+                var maxPills = 3;
+                var showCount = Math.min(sorted.length, maxPills);
+                html += '<div class="journey-strip">';
+                for (var ji = 0; ji < showCount; ji++) {
+                    var j = sorted[ji];
+                    html += '<span class="journey-pill ' + (j.connection || '').toLowerCase() + '"><span class="jp-name">' + (j.displayName || j.id || '') + '</span> <span class="jp-pct">' + (j.connectionPercent || '?') + '%</span></span>';
+                }
+                if (sorted.length > maxPills) html += '<span style="font-size:10px;color:#64748b;padding:1px 4px;">+' + (sorted.length - maxPills) + ' more</span>';
+                html += '</div>';
+            }
+            html += '</div>';
         }
         html += '</div>';
         var el = document.getElementById('matchListResult');
@@ -303,13 +314,16 @@
                         }
                         var list = _matchListData && _matchListData.matchList;
                         storeMatchData(guid, list);
+                        renderCards(guid);
                     }).catch(function() {
                         var list = _matchListData && _matchListData.matchList;
                         storeMatchData(guid, list);
+                        renderCards(guid);
                     });
                 } else {
                     var list = _matchListData && _matchListData.matchList;
                     storeMatchData(guid, list);
+                    renderCards(guid);
                 }
             })
             .catch(function(err) {});
@@ -331,7 +345,6 @@
             html += '<option value="' + guid + '">' + name + '</option>';
         }
         html += '</select>';
-        html += '<div class="guid-box" id="guidBox"><div class="guid-label">Test GUID</div><div class="guid-value" id="guidValue"></div></div>';
         html += '<div id="matchCountResult"></div>';
         html += '<button class="btn fetch-list-btn" id="fetchListBtn" disabled><span>&#x25B6;</span> Fetch</button>';
         html += '<div id="matchListResult"></div>';
@@ -339,16 +352,47 @@
         results.innerHTML = html;
 
         document.getElementById('testSelect').addEventListener('change', function() {
-            var box = document.getElementById('guidBox');
-            var val = document.getElementById('guidValue');
             var listBtn = document.getElementById('fetchListBtn');
-            if (this.value) {
-                val.textContent = this.value;
-                box.classList.add('visible');
+            var selectedGuid = this.value;
+            if (selectedGuid) {
                 listBtn.disabled = false;
-                fetchMatchCount(this.value);
+                fetchMatchCount(selectedGuid);
+                DB.getSession(selectedGuid).then(function(session) {
+                    if (session && session.matches) {
+                        var matchList = [];
+                        var sampleIds = Object.keys(session.matches);
+                        for (var si = 0; si < sampleIds.length; si++) {
+                            var m = session.matches[sampleIds[si]];
+                            matchList.push({
+                                sampleId: sampleIds[si],
+                                relationship: m.relationship || {},
+                                createdDate: m.createdDate || null
+                            });
+                        }
+                        if (matchList.length > 0) {
+                            _matchListData = { matchList: matchList };
+                            _batchCommunitiesData = {};
+                            for (var si2 = 0; si2 < sampleIds.length; si2++) {
+                                var m = session.matches[sampleIds[si2]];
+                                if (m.journeys && m.journeys.length > 0) {
+                                    _batchCommunitiesData[sampleIds[si2]] = { branches: m.journeys };
+                                }
+                            }
+                            _profileData = {};
+                            for (var si3 = 0; si3 < sampleIds.length; si3++) {
+                                var m = session.matches[sampleIds[si3]];
+                                _profileData[sampleIds[si3]] = {
+                                    matchName: m.matchName,
+                                    matchNameInitials: m.matchNameInitials,
+                                    displayGender: m.displayGender,
+                                    photoUrl: m.photoUrl
+                                };
+                            }
+                            renderCards(selectedGuid);
+                        }
+                    }
+                });
             } else {
-                box.classList.remove('visible');
                 document.getElementById('matchCountResult').innerHTML = '';
                 listBtn.disabled = true;
             }
@@ -362,7 +406,6 @@
 
     loadRegionMap().then(function() {
         checkUpdate();
-        fetchBtn.addEventListener('click', fetchTests);
         fetchTests();
     });
 

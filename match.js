@@ -70,7 +70,7 @@
                 regionsHtml += '<div class="ethnicity-group"><div class="section-title">' + macroKeys[mi] + ' <span class="total-pct">' + total + '%</span></div><div class="region-list">';
                 for (var ri2 = 0; ri2 < regions.length; ri2++) {
                     var reg2 = regions[ri2];
-                    regionsHtml += '<span class="detail ethnicity" style="border-left:3px solid ' + reg2.color + '"><span class="detail-label">' + (reg2.key || '') + '</span><span class="detail-value">' + reg2.percentage + '%';
+                    regionsHtml += '<span class="detail ethnicity" style="border-left:3px solid ' + reg2.color + '"><span class="detail-label">' + (reg2.displayName || reg2.key || '') + '</span><span class="detail-value">' + reg2.percentage + '%';
                     if (reg2.lowerConfidence != null && reg2.upperConfidence != null) regionsHtml += ' <span class="range">(' + reg2.lowerConfidence + '–' + reg2.upperConfidence + '%)</span>';
                     regionsHtml += '</span></span>';
                 }
@@ -92,7 +92,7 @@
                         var sc = 'strength-' + n.connection.toLowerCase();
                         strength = ' <span class="journey-strength ' + sc + '">' + n.connection + ' ' + (n.connectionPercent || '') + '%</span>';
                     }
-                    h += '<div class="journey-item" style="padding-left:' + (depth * 20) + 'px"><span class="journey-name">' + (n.id || '') + '</span>' + strength + '</div>';
+                    h += '<div class="journey-item" style="padding-left:' + (depth * 20) + 'px"><span class="journey-name">' + (n.displayName || n.id || '') + '</span>' + strength + '</div>';
                     if (n.communities && n.communities.length > 0) {
                         h += renderJourneyNodes(n.communities, depth + 1);
                     }

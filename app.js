@@ -1,5 +1,25 @@
 (function() {
     var REPO = 'strike978/matchfetch_ext';
+    var _regionMap = null;
+
+    function loadRegionMap() {
+        return fetch(chrome.runtime.getURL('ancestry_region_names.json')).then(function(r) { return r.json(); }).then(function(data) {
+            _regionMap = {};
+            for (var i = 0; i < data.items.length; i++) {
+                _regionMap[data.items[i].region] = data.items[i].name;
+            }
+        });
+    }
+
+    function resolveJourneyNames(nodes, nameMap) {
+        for (var i = 0; i < nodes.length; i++) {
+            var n = nodes[i];
+            n.displayName = nameMap[n.id] || n.id;
+            if (n.communities && n.communities.length > 0) {
+                resolveJourneyNames(n.communities, nameMap);
+            }
+        }
+    }
 
     function showUpdateModal(response) {
         var overlay = document.getElementById('modal');
@@ -223,6 +243,16 @@
         apiFetch(url, opts)
             .then(function(data) {
                 _batchEthnicityData = data;
+                if (_regionMap) {
+                    var sKeys = Object.keys(data);
+                    for (var si = 0; si < sKeys.length; si++) {
+                        var regions = data[sKeys[si]] && data[sKeys[si]].regions;
+                        if (!regions) continue;
+                        for (var ri = 0; ri < regions.length; ri++) {
+                            regions[ri].displayName = _regionMap[regions[ri].key] || regions[ri].key;
+                        }
+                    }
+                }
                 var list = _matchListData && _matchListData.matchList;
                 storeMatchData(guid, list);
             })
@@ -241,8 +271,46 @@
         apiFetch(url, opts)
             .then(function(data) {
                 _batchCommunitiesData = data;
-                var list = _matchListData && _matchListData.matchList;
-                storeMatchData(guid, list);
+                var allBranchIds = [];
+                var sKeys = Object.keys(data);
+                for (var si = 0; si < sKeys.length; si++) {
+                    var branches = data[sKeys[si]] && data[sKeys[si]].branches;
+                    if (!branches) continue;
+                    for (var bi = 0; bi < branches.length; bi++) {
+                        if (allBranchIds.indexOf(branches[bi].id) === -1) {
+                            allBranchIds.push(branches[bi].id);
+                        }
+                    }
+                }
+                if (allBranchIds.length > 0) {
+                    var namesUrl = 'https://www.ancestry.com/dna/origins/communities/names';
+                    var namesOpts = {
+                        method: 'POST', credentials: 'include', mode: 'cors',
+                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                        body: JSON.stringify(allBranchIds)
+                    };
+                    apiFetch(namesUrl, namesOpts).then(function(nameData) {
+                        var nameMap = {};
+                        for (var ghostId in nameData) {
+                            var subDict = nameData[ghostId];
+                            for (var subId in subDict) {
+                                nameMap[subId] = subDict[subId];
+                            }
+                        }
+                        for (var si2 = 0; si2 < sKeys.length; si2++) {
+                            var branches = data[sKeys[si2]] && data[sKeys[si2]].branches;
+                            if (branches) resolveJourneyNames(branches, nameMap);
+                        }
+                        var list = _matchListData && _matchListData.matchList;
+                        storeMatchData(guid, list);
+                    }).catch(function() {
+                        var list = _matchListData && _matchListData.matchList;
+                        storeMatchData(guid, list);
+                    });
+                } else {
+                    var list = _matchListData && _matchListData.matchList;
+                    storeMatchData(guid, list);
+                }
             })
             .catch(function(err) {});
     }
@@ -292,9 +360,11 @@
         });
     }
 
-    checkUpdate();
-    fetchBtn.addEventListener('click', fetchTests);
-    fetchTests();
+    loadRegionMap().then(function() {
+        checkUpdate();
+        fetchBtn.addEventListener('click', fetchTests);
+        fetchTests();
+    });
 
     document.getElementById('exportBtn').addEventListener('click', function() {
         if (typeof DB !== 'undefined' && DB.exportDatabase) {

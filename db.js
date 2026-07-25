@@ -81,7 +81,7 @@ var DB = (function() {
                                 if (eth.regions) {
                                     for (var ri = 0; ri < eth.regions.length; ri++) {
                                         var r = eth.regions[ri];
-                                        regions.push({ color: r.color, key: r.key, lowerConfidence: r.lowerConfidence, macroRegionKey: r.macroRegionKey, percentage: r.percentage, upperConfidence: r.upperConfidence });
+                                        regions.push({ color: r.color, key: r.key, displayName: r.displayName || null, lowerConfidence: r.lowerConfidence, macroRegionKey: r.macroRegionKey, percentage: r.percentage, upperConfidence: r.upperConfidence });
                                     }
                                 }
                                 existing.regions = regions;
@@ -104,10 +104,10 @@ var DB = (function() {
                                         if (b.communities) {
                                             for (var cci = 0; cci < b.communities.length; cci++) {
                                                 var co = b.communities[cci];
-                                                comms.push({ id: co.id, connection: co.connection, connectionPercent: co.connectionPercent });
+                                                comms.push({ id: co.id, displayName: co.displayName || null, connection: co.connection, connectionPercent: co.connectionPercent });
                                             }
                                         }
-                                        branches.push({ id: b.id, connection: b.connection, connectionPercent: b.connectionPercent, communities: comms });
+                                        branches.push({ id: b.id, displayName: b.displayName || null, connection: b.connection, connectionPercent: b.connectionPercent, communities: comms });
                                     }
                                 }
                                 existing.journeys = branches;

@@ -1,0 +1,588 @@
+{
+  "items": [
+    {
+      "region": "00503",
+      "name": "Nigeria"
+    },
+    {
+      "region": "00200",
+      "name": "Mali"
+    },
+    {
+      "region": "00300",
+      "name": "Ivory Coast & Ghana"
+    },
+    {
+      "region": "00401",
+      "name": "Benin & Togo"
+    },
+    {
+      "region": "00700",
+      "name": "Cameroon"
+    },
+    {
+      "region": "00600",
+      "name": "Nigerian Woodlands"
+    },
+    {
+      "region": "01500",
+      "name": "Egypt"
+    },
+    {
+      "region": "00501",
+      "name": "Central Nigeria"
+    },
+    {
+      "region": "01000",
+      "name": "Nilotic Peoples"
+    },
+    {
+      "region": "00502",
+      "name": "North-Central Nigeria"
+    },
+    {
+      "region": "00760",
+      "name": "Twa"
+    },
+    {
+      "region": "00800",
+      "name": "Southern Bantu Peoples"
+    },
+    {
+      "region": "01300",
+      "name": "Khoisan, Aka & Mbuti Peoples"
+    },
+    {
+      "region": "00100",
+      "name": "Senegal"
+    },
+    {
+      "region": "00403",
+      "name": "Central West Africa"
+    },
+    {
+      "region": "00900",
+      "name": "Eastern Bantu Peoples"
+    },
+    {
+      "region": "06351",
+      "name": "Sephardic Jews in Northern Africa"
+    },
+    {
+      "region": "01100",
+      "name": "Ethiopia & Eritrea"
+    },
+    {
+      "region": "01200",
+      "name": "Somalia"
+    },
+    {
+      "region": "00402",
+      "name": "Yorubaland"
+    },
+    {
+      "region": "01400",
+      "name": "North Africa"
+    },
+    {
+      "region": "00750",
+      "name": "Western Bantu Peoples"
+    },
+    {
+      "region": "05300",
+      "name": "Central America"
+    },
+    {
+      "region": "05600",
+      "name": "Haiti & Dominican Republic"
+    },
+    {
+      "region": "05700",
+      "name": "Puerto Rico"
+    },
+    {
+      "region": "04900",
+      "name": "Arctic"
+    },
+    {
+      "region": "05800",
+      "name": "Colombia & Venezuela"
+    },
+    {
+      "region": "05400",
+      "name": "Panama & Costa Rica"
+    },
+    {
+      "region": "06200",
+      "name": "Eastern South America"
+    },
+    {
+      "region": "06000",
+      "name": "Bolivia & Peru"
+    },
+    {
+      "region": "05900",
+      "name": "Ecuador"
+    },
+    {
+      "region": "05000",
+      "name": "Canada & United States"
+    },
+    {
+      "region": "05100",
+      "name": "Mexico "
+    },
+    {
+      "region": "06100",
+      "name": "Chile"
+    },
+    {
+      "region": "05500",
+      "name": "Cuba"
+    },
+    {
+      "region": "05200",
+      "name": "Yucatán Peninsula "
+    },
+    {
+      "region": "02303",
+      "name": "Gulf of Khambhat"
+    },
+    {
+      "region": "04000",
+      "name": "Northern & Central Philippines"
+    },
+    {
+      "region": "02001",
+      "name": "Lower Central Asia"
+    },
+    {
+      "region": "03100",
+      "name": "Japan"
+    },
+    {
+      "region": "04150",
+      "name": "Central & Southern Philippines"
+    },
+    {
+      "region": "02000",
+      "name": "Iran/Persia"
+    },
+    {
+      "region": "04151",
+      "name": "Luzon"
+    },
+    {
+      "region": "02100",
+      "name": "Burusho"
+    },
+    {
+      "region": "02700",
+      "name": "Tibetan Peoples"
+    },
+    {
+      "region": "02500",
+      "name": "Bengal"
+    },
+    {
+      "region": "01900",
+      "name": "Anatolia & the Caucasus"
+    },
+    {
+      "region": "03400",
+      "name": "Southwestern China"
+    },
+    {
+      "region": "03700",
+      "name": "Dai"
+    },
+    {
+      "region": "02200",
+      "name": "Indo-Gangetic Plain"
+    },
+    {
+      "region": "03200",
+      "name": "Southern Japanese Islands"
+    },
+    {
+      "region": "02401",
+      "name": "Southern India"
+    },
+    {
+      "region": "02402",
+      "name": "Southwest India"
+    },
+    {
+      "region": "02002",
+      "name": "Northern Iraq & Northern Iran"
+    },
+    {
+      "region": "01700",
+      "name": "Levant"
+    },
+    {
+      "region": "03000",
+      "name": "Korea"
+    },
+    {
+      "region": "04152",
+      "name": "Western Visayas"
+    },
+    {
+      "region": "03800",
+      "name": "Mainland Southeast Asia"
+    },
+    {
+      "region": "03350",
+      "name": "Western China"
+    },
+    {
+      "region": "02403",
+      "name": "The Deccan & the Gulf of Mannar"
+    },
+    {
+      "region": "03500",
+      "name": "Central & Eastern China & Taiwan"
+    },
+    {
+      "region": "02600",
+      "name": "Nepal & the Himalayan Foothills"
+    },
+    {
+      "region": "03850",
+      "name": "Maritime Southeast Asia"
+    },
+    {
+      "region": "02900",
+      "name": "Mongolia & Upper Central Asia"
+    },
+    {
+      "region": "03900",
+      "name": "Vietnam"
+    },
+    {
+      "region": "03300",
+      "name": "Northern China"
+    },
+    {
+      "region": "03600",
+      "name": "Southern China"
+    },
+    {
+      "region": "02301",
+      "name": "Western Himalayas & the Hindu Kush"
+    },
+    {
+      "region": "02302",
+      "name": "Gujarat"
+    },
+    {
+      "region": "01600",
+      "name": "Arabian Peninsula"
+    },
+    {
+      "region": "02800",
+      "name": "Northern Asia"
+    },
+    {
+      "region": "08106",
+      "name": "East Midlands"
+    },
+    {
+      "region": "07401",
+      "name": "Sicily"
+    },
+    {
+      "region": "07602",
+      "name": "Brittany, France"
+    },
+    {
+      "region": "08104",
+      "name": "Northern Wales & North West England"
+    },
+    {
+      "region": "08403",
+      "name": "Donegal, Ireland"
+    },
+    {
+      "region": "07601",
+      "name": "France"
+    },
+    {
+      "region": "06400",
+      "name": "Finland"
+    },
+    {
+      "region": "06801",
+      "name": "Russia"
+    },
+    {
+      "region": "06901",
+      "name": "Western Balkans"
+    },
+    {
+      "region": "08105",
+      "name": "Southeastern England & Northwestern Europe"
+    },
+    {
+      "region": "07903",
+      "name": "Spain"
+    },
+    {
+      "region": "08107",
+      "name": "West Midlands"
+    },
+    {
+      "region": "07101",
+      "name": "Aegean Islands"
+    },
+    {
+      "region": "06940",
+      "name": "Southwestern Balkans"
+    },
+    {
+      "region": "06810",
+      "name": "Western Ukraine"
+    },
+    {
+      "region": "07902",
+      "name": "Canary Islands"
+    },
+    {
+      "region": "07403",
+      "name": "Southern Italy"
+    },
+    {
+      "region": "06910",
+      "name": "Northwestern Balkans"
+    },
+    {
+      "region": "07001",
+      "name": "Albania"
+    },
+    {
+      "region": "06501",
+      "name": "Denmark"
+    },
+    {
+      "region": "06950",
+      "name": "Eastern European Roma"
+    },
+    {
+      "region": "06820",
+      "name": "Slovakia"
+    },
+    {
+      "region": "07502",
+      "name": "Northwestern Italy"
+    },
+    {
+      "region": "08101",
+      "name": "Cornwall"
+    },
+    {
+      "region": "07300",
+      "name": "Sardinia"
+    },
+    {
+      "region": "08404",
+      "name": "Leinster, Ireland"
+    },
+    {
+      "region": "07901",
+      "name": "Northern Spain"
+    },
+    {
+      "region": "07102",
+      "name": "Crete"
+    },
+    {
+      "region": "08300",
+      "name": "Central Scotland & Northern Ireland"
+    },
+    {
+      "region": "08201",
+      "name": "Southern Wales"
+    },
+    {
+      "region": "06930",
+      "name": "Romania"
+    },
+    {
+      "region": "07402",
+      "name": "Central Italy"
+    },
+    {
+      "region": "07103",
+      "name": "Ionian Islands"
+    },
+    {
+      "region": "06500",
+      "name": "Sweden"
+    },
+    {
+      "region": "06702",
+      "name": "Lithuania"
+    },
+    {
+      "region": "06601",
+      "name": "Iceland"
+    },
+    {
+      "region": "08103",
+      "name": "North East England"
+    },
+    {
+      "region": "07751",
+      "name": "Northwestern Germany"
+    },
+    {
+      "region": "07752",
+      "name": "Southern Germanic Europe"
+    },
+    {
+      "region": "06840",
+      "name": "Northeastern Poland"
+    },
+    {
+      "region": "06302",
+      "name": "Ashkenazi Jews in Eastern Europe & Russia"
+    },
+    {
+      "region": "06701",
+      "name": "Estonia & Latvia"
+    },
+    {
+      "region": "07701",
+      "name": "The Netherlands"
+    },
+    {
+      "region": "06841",
+      "name": "North Central Europe"
+    },
+    {
+      "region": "07800",
+      "name": "Basque"
+    },
+    {
+      "region": "08001",
+      "name": "Azores"
+    },
+    {
+      "region": "06303",
+      "name": "Ashkenazi Jews in Central & Southeastern Europe"
+    },
+    {
+      "region": "07200",
+      "name": "Malta"
+    },
+    {
+      "region": "07501",
+      "name": "Northeastern Italy"
+    },
+    {
+      "region": "06830",
+      "name": "Eastern Czechia"
+    },
+    {
+      "region": "01800",
+      "name": "Cyprus"
+    },
+    {
+      "region": "06920",
+      "name": "Slovenia"
+    },
+    {
+      "region": "06350",
+      "name": "Sephardic Jews in the Eastern Mediterranean"
+    },
+    {
+      "region": "08150",
+      "name": "Isle of Man"
+    },
+    {
+      "region": "08301",
+      "name": "Hebrides & Western Highlands, Scotland"
+    },
+    {
+      "region": "08102",
+      "name": "Devon & Somerset"
+    },
+    {
+      "region": "07050",
+      "name": "Northern & Central Greece"
+    },
+    {
+      "region": "08401",
+      "name": "Munster, Ireland"
+    },
+    {
+      "region": "07650",
+      "name": "Acadia"
+    },
+    {
+      "region": "08402",
+      "name": "Connacht, Ireland"
+    },
+    {
+      "region": "07051",
+      "name": "Southern Greece"
+    },
+    {
+      "region": "07651",
+      "name": "Quebec"
+    },
+    {
+      "region": "08302",
+      "name": "North East Scotland"
+    },
+    {
+      "region": "06600",
+      "name": "Norway"
+    },
+    {
+      "region": "06842",
+      "name": "Southern Poland"
+    },
+    {
+      "region": "08000",
+      "name": "Portugal"
+    },
+    {
+      "region": "07750",
+      "name": "Germans in Russia"
+    },
+    {
+      "region": "08002",
+      "name": "Madeira"
+    },
+    {
+      "region": "04500",
+      "name": "Tonga"
+    },
+    {
+      "region": "04300",
+      "name": "Melanesia"
+    },
+    {
+      "region": "04400",
+      "name": "Aboriginal and/or Torres Strait Islander Peoples"
+    },
+    {
+      "region": "04600",
+      "name": "Samoa"
+    },
+    {
+      "region": "04200",
+      "name": "Guam"
+    },
+    {
+      "region": "04800",
+      "name": "New Zealand Maori"
+    },
+    {
+      "region": "04700",
+      "name": "Hawaii"
+    }
+  ]
+}

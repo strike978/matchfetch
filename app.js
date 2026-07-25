@@ -87,6 +87,8 @@
     var _profileData = null;
     var _batchEthnicityData = null;
     var _batchCommunitiesData = null;
+    var _pageSize = 20;
+    var _currentPage = 1;
 
     function storeMatchData(guid, matchList) {
         if (typeof DB !== 'undefined') DB.saveSession(guid, matchList, _profileData, _batchEthnicityData, _batchCommunitiesData);
@@ -95,9 +97,14 @@
     function renderCards(guid) {
         var list = _matchListData && _matchListData.matchList;
         if (!list) return;
+        var totalPages = Math.ceil(list.length / _pageSize);
+        if (_currentPage > totalPages) _currentPage = totalPages || 1;
+        var start = (_currentPage - 1) * _pageSize;
+        var end = Math.min(start + _pageSize, list.length);
+        var page = list.slice(start, end);
         var html = '<div class="cards">';
-        for (var i = 0; i < list.length; i++) {
-            var m = list[i];
+        for (var i = 0; i < page.length; i++) {
+            var m = page[i];
             var p = _profileData && _profileData[m.sampleId] || {};
             var date = new Date(m.createdDate);
             var dateStr = (date.getMonth()+1) + '/' + date.getDate() + '/' + date.getFullYear();
@@ -143,16 +150,44 @@
             html += '</div>';
         }
         html += '</div>';
+        if (totalPages > 1) {
+            html += '<div class="pagination">';
+            html += '<button class="page-btn" data-page="' + (_currentPage - 1) + '"' + (_currentPage <= 1 ? ' disabled' : '') + '>&#9664;</button>';
+            var pageRange = [];
+            var startPage = Math.max(1, _currentPage - 2);
+            var endPage = Math.min(totalPages, _currentPage + 2);
+            if (startPage > 1) { pageRange.push(1); if (startPage > 2) pageRange.push('...'); }
+            for (var pi = startPage; pi <= endPage; pi++) pageRange.push(pi);
+            if (endPage < totalPages) { if (endPage < totalPages - 1) pageRange.push('...'); pageRange.push(totalPages); }
+            for (var pi2 = 0; pi2 < pageRange.length; pi2++) {
+                var p = pageRange[pi2];
+                if (p === '...') {
+                    html += '<span class="page-dots">...</span>';
+                } else {
+                    html += '<button class="page-btn' + (p === _currentPage ? ' page-active' : '') + '" data-page="' + p + '">' + p + '</button>';
+                }
+            }
+            html += '<button class="page-btn" data-page="' + (_currentPage + 1) + '"' + (_currentPage >= totalPages ? ' disabled' : '') + '>&#9654;</button>';
+            html += '</div>';
+        }
         var el = document.getElementById('matchListResult');
         if (el) el.innerHTML = html;
-        if (el) el.onclick = function(e) {
-            var card = e.target.closest('.match-card');
-            if (card) {
-                var g = card.getAttribute('data-guid');
-                var s = card.getAttribute('data-sample');
-                if (g && s) window.open('match.html?guid=' + g + '&sampleId=' + s, '_blank');
-            }
-        };
+        if (el) {
+            el.onclick = function(e) {
+                var btn = e.target.closest('.page-btn');
+                if (btn && !btn.disabled) {
+                    _currentPage = parseInt(btn.getAttribute('data-page'), 10);
+                    renderCards(guid);
+                    return;
+                }
+                var card = e.target.closest('.match-card');
+                if (card) {
+                    var g = card.getAttribute('data-guid');
+                    var s = card.getAttribute('data-sample');
+                    if (g && s) window.open('match.html?guid=' + g + '&sampleId=' + s, '_blank');
+                }
+            };
+        }
     }
 
     function delay(ms) { return new Promise(function(resolve) { setTimeout(resolve, ms); }); }
@@ -169,6 +204,7 @@
     }
 
     function fetchMatchList(guid, desiredCount) {
+        _currentPage = 1;
         var el = document.getElementById('matchListResult');
         if (el) el.innerHTML = '<div class="spinner" style="padding:24px"><div class="spinner-ring"></div></div>';
         _profileData = {};

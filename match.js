@@ -31,7 +31,10 @@
         } else {
             html += '<div class="avatar avatar-initials ' + gc + '">' + (p.matchNameInitials || '?') + '</div>';
         }
-        html += '<span>' + (p.matchName || 'Unknown') + '</span></div>';
+        html += '<span>' + (p.matchName || 'Unknown') + '</span>';
+        var profileUrl = 'https://www.ancestry.com/dna/matches/' + guid + '/compare/' + sampleId + '?returnUrl=' + encodeURIComponent('https://www.ancestry.com/dna/matches/' + guid + '/list');
+        html += '<a href="' + profileUrl + '" target="_blank" class="profile-link" title="Open on Ancestry"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>';
+        html += '</div>';
         html += '<div class="card-details" style="margin-top:12px;">';
         var relStr = '';
         if (rel.sharedCentimorgans) relStr += '<span class="num">' + rel.sharedCentimorgans + '</span> cM';

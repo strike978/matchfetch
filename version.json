@@ -1,4 +1,12 @@
 {
-  "version": "0.02",
-  "url": "https://github.com/strike978/matchfetch_ext"
+  "latest": "0.02",
+  "url": "https://github.com/strike978/matchfetch_ext",
+  "changelog": {
+    "0.02": [
+      "Added automatic update checker with changelog"
+    ],
+    "0.01": [
+      "Initial release"
+    ]
+  }
 }

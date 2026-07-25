@@ -39,12 +39,18 @@ function injectFetch(tabId, url, opts, sendResponse) {
 
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     if (request.action === 'checkUpdate') {
-        fetch('https://raw.githubusercontent.com/' + request.repo + '/main/version.json', { cache: 'no-cache' })
-            .then(function(r) { return r.json(); })
-            .then(function(data) {
-                sendResponse({ latest: data.version, url: data.url });
+        var url = 'https://raw.githubusercontent.com/' + request.repo + '/main/version.json?t=' + Date.now();
+        fetch(url, { cache: 'no-cache' })
+            .then(function(r) {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
             })
-            .catch(function() { sendResponse({ latest: null }); });
+            .then(function(data) {
+                sendResponse({ latest: data.latest, url: data.url, changelog: data.changelog || {} });
+            })
+            .catch(function(err) {
+                sendResponse({ latest: null, error: err.message });
+            });
         return true;
     }
     if (request.action !== 'apiFetch') return;

@@ -50,6 +50,16 @@ body {
 .btn:active { transform: scale(.98); }
 .btn:disabled { background: #1e293b; color: #475569; cursor: default; transform: none; }
 .fetch-list-btn { margin-top: 16px; width: auto; padding: 10px 24px; }
+.fetch-row { display: flex; gap: 10px; align-items: stretch; margin-top: 16px; }
+.fetch-row .fetch-list-btn { margin-top: 0; }
+.count-input {
+    width: 80px; padding: 10px 12px; background: #0f1724; color: #f1f5f9;
+    border: 1px solid #253044; border-radius: 10px; font-size: 14px;
+    font-family: inherit; outline: none; text-align: center;
+    transition: border-color .2s; -moz-appearance: textfield;
+}
+.count-input::-webkit-outer-spin-button, .count-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.count-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.15); }
 select {
     width: 100%; padding: 12px; margin-top: 16px;
     background: #0f1724; color: #f1f5f9; border: 1px solid #253044;

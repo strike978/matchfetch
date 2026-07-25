@@ -155,70 +155,94 @@
         };
     }
 
-    function fetchMatchList(guid) {
-        var url = 'https://www.ancestry.com/discoveryui-matches/parents/list/api/matchList/' + guid;
+    function fetchMatchList(guid, desiredCount) {
         var el = document.getElementById('matchListResult');
         if (el) el.innerHTML = '<div class="spinner" style="padding:24px"><div class="spinner-ring"></div></div>';
         _profileData = null;
         _batchEthnicityData = null;
         _batchCommunitiesData = null;
-        apiFetch(url, { credentials: 'include', mode: 'cors', headers: { 'Accept': 'application/json' } })
-            .then(function(data) {
-                _matchListData = data;
-                var sampleIds = [];
-                if (data.matchList && data.matchList.length > 0) {
-                    for (var i = 0; i < data.matchList.length; i++) {
-                        if (data.matchList[i].sampleId) sampleIds.push(data.matchList[i].sampleId);
+        _matchListData = null;
+
+        var allMatches = [];
+        var pageSize = 100;
+        var startIndex = 0;
+
+        function fetchPage() {
+            var url = 'https://www.ancestry.com/discoveryui-matches/parents/list/api/matchList/' + guid + '?startIndex=' + startIndex + '&itemsPerPage=' + pageSize;
+            return apiFetch(url, { credentials: 'include', mode: 'cors', headers: { 'Accept': 'application/json' } })
+                .then(function(data) {
+                    if (data.matchList) allMatches = allMatches.concat(data.matchList);
+                    startIndex += pageSize;
+                    var remaining = desiredCount - allMatches.length;
+                    if (remaining > 0 && data.matchList && data.matchList.length === pageSize) {
+                        return fetchPage();
+                    }
+                    if (allMatches.length > desiredCount) allMatches = allMatches.slice(0, desiredCount);
+                    _matchListData = { matchList: allMatches };
+                    var sampleIds = [];
+                    for (var i = 0; i < allMatches.length; i++) {
+                        if (allMatches[i].sampleId) sampleIds.push(allMatches[i].sampleId);
                     }
                     if (sampleIds.length > 0) fetchProfileData(guid, sampleIds);
-                }
-            })
-            .catch(function(err) {
-                var el = document.getElementById('matchListResult');
-                if (el) el.innerHTML = '<div class="error">' + friendlyError(err.message) + '</div>';
-            });
+                });
+        }
+
+        fetchPage().catch(function(err) {
+            var el = document.getElementById('matchListResult');
+            if (el) el.innerHTML = '<div class="error">' + friendlyError(err.message) + '</div>';
+        });
+    }
+
+    function chunkArray(arr, size) {
+        var chunks = [];
+        for (var i = 0; i < arr.length; i += size) chunks.push(arr.slice(i, i + size));
+        return chunks;
     }
 
     function fetchProfileData(guid, sampleIds) {
-        var url = 'https://www.ancestry.com/discoveryui-matches/cluster/api/profileData/' + guid;
-        var opts = {
-            method: 'POST',
-            credentials: 'include',
-            mode: 'cors',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify({ matchSampleIds: sampleIds })
-        };
-        apiFetch(url, opts)
-            .then(function(profiles) {
-                _profileData = profiles;
+        var chunks = chunkArray(sampleIds, 100);
+        var allProfiles = {};
+        var idx = 0;
+        var el = document.getElementById('matchListResult');
+
+        function next() {
+            if (idx >= chunks.length) {
+                _profileData = allProfiles;
                 var list = _matchListData && _matchListData.matchList;
                 renderCards(guid);
                 storeMatchData(guid, list);
                 fetchBatchEthnicity(guid, sampleIds);
                 fetchBatchCommunities(guid, sampleIds);
-            })
-            .catch(function(err) {
-                var el = document.getElementById('matchListResult');
+                return;
+            }
+            var url = 'https://www.ancestry.com/discoveryui-matches/cluster/api/profileData/' + guid;
+            apiFetch(url, {
+                method: 'POST', credentials: 'include', mode: 'cors',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify({ matchSampleIds: chunks[idx] })
+            }).then(function(profiles) {
+                for (var k in profiles) allProfiles[k] = profiles[k];
+                idx++;
+                next();
+            }).catch(function(err) {
                 if (el) el.innerHTML = '<div class="error">' + friendlyError(err.message) + '</div>';
             });
+        }
+        next();
     }
 
     function fetchBatchEthnicity(guid, sampleIds) {
-        var url = 'https://www.ancestry.com/dna/origins/secure/compare/' + guid + '/batchEthnicity';
-        var opts = {
-            method: 'PUT',
-            credentials: 'include',
-            mode: 'cors',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify(sampleIds)
-        };
-        apiFetch(url, opts)
-            .then(function(data) {
-                _batchEthnicityData = data;
+        var chunks = chunkArray(sampleIds, 24);
+        var allData = {};
+        var idx = 0;
+
+        function next() {
+            if (idx >= chunks.length) {
+                _batchEthnicityData = allData;
                 if (_regionMap) {
-                    var sKeys = Object.keys(data);
+                    var sKeys = Object.keys(allData);
                     for (var si = 0; si < sKeys.length; si++) {
-                        var regions = data[sKeys[si]] && data[sKeys[si]].regions;
+                        var regions = allData[sKeys[si]] && allData[sKeys[si]].regions;
                         if (!regions) continue;
                         for (var ri = 0; ri < regions.length; ri++) {
                             regions[ri].displayName = _regionMap[regions[ri].key] || regions[ri].key;
@@ -227,31 +251,40 @@
                 }
                 var list = _matchListData && _matchListData.matchList;
                 storeMatchData(guid, list);
-            })
-            .catch(function(err) {});
+                return;
+            }
+            var url = 'https://www.ancestry.com/dna/origins/secure/compare/' + guid + '/batchEthnicity';
+            var opts = {
+                method: 'PUT', credentials: 'include', mode: 'cors',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify(chunks[idx])
+            };
+            apiFetch(url, opts)
+                .then(function(data) {
+                    for (var k in data) allData[k] = data[k];
+                    idx++;
+                    next();
+                })
+                .catch(function(err) { idx++; next(); });
+        }
+        next();
     }
 
     function fetchBatchCommunities(guid, sampleIds) {
-        var url = 'https://www.ancestry.com/dna/origins/secure/compare/' + guid + '/batchCommunities';
-        var opts = {
-            method: 'POST',
-            credentials: 'include',
-            mode: 'cors',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify(sampleIds)
-        };
-        apiFetch(url, opts)
-            .then(function(data) {
-                _batchCommunitiesData = data;
+        var chunks = chunkArray(sampleIds, 24);
+        var allData = {};
+        var idx = 0;
+
+        function next() {
+            if (idx >= chunks.length) {
+                _batchCommunitiesData = allData;
                 var allBranchIds = [];
-                var sKeys = Object.keys(data);
+                var sKeys = Object.keys(allData);
                 for (var si = 0; si < sKeys.length; si++) {
-                    var branches = data[sKeys[si]] && data[sKeys[si]].branches;
+                    var branches = allData[sKeys[si]] && allData[sKeys[si]].branches;
                     if (!branches) continue;
                     for (var bi = 0; bi < branches.length; bi++) {
-                        if (allBranchIds.indexOf(branches[bi].id) === -1) {
-                            allBranchIds.push(branches[bi].id);
-                        }
+                        if (allBranchIds.indexOf(branches[bi].id) === -1) allBranchIds.push(branches[bi].id);
                     }
                 }
                 if (allBranchIds.length > 0) {
@@ -265,12 +298,10 @@
                         var nameMap = {};
                         for (var ghostId in nameData) {
                             var subDict = nameData[ghostId];
-                            for (var subId in subDict) {
-                                nameMap[subId] = subDict[subId];
-                            }
+                            for (var subId in subDict) nameMap[subId] = subDict[subId];
                         }
                         for (var si2 = 0; si2 < sKeys.length; si2++) {
-                            var branches = data[sKeys[si2]] && data[sKeys[si2]].branches;
+                            var branches = allData[sKeys[si2]] && allData[sKeys[si2]].branches;
                             if (branches) resolveJourneyNames(branches, nameMap);
                         }
                         var list = _matchListData && _matchListData.matchList;
@@ -286,8 +317,23 @@
                     storeMatchData(guid, list);
                     renderCards(guid);
                 }
-            })
-            .catch(function(err) {});
+                return;
+            }
+            var url = 'https://www.ancestry.com/dna/origins/secure/compare/' + guid + '/batchCommunities';
+            var opts = {
+                method: 'POST', credentials: 'include', mode: 'cors',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify(chunks[idx])
+            };
+            apiFetch(url, opts)
+                .then(function(data) {
+                    for (var k in data) allData[k] = data[k];
+                    idx++;
+                    next();
+                })
+                .catch(function(err) { idx++; next(); });
+        }
+        next();
     }
 
     function displayTests(data) {
@@ -306,7 +352,7 @@
             html += '<option value="' + guid + '">' + name + '</option>';
         }
         html += '</select><button id="clearKitBtn" class="clear-btn" title="Clear kit data" hidden><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></div>';
-        html += '<button class="btn fetch-list-btn" id="fetchListBtn" disabled><span>&#x25B6;</span> Fetch</button>';
+        html += '<div class="fetch-row"><input type="number" id="matchCountInput" class="count-input" value="100" min="1" step="1"><button class="btn fetch-list-btn" id="fetchListBtn" disabled><span>&#x25B6;</span> Fetch</button></div>';
         html += '<div id="matchListResult"></div>';
 
         results.innerHTML = html;
@@ -368,7 +414,9 @@
 
         document.getElementById('fetchListBtn').addEventListener('click', function() {
             var sel = document.getElementById('testSelect');
-            if (sel && sel.value) fetchMatchList(sel.value);
+            var input = document.getElementById('matchCountInput');
+            var count = parseInt(input && input.value, 10) || 100;
+            if (sel && sel.value) fetchMatchList(sel.value, count);
         });
 
         document.getElementById('clearKitBtn').addEventListener('click', function() {

@@ -205,10 +205,22 @@
         el.innerHTML = '<span class="spinner-ring" style="width:12px;height:12px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px"></span>' + msg;
     }
 
+    function debugLog(msg) {
+        var el = document.getElementById('debugLog');
+        if (!el) return;
+        el.style.display = 'block';
+        var t = new Date();
+        var ts = t.getHours().toString().padStart(2,'0') + ':' + t.getMinutes().toString().padStart(2,'0') + ':' + t.getSeconds().toString().padStart(2,'0');
+        el.textContent += '[' + ts + '] ' + msg + '\n';
+        el.scrollTop = el.scrollHeight;
+    }
+
     function fetchMatchList(guid, desiredCount) {
         _currentPage = 1;
         var el = document.getElementById('matchListResult');
         if (el) el.innerHTML = '';
+        var dl = document.getElementById('debugLog');
+        if (dl) { dl.textContent = ''; dl.style.display = 'none'; }
         _profileData = {};
         _batchEthnicityData = {};
         _batchCommunitiesData = {};
@@ -219,12 +231,23 @@
         var currentPage = 1;
         var nameCache = {};
 
-        function saveState(pageIdx) {
-            DB.saveFetchState(guid, { status: 0, mode: 'count', params: { desiredCount: desiredCount }, pageIndex: pageIdx });
+        function saveState() {
+            DB.saveFetchState(guid, 0, 'count', { desiredCount: desiredCount }, currentPage);
         }
 
         var fetchBtn = document.getElementById('fetchListBtn');
         if (fetchBtn) fetchBtn.disabled = true;
+
+        function findIncompleteSampleIds() {
+            var result = [];
+            for (var i = 0; i < allMatches.length; i++) {
+                var sid = allMatches[i].sampleId;
+                if (sid && (!_batchEthnicityData[sid] || !_batchCommunitiesData[sid])) {
+                    result.push(sid);
+                }
+            }
+            return result;
+        }
 
         var resumePromise = DB.getFetchState(guid).then(function(fs) {
             if (fs && fs.status === 0) {
@@ -239,66 +262,51 @@
                             if (m.regions) _batchEthnicityData[sids[i]] = { regions: m.regions };
                         }
                         _matchListData = { matchList: allMatches };
-                        currentPage = (fs.pageIndex || 0) + 1;
+                        currentPage = fs.nextPage || 1;
                         desiredCount = fs.params && fs.params.desiredCount || desiredCount;
-                        if (el) el.innerHTML = '<div class="status-msg">Resuming from page ' + currentPage + '...</div>';
                     }
                 });
             }
         });
 
         function fetchPage() {
-            saveState(currentPage - 1);
             var remaining = desiredCount - allMatches.length;
-            var thisPageSize = Math.min(100, remaining);
             setStatus('Fetching match list... (' + allMatches.length + '/' + desiredCount + ')');
-            var url = 'https://www.ancestry.com/discoveryui-matches/parents/list/api/matchList/' + guid + '?itemsPerPage=' + thisPageSize + '&currentPage=' + currentPage;
+            debugLog('page ' + currentPage + ' have=' + allMatches.length + ' need=' + remaining);
+            var url = 'https://www.ancestry.com/discoveryui-matches/parents/list/api/matchList/' + guid + '?itemsPerPage=100&currentPage=' + currentPage;
             return apiFetch(url, { credentials: 'include', mode: 'cors', headers: { 'Accept': 'application/json' } })
                 .then(function(data) {
                     var matches = data.matchList;
-                    if (Array.isArray(matches)) {
-                        var prevCount = allMatches.length;
-                        var sidIndex = {};
-                        for (var ei = 0; ei < allMatches.length; ei++) sidIndex[allMatches[ei].sampleId] = true;
-                        var pageSampleIds = [];
-                        for (var mi = 0; mi < matches.length; mi++) {
-                            if (!sidIndex[matches[mi].sampleId]) {
-                                allMatches.push(matches[mi]);
-                                sidIndex[matches[mi].sampleId] = true;
-                                if (matches[mi].sampleId) pageSampleIds.push(matches[mi].sampleId);
-                            }
-                        }
-                        if (allMatches.length > desiredCount) allMatches = allMatches.slice(0, desiredCount);
-                        // trim new sampleIds if sliced
-                        if (allMatches.length < prevCount + pageSampleIds.length) {
-                            pageSampleIds = pageSampleIds.slice(0, allMatches.length - prevCount);
-                        }
-                        // also re-process existing matches from this page that are missing ethnicity/journeys
-                        for (var mi = 0; mi < matches.length; mi++) {
-                            var sid = matches[mi].sampleId;
-                            if (sid && sidIndex[sid] && (!_batchEthnicityData[sid] || !_batchCommunitiesData[sid]) && pageSampleIds.indexOf(sid) === -1) pageSampleIds.push(sid);
-                        }
-                        _matchListData = { matchList: allMatches };
-                        currentPage++;
-                        var matchesFromThisPage = allMatches.length - prevCount;
-                        if (pageSampleIds.length === 0 && matches.length < thisPageSize) return nextPage(false);
-                        if (pageSampleIds.length === 0) return nextPage(matches.length >= thisPageSize);
-                        return fetchProfileData(guid, pageSampleIds).then(function() {
-                            var list = _matchListData && _matchListData.matchList;
-                            storeMatchData(guid, list);
-                            return processPageChunks(guid, pageSampleIds);
-                        }).then(function() {
-                            saveState(currentPage - 1);
-                            return nextPage(matches.length >= thisPageSize);
-                        });
-                    } else {
-                        nextPage(false);
+                    if (!Array.isArray(matches)) return nextPage(false);
+                    var newSids = [];
+                    var sidIndex = {};
+                    for (var i = 0; i < allMatches.length; i++) sidIndex[allMatches[i].sampleId] = true;
+                    for (var i = 0; i < matches.length && allMatches.length < desiredCount; i++) {
+                        var sid = matches[i].sampleId;
+                        if (!sid || sidIndex[sid]) continue;
+                        sidIndex[sid] = true;
+                        allMatches.push(matches[i]);
+                        newSids.push(sid);
                     }
+                    if (allMatches.length > desiredCount) allMatches = allMatches.slice(0, desiredCount);
+                    _matchListData = { matchList: allMatches };
+                    currentPage++;
+                    saveState();
+                    var hasMore = matches.length >= 100;
+                    debugLog('  got ' + newSids.length + ' new, total=' + allMatches.length + ' next=' + currentPage + ' hasMore=' + hasMore);
+                    if (newSids.length === 0) return nextPage(hasMore);
+                    return fetchProfileData(guid, newSids).then(function() {
+                        storeMatchData(guid, allMatches);
+                        return processPageChunks(guid, newSids);
+                    }).then(function() {
+                        return nextPage(hasMore);
+                    });
                 });
         }
 
         function nextPage(hasMore) {
             var remaining = desiredCount - allMatches.length;
+            debugLog('nextPage: hasMore=' + hasMore + ' remaining=' + remaining);
             if (remaining > 0 && hasMore) return delay(500).then(fetchPage);
         }
 
@@ -372,11 +380,12 @@
         }
 
         function finishFetch() {
+            debugLog('finishFetch: total=' + allMatches.length + ' target=' + desiredCount);
             setStatus('');
             if (fetchBtn) { fetchBtn.disabled = false; fetchBtn.innerHTML = '<span>&#x25B6;</span> Fetch'; }
             var ci = document.getElementById('matchCountInput');
             if (ci) ci.style.display = '';
-            DB.saveFetchState(guid, { status: 1, mode: 'count', params: { desiredCount: desiredCount }, pageIndex: currentPage - 1 });
+            DB.saveFetchState(guid, 1, 'count', { desiredCount: desiredCount });
             try {
                 chrome.notifications.create({
                     type: 'basic',
@@ -392,20 +401,27 @@
         }
 
         resumePromise.then(function() {
+            saveState();
+            var incomplete = findIncompleteSampleIds();
+            debugLog('resume: have=' + allMatches.length + ' target=' + desiredCount + ' incomplete=' + incomplete.length);
             if (allMatches.length >= desiredCount) {
-                var sids = [];
-                for (var ri = 0; ri < allMatches.length; ri++) {
-                    if (allMatches[ri].sampleId) sids.push(allMatches[ri].sampleId);
-                }
-                setStatus('Resuming: processing data for ' + sids.length + ' matches...');
-                return processPageChunks(guid, sids).then(finishFetch).catch(function(err) {
+                if (incomplete.length === 0) return finishFetch();
+                setStatus('Resuming: processing data for ' + incomplete.length + ' matches...');
+                return processPageChunks(guid, incomplete).then(finishFetch).catch(function(err) {
                     if (fetchBtn) fetchBtn.disabled = false;
                     var el = document.getElementById('matchListResult');
                     if (el) el.innerHTML = '<div class="error">' + friendlyError(err.message) + '</div>';
                     setStatus('');
                 });
             }
-            fetchPage().then(finishFetch).catch(function(err) {
+            var chain = Promise.resolve();
+            if (incomplete.length > 0) {
+                setStatus('Resuming: processing ' + incomplete.length + ' existing matches first...');
+                chain = processPageChunks(guid, incomplete);
+            }
+            return chain.then(function() {
+                return fetchPage();
+            }).then(finishFetch).catch(function(err) {
                 if (fetchBtn) fetchBtn.disabled = false;
                 var el = document.getElementById('matchListResult');
                 if (el) el.innerHTML = '<div class="error">' + friendlyError(err.message) + '</div>';
@@ -480,6 +496,7 @@
         html += '</select><button id="clearKitBtn" class="clear-btn" title="Clear kit data" hidden><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></div>';
         html += '<div class="label" style="margin-top:16px">Fetch Options</div><div class="fetch-row"><label class="input-label">Matches <input type="number" id="matchCountInput" class="count-input" value="100" min="1" step="1"></label><button class="btn fetch-list-btn" id="fetchListBtn" disabled><span>&#x25B6;</span> Fetch</button></div>';
         html += '<div id="statusMsg" class="status-msg"></div>';
+        html += '<pre id="debugLog"></pre>';
         html += '<div id="matchListResult"></div>';
 
         results.innerHTML = html;
@@ -490,6 +507,8 @@
             var countInput = document.getElementById('matchCountInput');
             var selectedGuid = this.value;
             var matchListEl = document.getElementById('matchListResult');
+            var debugEl = document.getElementById('debugLog');
+            if (debugEl) { debugEl.textContent = ''; debugEl.style.display = 'none'; }
             _matchListData = null;
             _batchCommunitiesData = null;
             _profileData = null;

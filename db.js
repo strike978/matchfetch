@@ -174,7 +174,7 @@ var DB = (function() {
             });
         },
 
-        saveFetchState: function(guid, state) {
+        saveFetchState: function(guid, status, mode, params, nextPage) {
             return _open().then(function(db) {
                 return new Promise(function(resolve, reject) {
                     var tx = db.transaction('Ancestry', 'readwrite');
@@ -183,7 +183,7 @@ var DB = (function() {
                     var getReq = tx.objectStore('Ancestry').get(guid);
                     getReq.onsuccess = function() {
                         var obj = getReq.result || { guid: guid, matches: {} };
-                        obj.fetchState = { status: state.status, mode: state.mode, params: state.params, pageIndex: state.pageIndex };
+                        obj.fetchState = { status: status, mode: mode, params: params, nextPage: nextPage || null };
                         tx.objectStore('Ancestry').put(obj);
                     };
                 });
@@ -196,7 +196,7 @@ var DB = (function() {
                     var req = db.transaction('Ancestry', 'readonly').objectStore('Ancestry').get(guid);
                     req.onsuccess = function() {
                         var r = req.result;
-                        resolve(r && r.fetchState ? { status: r.fetchState.status, mode: r.fetchState.mode, params: r.fetchState.params, pageIndex: r.fetchState.pageIndex } : null);
+                        resolve(r && r.fetchState ? { status: r.fetchState.status, mode: r.fetchState.mode, params: r.fetchState.params, nextPage: r.fetchState.nextPage } : null);
                     };
                     req.onerror = function() { reject(req.error); };
                 });

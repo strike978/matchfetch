@@ -138,6 +138,13 @@
         }
     }
 
+    function titleize(str) {
+        if (!str) return '';
+        return str.replace(/_/g, ' ').replace(/\w\S*/g, function(txt) {
+            return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+        });
+    }
+
     function strengthColor(connection) {
         if (!connection) return '#3b82f6';
         var c = connection.toLowerCase().replace(/[\s_]+/g, '_');
@@ -194,7 +201,7 @@
             var pct = nodeData.connectionPercent != null ? nodeData.connectionPercent + '%' : '';
             var strength = nodeData.connection || '';
             var popupHtml = '<div style="font-size:13px;font-weight:600;color:#e2e8f0">' + (nodeData.displayName || key) + '</div>';
-            if (pct || strength) popupHtml += '<div style="font-size:11px;color:#94a3b8;margin-top:2px">' + (strength ? strength + ' ' : '') + pct + '</div>';
+            if (pct || strength) popupHtml += '<div style="font-size:11px;color:#94a3b8;margin-top:2px">' + (strength ? titleize(strength) + ' ' : '') + pct + '</div>';
             layer.bindPopup(popupHtml, { closeButton: true, offset: L.point(0, -4) }).openPopup();
         } catch(e) {}
     }
@@ -326,7 +333,7 @@
             for (var mi = 0; mi < macroKeys.length; mi++) {
                 var regions = grouped[macroKeys[mi]];
                 var total = macroTotals[macroKeys[mi]];
-                regionsHtml += '<div class="ethnicity-group"><div class="section-title">' + macroKeys[mi] + ' <span class="total-pct">' + total + '%</span></div><div class="region-list">';
+                regionsHtml += '<div class="ethnicity-group"><div class="section-title">' + titleize(macroKeys[mi]) + ' <span class="total-pct">' + total + '%</span></div><div class="region-list">';
                 for (var ri2 = 0; ri2 < regions.length; ri2++) {
                     var reg2 = regions[ri2];
                     regionsHtml += '<span class="detail ethnicity" style="border-left:3px solid ' + reg2.color + ';cursor:pointer" data-key="' + reg2.key + '"><span class="detail-label">' + (reg2.displayName || reg2.key || '') + '</span><span class="detail-value">' + reg2.percentage + '%';
@@ -351,7 +358,7 @@
                     var strength = '';
                     if (n.connection) {
                         var sc = 'strength-' + n.connection.toLowerCase();
-                        strength = ' <span class="journey-strength ' + sc + '">' + n.connection + ' ' + (n.connectionPercent || '') + '%</span>';
+                        strength = ' <span class="journey-strength ' + sc + '">' + titleize(n.connection) + ' ' + (n.connectionPercent || '') + '%</span>';
                     }
                     if (depth === 0) {
                         journeysHtml += '<div class="journey-node">';

@@ -746,6 +746,7 @@
         html += '<div class="filter-row">';
         html += '<span class="filter-group">Journey <select id="filterJourney" class="filter-select"><option value="">All</option></select><label class="filter-check"><input type="checkbox" id="filterJourneyOnly"><span class="check-mark"></span> Only this</label></span>';
         html += '<span class="filter-group">Region <select id="filterRegion" class="filter-select"><option value="">All</option></select><span class="filter-sep" style="margin:0 2px">%</span><input type="number" id="filterRegionPctMin" class="filter-input filter-cm" placeholder="Min"><span class="filter-sep">–</span><input type="number" id="filterRegionPctMax" class="filter-input filter-cm" placeholder="Max"></span>';
+        html += '<span id="filterReset" class="filter-clear">Clear filters</span>';
         html += '</div></div></div>';
         html += '<div id="matchListResult"></div>';
         html += '<div id="doneMsg" class="status-msg" style="display:none"></div>';
@@ -810,6 +811,18 @@
                 body.style.display = 'none';
                 arrow.classList.remove('open');
             }
+        });
+
+        document.getElementById('filterReset').addEventListener('click', function() {
+            document.getElementById('filterName').value = '';
+            document.getElementById('filterCmMin').value = '';
+            document.getElementById('filterCmMax').value = '';
+            document.getElementById('filterJourney').value = '';
+            document.getElementById('filterJourneyOnly').checked = false;
+            document.getElementById('filterRegion').value = '';
+            document.getElementById('filterRegionPctMin').value = '';
+            document.getElementById('filterRegionPctMax').value = '';
+            applyFiltersAndRender();
         });
 
         document.getElementById('testSelect').addEventListener('change', function() {

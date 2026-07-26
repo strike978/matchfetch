@@ -215,7 +215,7 @@
         _matchListData = null;
 
         var allMatches = [];
-        var pageSize = 100;
+        var pageSize = Math.min(100, desiredCount);
         var currentPage = 1;
         var nameCache = {};
 
@@ -249,8 +249,10 @@
 
         function fetchPage() {
             saveState(currentPage - 1);
+            var remaining = desiredCount - allMatches.length;
+            var thisPageSize = Math.min(100, remaining);
             setStatus('Fetching match list... (' + allMatches.length + '/' + desiredCount + ')');
-            var url = 'https://www.ancestry.com/discoveryui-matches/parents/list/api/matchList/' + guid + '?itemsPerPage=' + pageSize + '&currentPage=' + currentPage;
+            var url = 'https://www.ancestry.com/discoveryui-matches/parents/list/api/matchList/' + guid + '?itemsPerPage=' + thisPageSize + '&currentPage=' + currentPage;
             return apiFetch(url, { credentials: 'include', mode: 'cors', headers: { 'Accept': 'application/json' } })
                 .then(function(data) {
                     var matches = data.matchList;
@@ -279,15 +281,15 @@
                         _matchListData = { matchList: allMatches };
                         currentPage++;
                         var matchesFromThisPage = allMatches.length - prevCount;
-                        if (pageSampleIds.length === 0 && matches.length < pageSize) return nextPage(false);
-                        if (pageSampleIds.length === 0) return nextPage(matches.length >= pageSize);
+                        if (pageSampleIds.length === 0 && matches.length < thisPageSize) return nextPage(false);
+                        if (pageSampleIds.length === 0) return nextPage(matches.length >= thisPageSize);
                         return fetchProfileData(guid, pageSampleIds).then(function() {
                             var list = _matchListData && _matchListData.matchList;
                             storeMatchData(guid, list);
                             return processPageChunks(guid, pageSampleIds);
                         }).then(function() {
                             saveState(currentPage - 1);
-                            return nextPage(matches.length >= pageSize);
+                            return nextPage(matches.length >= thisPageSize);
                         });
                     } else {
                         nextPage(false);

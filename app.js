@@ -433,6 +433,14 @@
         var currentPage = 1;
         var nameCache = {};
 
+        function setBadgeFetching() {
+            try { chrome.action.setBadgeText({ text: '↻' }); chrome.action.setBadgeBackgroundColor({ color: '#3b82f6' }); } catch(e) {}
+        }
+
+        function clearBadge() {
+            try { chrome.action.setBadgeText({ text: '' }); } catch(e) {}
+        }
+
         function saveState() {
             DB.saveFetchState(guid, 0, mode, params, currentPage);
             var pageJustFetched = currentPage - 1;
@@ -601,6 +609,7 @@
         }
 
         function finishFetch() {
+            clearBadge();
             debugLog('finishFetch: total=' + allMatches.length + ' mode=' + mode);
             setStatus('');
             if (fetchBtn) { fetchBtn.disabled = false; fetchBtn.innerHTML = '<span>&#x25B6;</span> Fetch'; }
@@ -630,6 +639,7 @@
         }
 
         resumePromise.then(function() {
+            setBadgeFetching();
             saveState();
             var incomplete = findIncompleteSampleIds();
             debugLog('resume: mode=' + mode + ' have=' + allMatches.length + (mode === 'cmRange' ? '' : ' target=' + desiredCount) + ' incomplete=' + incomplete.length);
@@ -637,6 +647,7 @@
                 if (incomplete.length === 0) return finishFetch();
                 setStatus('Resuming: processing data for ' + incomplete.length + ' matches...');
                 return processPageChunks(guid, incomplete).then(finishFetch).catch(function(err) {
+                    clearBadge();
                     if (fetchBtn) fetchBtn.disabled = false;
                     restoreFetchUI(guid);
                     var el = document.getElementById('matchListResult');
@@ -652,6 +663,7 @@
             return chain.then(function() {
                 return fetchPage();
             }).then(finishFetch).catch(function(err) {
+                clearBadge();
                 if (fetchBtn) fetchBtn.disabled = false;
                 restoreFetchUI(guid);
                 var el = document.getElementById('matchListResult');

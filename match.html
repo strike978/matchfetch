@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Match Detail</title>
+<link rel="stylesheet" href="leaflet.css">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -66,6 +67,32 @@ body {
     padding: 4px; border-radius: 6px; transition: color .2s, background .2s;
 }
 .profile-link:hover { color: #3b82f6; background: rgba(59,130,246,.1); }
+#map { height: 420px; border-radius: 10px; overflow: hidden; outline: 0; }
+#map:focus, #map:focus-visible { outline: 0; }
+#map * { outline: 0; }
+.leaflet-container { background: #0f1724; outline: 0; }
+.leaflet-interactive, .leaflet-interactive:focus, .leaflet-interactive:focus-visible { outline: 0 !important; }
+svg, svg * { outline: 0; }
+.regions-map-row { display: flex; gap: 16px; align-items: flex-start; }
+.regions-map-row > .card { flex: 0 0 300px; margin-bottom: 0; }
+.regions-map-row > .map-card { flex: 1; min-width: 0; }
+.leaflet-popup-content-wrapper { background: #1a2332; color: #e2e8f0; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,.5); }
+.leaflet-popup-content { margin: 10px 14px; }
+.leaflet-popup-tip { background: #1a2332; }
+.leaflet-popup-close-button { color: #64748b !important; }
+#journey-map { height: 420px; border-radius: 10px; overflow: hidden; outline: 0; }
+#journey-map:focus, #journey-map:focus-visible { outline: 0; }
+#journey-map * { outline: 0; }
+.journey-tree { margin-top: 4px; }
+.journey-node { margin-bottom: 6px; }
+.journey-sub-node { }
+.journey-header { display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 5px 6px; border-radius: 6px; transition: background .15s; }
+.journey-header:hover { background: rgba(255,255,255,.05); }
+.journey-item { display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 4px 6px; border-radius: 6px; transition: background .15s; }
+.journey-item:hover { background: rgba(255,255,255,.05); }
+.journey-toggle { font-size: 10px; color: #64748b; flex-shrink: 0; width: 14px; text-align: center; transition: transform .15s; }
+.journey-toggle-empty { visibility: hidden; }
+.journey-children { border-left: 1px solid #253044; margin-left: 6px; padding-left: 4px; }
 </style>
 </head>
 <body>
@@ -78,6 +105,7 @@ body {
     <div class="spinner"><div class="spinner-ring"></div><div>Loading...</div></div>
 </div>
 <script src="db.js"></script>
+<script src="leaflet.js"></script>
 <script src="match.js"></script>
 </body>
 </html>

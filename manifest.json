@@ -24,6 +24,7 @@
   },
   "permissions": ["scripting", "unlimitedStorage", "notifications"],
   "host_permissions": [
-    "https://www.ancestry.com/*"
+    "https://www.ancestry.com/*",
+    "https://*.basemaps.cartocdn.com/*"
   ]
 }

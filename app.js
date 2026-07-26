@@ -275,14 +275,16 @@
         if (fb) fb.style.display = '';
         populateFilterSelects();
         var filtered = list.filter(matchesFilter);
-        var fc = document.getElementById('filterCount');
-        if (fc) fc.textContent = filtered.length < list.length ? filtered.length + ' of ' + list.length : '';
         var totalPages = Math.ceil(filtered.length / _pageSize);
         if (_currentPage > totalPages) _currentPage = totalPages || 1;
         var start = (_currentPage - 1) * _pageSize;
         var end = Math.min(start + _pageSize, filtered.length);
         var page = filtered.slice(start, end);
-        var html = '<div class="cards">';
+        var total = list.length;
+        var shown = filtered.length;
+        var html = '';
+        if (shown < total) html += '<div class="match-count">Showing <strong>' + shown + '</strong> of <strong>' + total + '</strong> matches</div>';
+        html += '<div class="cards">';
         for (var i = 0; i < page.length; i++) {
             var m = page[i];
             var p = _profileData && _profileData[m.sampleId] || {};
@@ -411,8 +413,6 @@ function titleize(str) {
     function restoreFetchUI(guid) {
         var fetchGroupEl = document.getElementById('fetchGroup');
         if (fetchGroupEl) fetchGroupEl.style.display = '';
-        var doneMsgEl = document.getElementById('doneMsg');
-        if (doneMsgEl) doneMsgEl.style.display = 'none';
         DB.getFetchState(guid).then(function(fs) {
             var listBtn = document.getElementById('fetchListBtn');
             var countInput = document.getElementById('matchCountInput');
@@ -464,8 +464,8 @@ function titleize(str) {
         _matchListData = null;
         var fetchGroupEl = document.getElementById('fetchGroup');
         if (fetchGroupEl) fetchGroupEl.style.display = 'none';
-        var doneMsgEl = document.getElementById('doneMsg');
-        if (doneMsgEl) doneMsgEl.style.display = 'none';
+
+
 
         var allMatches = [];
         var desiredCount = mode === 'cmRange' ? Infinity : (params.desiredCount || 100);
@@ -618,7 +618,7 @@ function titleize(str) {
         }
 
         function processChunk24(guid, chunk, rangeStart, total) {
-            setStatus('Fetching ethnicity for matches ' + rangeStart + '-' + (rangeStart + chunk.length - 1) + ' of ' + total + '...');
+            setStatus('Fetching regions for matches ' + rangeStart + '-' + (rangeStart + chunk.length - 1) + ' of ' + total + '...');
             return fetchBatchEthnicity(guid, chunk).then(function(ethData) {
                 for (var k in ethData) _batchEthnicityData[k] = ethData[k];
                 if (_regionMap) {
@@ -632,7 +632,7 @@ function titleize(str) {
                 }
                 return delay(1500);
             }).then(function() {
-                setStatus('Fetching communities for matches ' + rangeStart + '-' + (rangeStart + chunk.length - 1) + ' of ' + total + '...');
+                setStatus('Fetching journeys for matches ' + rangeStart + '-' + (rangeStart + chunk.length - 1) + ' of ' + total + '...');
                 return fetchBatchCommunities(guid, chunk);
             }).then(function(comData) {
                 for (var k in comData) _batchCommunitiesData[k] = comData[k];
@@ -796,7 +796,6 @@ function titleize(str) {
         html += '<div class="filter-row">';
         html += '<label class="filter-group">Name <input type="text" id="filterName" class="filter-input" placeholder="Filter by name"></label>';
         html += '<label class="filter-group">cM <input type="number" id="filterCmMin" class="filter-input filter-cm" placeholder="Min"><span class="filter-sep">–</span><input type="number" id="filterCmMax" class="filter-input filter-cm" placeholder="Max"></label>';
-        html += '<span id="filterCount" class="filter-count"></span>';
         html += '</div>';
         html += '<div class="filter-row">';
         html += '<span class="filter-group">Journey <select id="filterJourney" class="filter-select"><option value="">All</option></select><label class="filter-check"><input type="checkbox" id="filterJourneyOnly"><span class="check-mark"></span> Only this</label></span>';
@@ -804,7 +803,6 @@ function titleize(str) {
         html += '<span id="filterReset" class="filter-clear">Clear filters</span>';
         html += '</div></div></div>';
         html += '<div id="matchListResult"></div>';
-        html += '<div id="doneMsg" class="status-msg" style="display:none"></div>';
 
         results.innerHTML = html;
 
@@ -895,7 +893,7 @@ function titleize(str) {
             _profileData = null;
             if (matchListEl) matchListEl.innerHTML = '';
             var filterBar = document.getElementById('filterBar');
-            if (filterBar) { filterBar.style.display = 'none'; document.getElementById('filterName').value = ''; document.getElementById('filterCmMin').value = ''; document.getElementById('filterCmMax').value = ''; document.getElementById('filterJourney').value = ''; document.getElementById('filterJourneyOnly').checked = false; document.getElementById('filterRegion').value = ''; document.getElementById('filterRegionPctMin').value = ''; document.getElementById('filterRegionPctMax').value = ''; var fc = document.getElementById('filterCount'); if (fc) fc.textContent = ''; }
+            if (filterBar) { filterBar.style.display = 'none'; document.getElementById('filterName').value = ''; document.getElementById('filterCmMin').value = ''; document.getElementById('filterCmMax').value = ''; document.getElementById('filterJourney').value = ''; document.getElementById('filterJourneyOnly').checked = false; document.getElementById('filterRegion').value = ''; document.getElementById('filterRegionPctMin').value = ''; document.getElementById('filterRegionPctMax').value = ''; }
             _filters = { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, region: '', regionPctMin: null, regionPctMax: null };
             if (selectedGuid) {
                 listBtn.disabled = false;
@@ -952,8 +950,8 @@ function titleize(str) {
                         if (fetchGroupEl) fetchGroupEl.style.display = '';
                         var fetchOptionsEl = document.getElementById('fetchOptions');
                         if (fetchOptionsEl) fetchOptionsEl.style.display = 'none';
-                        var doneMsgEl = document.getElementById('doneMsg');
-                        if (doneMsgEl) doneMsgEl.style.display = 'none';
+                
+                
                         var label = '';
                         if (fs.mode === 'cmRange') {
                             var r = fs.params && fs.params.range || '';
@@ -981,14 +979,7 @@ function titleize(str) {
                     } else if (fs && fs.status === 1) {
                         var fetchGroupEl = document.getElementById('fetchGroup');
                         if (fetchGroupEl) fetchGroupEl.style.display = 'none';
-                        var doneMsgEl = document.getElementById('doneMsg');
-                        if (doneMsgEl) {
-                            DB.getSession(selectedGuid).then(function(s) {
-                                var c = s && s.matches ? Object.keys(s.matches).length : 0;
-                                doneMsgEl.textContent = '✓ Data complete — ' + c + ' matches loaded';
-                                doneMsgEl.style.display = '';
-                            });
-                        }
+                
                         DB.getSession(selectedGuid).then(function(s) {
                             if (fsBadge) fsBadge.textContent = s && s.matches ? '✓ ' + Object.keys(s.matches).length + ' matches' : '✓ done';
                         });
@@ -997,8 +988,8 @@ function titleize(str) {
                         if (fetchGroupEl) fetchGroupEl.style.display = '';
                         var fetchOptionsEl = document.getElementById('fetchOptions');
                         if (fetchOptionsEl) fetchOptionsEl.style.display = '';
-                        var doneMsgEl = document.getElementById('doneMsg');
-                        if (doneMsgEl) doneMsgEl.style.display = 'none';
+                
+                
                         listBtn.innerHTML = '<span>&#x25B6;</span> Fetch';
                         if (countInput) countInput.style.display = '';
                         if (fsBadge) fsBadge.textContent = '';
@@ -1010,8 +1001,8 @@ function titleize(str) {
                 if (fetchGroupEl) fetchGroupEl.style.display = '';
                 var fetchOptionsEl = document.getElementById('fetchOptions');
                 if (fetchOptionsEl) fetchOptionsEl.style.display = '';
-                var doneMsgEl = document.getElementById('doneMsg');
-                if (doneMsgEl) doneMsgEl.style.display = 'none';
+        
+        
                 listBtn.disabled = true;
                 if (clearBtn) clearBtn.hidden = true;
                 listBtn.innerHTML = '<span>&#x25B6;</span> Fetch';
@@ -1059,13 +1050,13 @@ function titleize(str) {
                     _batchEthnicityData = null;
                     document.getElementById('matchListResult').innerHTML = '';
                     var fbClear = document.getElementById('filterBar');
-                    if (fbClear) { fbClear.style.display = 'none'; document.getElementById('filterJourney').innerHTML = '<option value="">All</option>'; document.getElementById('filterRegion').innerHTML = '<option value="">All</option>'; var fc = document.getElementById('filterCount'); if (fc) fc.textContent = ''; }
+                    if (fbClear) { fbClear.style.display = 'none'; document.getElementById('filterJourney').innerHTML = '<option value="">All</option>'; document.getElementById('filterRegion').innerHTML = '<option value="">All</option>'; }
                     var fetchGroupEl = document.getElementById('fetchGroup');
                     if (fetchGroupEl) fetchGroupEl.style.display = '';
                     var fetchOptionsEl = document.getElementById('fetchOptions');
                     if (fetchOptionsEl) fetchOptionsEl.style.display = '';
-                    var doneMsgEl = document.getElementById('doneMsg');
-                    if (doneMsgEl) doneMsgEl.style.display = 'none';
+            
+            
                     var listBtn = document.getElementById('fetchListBtn');
                     if (listBtn) listBtn.innerHTML = '<span>&#x25B6;</span> Fetch';
                     var countInput = document.getElementById('matchCountInput');

@@ -126,7 +126,7 @@
             } else {
                 html += '<div class="avatar avatar-initials ' + gc + '">' + (p.matchNameInitials || '?') + '</div>';
             }
-            html += '<span class="card-name">' + (p.matchName || 'Unknown') + '</span></div>';
+            html += '<span class="card-name">' + (_hideNames ? (p.matchNameInitials || '??') : (p.matchName || 'Unknown')) + '</span></div>';
             html += '<div class="card-details">';
             var relStr = '';
             if (r.sharedCentimorgans) relStr += '<span class="num">' + r.sharedCentimorgans + '</span> cM';
@@ -206,6 +206,7 @@
     }
 
     var _debugEnabled = false;
+    var _hideNames = false;
 
     function debugLog(msg) {
         if (!_debugEnabled) return;
@@ -548,7 +549,7 @@
         html += '<div class="fetch-row" id="cmRangeModeRow" style="display:none"><label class="input-label">Min <input type="number" id="cmRangeMin" class="count-input" value="90" min="0"></label><label class="input-label">Max <input type="number" id="cmRangeMax" class="count-input" value="400" min="0"></label></div>';
         html += '<button class="btn fetch-list-btn" id="fetchListBtn" disabled><span>&#x25B6;</span> Fetch</button>';
         html += '<div id="statusMsg" class="status-msg"></div>';
-        html += '<label class="debug-toggle"><input type="checkbox" id="debugToggle"><span class="slider"></span> Debug log</label>';
+        html += '<div style="display:flex;align-items:center;gap:16px;margin-top:8px"><label class="debug-toggle"><input type="checkbox" id="debugToggle"><span class="slider"></span> Debug log</label><label class="debug-toggle"><input type="checkbox" id="hideNamesToggle"><span class="slider"></span> Hide names</label></div>';
         html += '<pre id="debugLog" style="display:none"></pre>';
         html += '<div id="matchListResult"></div>';
 
@@ -572,6 +573,11 @@
             _debugEnabled = this.checked;
             var dl = document.getElementById('debugLog');
             if (dl) dl.style.display = this.checked ? 'block' : 'none';
+        });
+        document.getElementById('hideNamesToggle').addEventListener('change', function() {
+            _hideNames = this.checked;
+            var sel = document.getElementById('testSelect');
+            if (sel && sel.value) renderCards(sel.value);
         });
 
         document.getElementById('testSelect').addEventListener('change', function() {

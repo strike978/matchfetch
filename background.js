@@ -45,7 +45,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
             if (tabs[0].status === 'complete') injectFetch(tabs[0].id, request.url, request.options, sendResponse);
             else waitForTab(tabs[0].id, function(id) { injectFetch(id, request.url, request.options, sendResponse); });
         } else {
-            chrome.tabs.create({ url: 'https://www.' + request.domain + '/dna/matches/list', active: false, pinned: true }, function(tab) {
+            chrome.tabs.create({ url: 'https://www.' + request.domain + '/dna/matches/list', active: false }, function(tab) {
                 waitForTab(tab.id, function(id) { injectFetch(id, request.url, request.options, sendResponse); });
             });
         }

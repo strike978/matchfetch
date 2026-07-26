@@ -526,8 +526,6 @@
                     }
                     if (allMatches.length > desiredCount) allMatches = allMatches.slice(0, desiredCount);
                     _matchListData = { matchList: allMatches };
-                    currentPage++;
-                    saveState();
                     var hasMore;
                     if (mode === 'cmRange') {
                         if (data.isLastPage === true) { hasMore = false; }
@@ -536,10 +534,16 @@
                     } else {
                         hasMore = matches.length >= 100;
                     }
-                    debugLog('  got ' + newSids.length + ' new, total=' + allMatches.length + ' next=' + currentPage + ' hasMore=' + hasMore + ' isLastPage=' + data.isLastPage);
-                    if (newSids.length === 0) return nextPage(false);
+                    debugLog('  got ' + newSids.length + ' new, total=' + allMatches.length + ' next=' + (currentPage + 1) + ' hasMore=' + hasMore + ' isLastPage=' + data.isLastPage);
+                    if (newSids.length === 0) {
+                        currentPage++;
+                        saveState();
+                        return nextPage(false);
+                    }
                     return fetchProfileData(guid, newSids).then(function() {
                         storeMatchData(guid, allMatches);
+                        currentPage++;
+                        saveState();
                         return processPageChunks(guid, newSids);
                     }).then(function() {
                         return nextPage(hasMore);

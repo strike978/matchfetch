@@ -225,31 +225,44 @@
         return html;
     }
 
-    function renderRegionFilters() {
-        if (_filterSelectFocused) return;
+    function renderRegionFilters(force) {
+        if (!force && _filterSelectFocused) return;
         var container = document.getElementById('regionFilters');
         if (!container) return;
-        var newSig = buildRegionOptions();
-        if (newSig === _regionOptsSig && container.children.length) return;
-        _regionOptsSig = newSig;
+        if (!force && _regionOptsSig === buildRegionOptions() && container.children.length) return;
+        _regionOptsSig = buildRegionOptions();
         var filters = _filters.regions && _filters.regions.length ? _filters.regions : [{ region: '', pctMin: null, pctMax: null }];
         var opts = buildRegionOptions();
         var html = '';
         for (var i = 0; i < filters.length; i++) {
-            html += '<span class="region-row" data-idx="' + i + '">';
-            html += '<select class="region-select" data-idx="' + i + '">' + opts + '</select>';
-            html += '<span class="filter-sep" style="margin:0 2px">%</span>';
-            html += '<input type="number" class="region-pct-min filter-input filter-cm" data-idx="' + i + '" placeholder="Min" value="' + (filters[i].pctMin || '') + '">';
-            html += '<span class="filter-sep">–</span>';
-            html += '<input type="number" class="region-pct-max filter-input filter-cm" data-idx="' + i + '" placeholder="Max" value="' + (filters[i].pctMax || '') + '">';
-            html += '<button class="region-remove topbar-btn" data-idx="' + i + '" style="font-size:14px;padding:2px 8px' + (filters.length === 1 ? ';display:none' : '') + '">−</button>';
-            html += '</span>';
+            html += regionRowHtml(i, opts, filters[i]);
         }
         container.innerHTML = html;
         for (var i = 0; i < filters.length; i++) {
-            var sel = container.querySelector('.region-select[data-idx="' + i + '"]');
-            if (sel && filters[i].region) sel.value = filters[i].region;
+            restoreRegionRow(i, filters[i]);
         }
+        var rows = container.querySelectorAll('.region-row');
+        if (rows.length === 1) {
+            var btn = rows[0].querySelector('.region-remove');
+            if (btn) btn.style.display = 'none';
+        }
+    }
+
+    function regionRowHtml(idx, opts, filter) {
+        return '<span class="region-row" data-idx="' + idx + '">' +
+            '<select class="region-select" data-idx="' + idx + '">' + opts + '</select>' +
+            '<span class="filter-sep" style="margin:0 2px">%</span>' +
+            '<input type="number" class="region-pct-min filter-input filter-cm" data-idx="' + idx + '" placeholder="Min" value="' + (filter.pctMin || '') + '">' +
+            '<span class="filter-sep">–</span>' +
+            '<input type="number" class="region-pct-max filter-input filter-cm" data-idx="' + idx + '" placeholder="Max" value="' + (filter.pctMax || '') + '">' +
+            '<button class="region-remove topbar-btn" data-idx="' + idx + '" style="font-size:14px;padding:2px 8px">−</button>' +
+            '</span>';
+    }
+
+    function restoreRegionRow(idx, filter) {
+        if (!filter.region) return;
+        var sel = document.querySelector('#regionFilters .region-select[data-idx="' + idx + '"]');
+        if (sel) sel.value = filter.region;
     }
 
     function populateFilterSelects() {
@@ -915,18 +928,28 @@ function titleize(str) {
 
         document.getElementById('regionFilters').addEventListener('click', function(e) {
             if (e.target.classList.contains('region-remove')) {
-                var idx = parseInt(e.target.getAttribute('data-idx'), 10);
-                _filters.regions.splice(idx, 1);
-                _regionOptsSig = '';
-                renderRegionFilters();
+                var row = e.target.closest('.region-row');
+                if (row) row.remove();
+                var rows = document.querySelectorAll('#regionFilters .region-row');
+                if (rows.length === 1) {
+                    var btn = rows[0].querySelector('.region-remove');
+                    if (btn) btn.style.display = 'none';
+                }
                 applyFiltersAndRender();
             }
         });
 
         document.getElementById('addRegionRow').addEventListener('click', function() {
+            var opts = buildRegionOptions();
+            var rows = document.querySelectorAll('#regionFilters .region-row');
+            var idx = rows.length;
             _filters.regions.push({ region: '', pctMin: null, pctMax: null });
-            _regionOptsSig = '';
-            renderRegionFilters();
+            document.getElementById('regionFilters').insertAdjacentHTML('beforeend', regionRowHtml(idx, opts, { region: '', pctMin: null, pctMax: null }));
+            for (var ri = 0; ri <= idx; ri++) {
+                var btn = document.querySelector('#regionFilters .region-row[data-idx="' + ri + '"] .region-remove');
+                if (btn) btn.style.display = '';
+            }
+            applyFiltersAndRender();
         });
 
         document.getElementById('filterReset').addEventListener('click', function() {
@@ -937,7 +960,7 @@ function titleize(str) {
             document.getElementById('filterJourneyOnly').checked = false;
             _filters.regions = [];
             _regionOptsSig = '';
-            renderRegionFilters();
+            renderRegionFilters(true);
             applyFiltersAndRender();
         });
 
@@ -957,7 +980,7 @@ function titleize(str) {
             _profileData = null;
             if (matchListEl) matchListEl.innerHTML = '';
             var filterBar = document.getElementById('filterBar');
-            if (filterBar) { filterBar.style.display = 'none'; document.getElementById('filterName').value = ''; document.getElementById('filterCmMin').value = ''; document.getElementById('filterCmMax').value = ''; document.getElementById('filterJourney').value = ''; document.getElementById('filterJourneyOnly').checked = false; _filters.regions = []; _regionOptsSig = ''; renderRegionFilters(); }
+            if (filterBar) { filterBar.style.display = 'none'; document.getElementById('filterName').value = ''; document.getElementById('filterCmMin').value = ''; document.getElementById('filterCmMax').value = ''; document.getElementById('filterJourney').value = ''; document.getElementById('filterJourneyOnly').checked = false; _filters.regions = []; _regionOptsSig = ''; renderRegionFilters(true); }
             _filters = { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, regions: [] };
             if (selectedGuid) {
                 listBtn.disabled = false;
@@ -1115,7 +1138,7 @@ function titleize(str) {
                     _batchEthnicityData = null;
                     document.getElementById('matchListResult').innerHTML = '';
                     var fbClear = document.getElementById('filterBar');
-                    if (fbClear) { fbClear.style.display = 'none'; document.getElementById('filterJourney').innerHTML = '<option value="">All</option>'; _filters.regions = []; _regionOptsSig = ''; renderRegionFilters(); }
+                    if (fbClear) { fbClear.style.display = 'none'; document.getElementById('filterJourney').innerHTML = '<option value="">All</option>'; _filters.regions = []; _regionOptsSig = ''; renderRegionFilters(true); }
                     var fetchGroupEl = document.getElementById('fetchGroup');
                     if (fetchGroupEl) fetchGroupEl.style.display = '';
                     var fetchOptionsEl = document.getElementById('fetchOptions');

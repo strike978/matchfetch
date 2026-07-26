@@ -327,13 +327,17 @@
 
         fetchPage().then(function() {
             setStatus('');
-            if (typeof chrome !== 'undefined' && chrome.notifications) {
+            try {
                 chrome.notifications.create({
                     type: 'basic',
                     iconUrl: chrome.runtime.getURL('icons/icon48.png'),
                     title: 'MatchFetch',
                     message: 'Finished fetching ' + allMatches.length + ' matches'
+                }, function() {
+                    if (chrome.runtime.lastError) console.log('Notification error:', chrome.runtime.lastError.message);
                 });
+            } catch(e) {
+                console.log('Notification error:', e);
             }
         }).catch(function(err) {
             var el = document.getElementById('matchListResult');

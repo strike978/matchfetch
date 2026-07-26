@@ -219,6 +219,50 @@
         el.scrollTop = el.scrollHeight;
     }
 
+    function restoreFetchUI(guid) {
+        var fetchGroupEl = document.getElementById('fetchGroup');
+        if (fetchGroupEl) fetchGroupEl.style.display = '';
+        var doneMsgEl = document.getElementById('doneMsg');
+        if (doneMsgEl) doneMsgEl.style.display = 'none';
+        DB.getFetchState(guid).then(function(fs) {
+            var listBtn = document.getElementById('fetchListBtn');
+            var countInput = document.getElementById('matchCountInput');
+            var fsBadge = document.getElementById('fetchStateBadge');
+            var fetchOptionsEl = document.getElementById('fetchOptions');
+            if (fs && fs.status === 0) {
+                if (fetchOptionsEl) fetchOptionsEl.style.display = 'none';
+                var label = '';
+                if (fs.mode === 'cmRange') {
+                    var r = fs.params && fs.params.range || '';
+                    label = r ? ' (' + r + ' cM)' : '';
+                    var parts = r.split('-');
+                    if (parts.length === 2) {
+                        document.getElementById('cmRangeMin').value = parts[0];
+                        document.getElementById('cmRangeMax').value = parts[1];
+                    }
+                } else {
+                    var count = fs.params && fs.params.desiredCount || 0;
+                    if (count > 0) label = ' (' + count + ' matches)';
+                }
+                if (label && listBtn) {
+                    listBtn.innerHTML = '<span>&#x25B6;</span> Resume' + label;
+                }
+                if (countInput) countInput.style.display = 'none';
+                var msgEl = document.getElementById('statusMsg');
+                if (msgEl) msgEl.innerHTML = 'Previous fetch incomplete — click Resume to continue';
+                DB.getSession(guid).then(function(s) {
+                    var c = s && s.matches ? Object.keys(s.matches).length : 0;
+                    if (fsBadge) fsBadge.textContent = '↻ ' + c + ' fetched (page ' + (fs.nextPage || 1) + ')';
+                });
+            } else {
+                if (fetchOptionsEl) fetchOptionsEl.style.display = '';
+                if (listBtn) listBtn.innerHTML = '<span>&#x25B6;</span> Fetch';
+                if (countInput) countInput.style.display = '';
+                if (fsBadge) fsBadge.textContent = '';
+            }
+        });
+    }
+
     function fetchMatchList(guid, mode, params) {
         _currentPage = 1;
         var el = document.getElementById('matchListResult');
@@ -229,6 +273,10 @@
         _batchEthnicityData = {};
         _batchCommunitiesData = {};
         _matchListData = null;
+        var fetchGroupEl = document.getElementById('fetchGroup');
+        if (fetchGroupEl) fetchGroupEl.style.display = 'none';
+        var doneMsgEl = document.getElementById('doneMsg');
+        if (doneMsgEl) doneMsgEl.style.display = 'none';
 
         var allMatches = [];
         var desiredCount = mode === 'cmRange' ? Infinity : (params.desiredCount || 100);
@@ -455,6 +503,7 @@
                 setStatus('Resuming: processing data for ' + incomplete.length + ' matches...');
                 return processPageChunks(guid, incomplete).then(finishFetch).catch(function(err) {
                     if (fetchBtn) fetchBtn.disabled = false;
+                    restoreFetchUI(guid);
                     var el = document.getElementById('matchListResult');
                     if (el) el.innerHTML = '<div class="error">' + friendlyError(err.message) + '</div>';
                     setStatus('');
@@ -469,6 +518,7 @@
                 return fetchPage();
             }).then(finishFetch).catch(function(err) {
                 if (fetchBtn) fetchBtn.disabled = false;
+                restoreFetchUI(guid);
                 var el = document.getElementById('matchListResult');
                 if (el) el.innerHTML = '<div class="error">' + friendlyError(err.message) + '</div>';
                 setStatus('');
@@ -540,6 +590,8 @@
             html += '<option value="' + guid + '">' + name + '</option>';
         }
         html += '</select><button id="clearKitBtn" class="clear-btn" title="Clear kit data" hidden><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></div>';
+        html += '<div id="fetchGroup">';
+        html += '<div id="fetchOptions">';
         html += '<div class="label" style="margin-top:16px">Fetch Options</div>';
         html += '<div class="mode-toggle">';
         html += '<button class="mode-btn active" data-mode="count">Count</button>';
@@ -547,11 +599,13 @@
         html += '</div>';
         html += '<div class="fetch-row" id="countModeRow"><label class="input-label">Matches <input type="number" id="matchCountInput" class="count-input" value="100" min="1" step="1"></label></div>';
         html += '<div class="fetch-row" id="cmRangeModeRow" style="display:none"><label class="input-label">Min <input type="number" id="cmRangeMin" class="count-input" value="90" min="0"></label><label class="input-label">Max <input type="number" id="cmRangeMax" class="count-input" value="400" min="0"></label></div>';
+        html += '</div>';
         html += '<button class="btn fetch-list-btn" id="fetchListBtn" disabled><span>&#x25B6;</span> Fetch</button>';
+        html += '</div>';
         html += '<div id="statusMsg" class="status-msg"></div>';
-        html += '<div style="display:flex;align-items:center;gap:16px;margin-top:8px"><label class="debug-toggle"><input type="checkbox" id="debugToggle"><span class="slider"></span> Debug log</label><label class="debug-toggle"><input type="checkbox" id="hideNamesToggle"><span class="slider"></span> Hide names</label></div>';
         html += '<pre id="debugLog" style="display:none"></pre>';
         html += '<div id="matchListResult"></div>';
+        html += '<div id="doneMsg" class="status-msg" style="display:none"></div>';
 
         results.innerHTML = html;
 
@@ -634,6 +688,12 @@
                 DB.getFetchState(selectedGuid).then(function(fs) {
                     var fsBadge = document.getElementById('fetchStateBadge');
                     if (fs && fs.status === 0) {
+                        var fetchGroupEl = document.getElementById('fetchGroup');
+                        if (fetchGroupEl) fetchGroupEl.style.display = '';
+                        var fetchOptionsEl = document.getElementById('fetchOptions');
+                        if (fetchOptionsEl) fetchOptionsEl.style.display = 'none';
+                        var doneMsgEl = document.getElementById('doneMsg');
+                        if (doneMsgEl) doneMsgEl.style.display = 'none';
                         var label = '';
                         if (fs.mode === 'cmRange') {
                             var r = fs.params && fs.params.range || '';
@@ -659,12 +719,26 @@
                             if (fsBadge) fsBadge.textContent = '↻ ' + count + ' fetched (page ' + (fs.nextPage || 1) + ')';
                         });
                     } else if (fs && fs.status === 1) {
-                        listBtn.innerHTML = '<span>&#x25B6;</span> Fetch';
-                        if (countInput) countInput.style.display = '';
+                        var fetchGroupEl = document.getElementById('fetchGroup');
+                        if (fetchGroupEl) fetchGroupEl.style.display = 'none';
+                        var doneMsgEl = document.getElementById('doneMsg');
+                        if (doneMsgEl) {
+                            DB.getSession(selectedGuid).then(function(s) {
+                                var c = s && s.matches ? Object.keys(s.matches).length : 0;
+                                doneMsgEl.textContent = '✓ Data complete — ' + c + ' matches loaded';
+                                doneMsgEl.style.display = '';
+                            });
+                        }
                         DB.getSession(selectedGuid).then(function(s) {
                             if (fsBadge) fsBadge.textContent = s && s.matches ? '✓ ' + Object.keys(s.matches).length + ' matches' : '✓ done';
                         });
                     } else {
+                        var fetchGroupEl = document.getElementById('fetchGroup');
+                        if (fetchGroupEl) fetchGroupEl.style.display = '';
+                        var fetchOptionsEl = document.getElementById('fetchOptions');
+                        if (fetchOptionsEl) fetchOptionsEl.style.display = '';
+                        var doneMsgEl = document.getElementById('doneMsg');
+                        if (doneMsgEl) doneMsgEl.style.display = 'none';
                         listBtn.innerHTML = '<span>&#x25B6;</span> Fetch';
                         if (countInput) countInput.style.display = '';
                         if (fsBadge) fsBadge.textContent = '';
@@ -672,6 +746,12 @@
                 });
             } else {
                 document.getElementById('matchCountBadge').textContent = '';
+                var fetchGroupEl = document.getElementById('fetchGroup');
+                if (fetchGroupEl) fetchGroupEl.style.display = '';
+                var fetchOptionsEl = document.getElementById('fetchOptions');
+                if (fetchOptionsEl) fetchOptionsEl.style.display = '';
+                var doneMsgEl = document.getElementById('doneMsg');
+                if (doneMsgEl) doneMsgEl.style.display = 'none';
                 listBtn.disabled = true;
                 if (clearBtn) clearBtn.hidden = true;
                 listBtn.innerHTML = '<span>&#x25B6;</span> Fetch';
@@ -717,6 +797,12 @@
                     _profileData = null;
                     _batchEthnicityData = null;
                     document.getElementById('matchListResult').innerHTML = '';
+                    var fetchGroupEl = document.getElementById('fetchGroup');
+                    if (fetchGroupEl) fetchGroupEl.style.display = '';
+                    var fetchOptionsEl = document.getElementById('fetchOptions');
+                    if (fetchOptionsEl) fetchOptionsEl.style.display = '';
+                    var doneMsgEl = document.getElementById('doneMsg');
+                    if (doneMsgEl) doneMsgEl.style.display = 'none';
                     var listBtn = document.getElementById('fetchListBtn');
                     if (listBtn) listBtn.innerHTML = '<span>&#x25B6;</span> Fetch';
                     var countInput = document.getElementById('matchCountInput');

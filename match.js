@@ -8,8 +8,6 @@
         return;
     }
 
-    document.getElementById('sampleId').textContent = sampleId;
-
     var _regionCoords = null;
     var _map = null;
     var _mapInitialized = false;
@@ -292,7 +290,7 @@
         if (p.displayGender === 'M') gc = 'gender-m';
         else if (p.displayGender === 'F') gc = 'gender-f';
         if (p.photoUrl) {
-            html += '<img src="' + p.photoUrl + '" class="avatar">';
+            html += '<a href="' + p.photoUrl + '" target="_blank" title="Open photo"><img src="' + p.photoUrl + '" class="avatar"></a>';
         } else {
             html += '<div class="avatar avatar-initials ' + gc + '">' + (p.matchNameInitials || '?') + '</div>';
         }

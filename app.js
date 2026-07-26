@@ -419,10 +419,45 @@
     }
 
     function setStatus(msg) {
-        var el = document.getElementById('statusMsg');
+        var el = document.getElementById('fetchStatus');
         if (!el) return;
-        if (!msg) { el.innerHTML = ''; return; }
-        el.innerHTML = '<span class="spinner-ring" style="width:12px;height:12px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px"></span>' + msg;
+        if (!msg) { el.style.display = 'none'; return; }
+        el.style.display = '';
+        document.getElementById('fetchMsg').textContent = msg;
+        var activeMode = document.querySelector('.mode-btn.active');
+        var isCm = activeMode && activeMode.getAttribute('data-mode') === 'cmRange';
+        var bar = document.getElementById('fetchBarWrap');
+        var pct = document.getElementById('fetchPct');
+        if (bar) bar.style.display = isCm ? 'none' : '';
+        if (pct) pct.style.display = isCm ? 'none' : '';
+    }
+
+    function setProgress(current, total) {
+        var fill = document.getElementById('fetchBarFill');
+        var pctEl = document.getElementById('fetchPct');
+        if (!fill || !pctEl) return;
+        var pct = total > 0 ? Math.min(current / total * 100, 100) : 0;
+        fill.style.width = pct + '%';
+        var t = pct / 100;
+        var r, g, b;
+        if (t < 0.5) {
+            var f = t * 2;
+            r = 239; g = Math.round(68 + f * (168 - 68)); b = Math.round(68 + f * (129 - 68));
+        } else {
+            var f = (t - 0.5) * 2;
+            r = Math.round(239 - f * (239 - 34)); g = Math.round(168 + f * (197 - 168)); b = Math.round(129 - f * (129 - 94));
+        }
+        var color = 'rgb(' + r + ',' + g + ',' + b + ')';
+        fill.style.background = color;
+        pctEl.textContent = Math.round(pct) + '%';
+        pctEl.style.color = color;
+        var svg = document.querySelector('#fetchStatus svg');
+        if (svg) {
+            var paths = svg.querySelectorAll('path, line');
+            var c2 = 'rgb(' + Math.round(r * 0.8) + ',' + Math.round(g * 0.8) + ',' + Math.round(b * 0.8) + ')';
+            if (paths.length) paths[0].setAttribute('stroke', color);
+            for (var pi = 1; pi < paths.length; pi++) paths[pi].setAttribute('stroke', c2);
+        }
     }
 
     var _debugEnabled = false;
@@ -508,6 +543,8 @@ function titleize(str) {
         var desiredCount = mode === 'cmRange' ? Infinity : (params.desiredCount || 100);
         var currentPage = 1;
         var nameCache = {};
+        var _progressDone = 0;
+        var _progressTotal = mode === 'cmRange' ? 300 : desiredCount * 3;
 
         function setBadgeFetching() {
             try { chrome.action.setBadgeText({ text: '↻' }); chrome.action.setBadgeBackgroundColor({ color: '#3b82f6' }); } catch(e) {}
@@ -610,6 +647,7 @@ function titleize(str) {
                     }
                     if (allMatches.length > desiredCount) allMatches = allMatches.slice(0, desiredCount);
                     _matchListData = { matchList: allMatches };
+                    if (mode !== 'cmRange') { _progressDone += newSids.length; setProgress(_progressDone, _progressTotal); }
                     var hasMore;
                     if (mode === 'cmRange') {
                         if (data.isLastPage === true) { hasMore = false; }
@@ -667,6 +705,7 @@ function titleize(str) {
                         }
                     }
                 }
+                if (mode !== 'cmRange') { _progressDone += chunk.length; setProgress(_progressDone, _progressTotal); }
                 return delay(1500);
             }).then(function() {
                 setStatus('Fetching journeys for matches ' + rangeStart + '-' + (rangeStart + chunk.length - 1) + ' of ' + total + '...');
@@ -680,6 +719,7 @@ function titleize(str) {
                 }
                 var list = _matchListData && _matchListData.matchList;
                 storeMatchData(guid, list);
+                if (mode !== 'cmRange') { _progressDone += chunk.length; setProgress(_progressDone, _progressTotal); }
                 renderCards(guid);
             });
         }
@@ -688,6 +728,7 @@ function titleize(str) {
             clearBadge();
             debugLog('finishFetch: total=' + allMatches.length + ' mode=' + mode);
             setStatus('');
+            document.getElementById('fetchStatus').style.display = 'none';
             if (fetchBtn) { fetchBtn.disabled = false; fetchBtn.innerHTML = '<span>&#x25B6;</span> Fetch'; }
             var ci = document.getElementById('matchCountInput');
             if (ci) ci.style.display = '';
@@ -717,6 +758,7 @@ function titleize(str) {
         resumePromise.then(function() {
             setBadgeFetching();
             saveState();
+            if (mode !== 'cmRange') { _progressDone = allMatches.length; setProgress(_progressDone, _progressTotal); }
             var incomplete = findIncompleteSampleIds();
             debugLog('resume: mode=' + mode + ' have=' + allMatches.length + (mode === 'cmRange' ? '' : ' target=' + desiredCount) + ' incomplete=' + incomplete.length);
             if (allMatches.length >= desiredCount) {
@@ -824,6 +866,10 @@ function titleize(str) {
         html += '<div class="fetch-row" id="cmRangeModeRow" style="display:none"><label class="input-label">Min <input type="number" id="cmRangeMin" class="count-input" value="90" min="0"></label><label class="input-label">Max <input type="number" id="cmRangeMax" class="count-input" value="400" min="0"></label></div>';
         html += '</div>';
         html += '<button class="btn fetch-list-btn" id="fetchListBtn" disabled><span>&#x25B6;</span> Fetch</button>';
+        html += '</div>';
+        html += '<div id="fetchStatus" style="display:none;text-align:center;padding:6px 0">';
+        html += '<div style="display:flex;align-items:center;justify-content:center;gap:8px"><svg class="helix-svg" viewBox="0 0 18 18" width="18" height="18"><g><animateTransform attributeName="transform" type="rotate" from="0 9 9" to="360 9 9" dur="2s" repeatCount="indefinite"/><path d="M2,4 C4,1 7,1 9,4 C11,7 14,7 16,4" stroke="#3b82f6" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M2,14 C4,17 7,17 9,14 C11,11 14,11 16,14" stroke="#60a5fa" stroke-width="1.5" fill="none" stroke-linecap="round" opacity=".6"/><line x1="2" y1="4" x2="2" y2="14" stroke="#60a5fa" stroke-width=".7" opacity=".35"/><line x1="5.5" y1="2.5" x2="5.5" y2="15.5" stroke="#60a5fa" stroke-width=".7" opacity=".35"/><line x1="9" y1="4" x2="9" y2="14" stroke="#60a5fa" stroke-width=".7" opacity=".35"/><line x1="12.5" y1="5.5" x2="12.5" y2="12.5" stroke="#60a5fa" stroke-width=".7" opacity=".35"/><line x1="16" y1="4" x2="16" y2="14" stroke="#60a5fa" stroke-width=".7" opacity=".35"/></g></svg><span id="fetchMsg" style="font-size:12px;color:#94a3b8"></span><span id="fetchPct" style="font-size:12px;font-weight:700;color:#e2e8f0"></span></div>';
+        html += '<div id="fetchBarWrap" style="height:4px;background:#0f1724;border-radius:4px;overflow:hidden;margin-top:6px;max-width:300px;margin-left:auto;margin-right:auto"><div id="fetchBarFill" style="height:100%;width:0%;border-radius:4px;transition:width .3s,background .3s"></div></div>';
         html += '</div>';
         html += '<div id="statusMsg" class="status-msg"></div>';
         html += '<pre id="debugLog" style="display:none"></pre>';

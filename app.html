@@ -100,7 +100,9 @@ select:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.15)
 .mode-btn { flex: 1; padding: 6px 12px; border: none; background: transparent; color: #64748b; font-size: 12px; font-weight: 600; cursor: pointer; border-radius: 6px; font-family: inherit; transition: all .15s; }
 .mode-btn.active { background: #3b82f6; color: #fff; }
 .mode-btn:hover:not(.active) { color: #94a3b8; background: rgba(255,255,255,.04); }
-.status-msg { font-size: 12px; color: #64748b; padding: 8px 0; text-align: center; }
+.status-msg { font-size: 12px; color: #94a3b8; padding: 6px 0 0; text-align: left; }
+.helix-svg { display:inline-block;vertical-align:middle;animation:helixBob 1s ease-in-out infinite }
+@keyframes helixBob { 0%,100% { transform:translateY(-1px) } 50% { transform:translateY(1px) } }
 .topbar-toggle { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: #64748b; cursor: pointer; user-select: none; }
 .topbar-toggle input { display: none; }
 .topbar-toggle .slider { width: 28px; height: 16px; background: #1e293b; border-radius: 8px; position: relative; transition: background .2s; }

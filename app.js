@@ -1,6 +1,7 @@
 (function() {
     var _regionMap = null;
     var _journeyNameMap = null;
+    var _filterSelectFocused = false;
 
     function loadRegionMap() {
         return fetch(chrome.runtime.getURL('ancestry_region_names.json')).then(function(r) { return r.json(); }).then(function(data) {
@@ -175,10 +176,26 @@
         var journeySel = document.getElementById('filterJourney');
         var regionSel = document.getElementById('filterRegion');
         if (!journeySel || !regionSel) return;
+        if (_filterSelectFocused) return;
+        if (!journeySel._tracking) {
+            journeySel._tracking = true;
+            journeySel.addEventListener('focus', function() { _filterSelectFocused = true; });
+            journeySel.addEventListener('blur', function() { _filterSelectFocused = false; populateFilterSelects(); });
+            regionSel.addEventListener('focus', function() { _filterSelectFocused = true; });
+            regionSel.addEventListener('blur', function() { _filterSelectFocused = false; populateFilterSelects(); });
+        }
         var currentJourney = journeySel.value;
         var currentRegion = regionSel.value;
-        var journeys = {};
-        var regions = {};
+        if (!journeySel.options.length || journeySel.options[0].value !== '') {
+            journeySel.insertAdjacentHTML('afterbegin', '<option value="">All</option>');
+        }
+        if (!regionSel.options.length || regionSel.options[0].value !== '') {
+            regionSel.insertAdjacentHTML('afterbegin', '<option value="">All</option>');
+        }
+        var knownJourneys = {};
+        var knownRegions = {};
+        for (var oi = 0; oi < journeySel.options.length; oi++) knownJourneys[journeySel.options[oi].value] = true;
+        for (var oi = 0; oi < regionSel.options.length; oi++) knownRegions[regionSel.options[oi].value] = true;
         if (_sessionMatches) {
             var sids = Object.keys(_sessionMatches);
             for (var i = 0; i < sids.length; i++) {
@@ -186,30 +203,37 @@
                 var branches = sm && sm.journeys;
                 if (branches) {
                     for (var bi = 0; bi < branches.length; bi++) {
-                        if (branches[bi].displayName) journeys[branches[bi].displayName] = true;
+                        var name = branches[bi].displayName;
+                        if (name && !knownJourneys[name]) {
+                            knownJourneys[name] = true;
+                            var opt = document.createElement('option');
+                            opt.value = name;
+                            opt.textContent = name;
+                            var insertIdx = 1;
+                            while (insertIdx < journeySel.options.length && journeySel.options[insertIdx].value < name) insertIdx++;
+                            journeySel.insertBefore(opt, journeySel.options[insertIdx] || null);
+                        }
                     }
                 }
                 var regs = sm && sm.regions;
                 if (regs) {
                     for (var ri = 0; ri < regs.length; ri++) {
                         var name = regs[ri].displayName || regs[ri].key;
-                        if (name) regions[name] = true;
+                        if (name && !knownRegions[name]) {
+                            knownRegions[name] = true;
+                            var opt = document.createElement('option');
+                            opt.value = name;
+                            opt.textContent = name;
+                            var insertIdx = 1;
+                            while (insertIdx < regionSel.options.length && regionSel.options[insertIdx].value < name) insertIdx++;
+                            regionSel.insertBefore(opt, regionSel.options[insertIdx] || null);
+                        }
                     }
                 }
             }
         }
-        var sortedJourneys = Object.keys(journeys).sort();
-        var sortedRegions = Object.keys(regions).sort();
-        journeySel.innerHTML = '<option value="">All</option>';
-        for (var ji = 0; ji < sortedJourneys.length; ji++) {
-            journeySel.innerHTML += '<option value="' + sortedJourneys[ji].replace(/"/g, '&quot;') + '">' + sortedJourneys[ji] + '</option>';
-        }
-        journeySel.value = currentJourney && journeys[currentJourney] ? currentJourney : '';
-        regionSel.innerHTML = '<option value="">All</option>';
-        for (var ri2 = 0; ri2 < sortedRegions.length; ri2++) {
-            regionSel.innerHTML += '<option value="' + sortedRegions[ri2].replace(/"/g, '&quot;') + '">' + sortedRegions[ri2] + '</option>';
-        }
-        regionSel.value = currentRegion && regions[currentRegion] ? currentRegion : '';
+        journeySel.value = currentJourney && knownJourneys[currentJourney] ? currentJourney : '';
+        regionSel.value = currentRegion && knownRegions[currentRegion] ? currentRegion : '';
     }
 
     function renderCards(guid) {

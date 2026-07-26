@@ -163,6 +163,23 @@ var DB = (function() {
             });
         },
 
+        importDatabase: function(data) {
+            return _open().then(function(db) {
+                return new Promise(function(resolve, reject) {
+                    var tx = db.transaction('Ancestry', 'readwrite');
+                    tx.oncomplete = function() { resolve(data.length); };
+                    tx.onerror = function() { reject(tx.error); };
+                    var clearReq = tx.objectStore('Ancestry').clear();
+                    clearReq.onsuccess = function() {
+                        for (var i = 0; i < data.length; i++) {
+                            tx.objectStore('Ancestry').put(data[i]);
+                        }
+                    };
+                    clearReq.onerror = function() { reject(clearReq.error); };
+                });
+            });
+        },
+
         deleteSession: function(guid) {
             return _open().then(function(db) {
                 return new Promise(function(resolve, reject) {

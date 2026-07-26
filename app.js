@@ -1033,11 +1033,56 @@
         }
     });
 
+    document.getElementById('importBtn').addEventListener('click', function() {
+        document.getElementById('importFileInput').click();
+    });
+
+    document.getElementById('importFileInput').addEventListener('change', function(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+        if (!file.name.endsWith('.json')) { e.target.value = ''; return; }
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+            try {
+                var data = JSON.parse(ev.target.result);
+                if (!Array.isArray(data)) throw new Error('Invalid format: expected an array');
+                var overlay = document.createElement('div');
+                overlay.className = 'modal-overlay';
+                overlay.innerHTML = '<div class="modal"><div class="modal-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div><div class="modal-title">Import database?</div><div class="modal-text">This will overwrite your entire database with ' + data.length + ' kit(s) from this file. This cannot be undone.</div><div class="modal-actions"><button class="modal-btn modal-cancel">Cancel</button><button class="modal-btn modal-confirm">Import</button></div></div>';
+                document.body.appendChild(overlay);
+                overlay.querySelector('.modal-cancel').addEventListener('click', function() { overlay.remove(); });
+                overlay.querySelector('.modal-confirm').addEventListener('click', function() {
+                    overlay.remove();
+                    if (typeof DB !== 'undefined' && DB.importDatabase) {
+                        var msg = document.getElementById('statusMsg');
+                        if (msg) msg.textContent = 'Importing...';
+                        DB.importDatabase(data).then(function(count) {
+                            if (msg) msg.textContent = 'Imported ' + count + ' kit(s)';
+                            fetchTests();
+                        });
+                    }
+                });
+            } catch (err) {
+                var overlay = document.createElement('div');
+                overlay.className = 'modal-overlay';
+                overlay.innerHTML = '<div class="modal"><div class="modal-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div><div class="modal-title">Import failed</div><div class="modal-text">' + err.message + '</div><div class="modal-actions"><button class="modal-btn modal-cancel">OK</button></div></div>';
+                document.body.appendChild(overlay);
+                overlay.querySelector('.modal-cancel').addEventListener('click', function() { overlay.remove(); });
+            }
+        };
+        reader.readAsText(file);
+        e.target.value = '';
+    });
+
     document.getElementById('githubBtn').addEventListener('click', function() {
         chrome.tabs.create({ url: 'https://github.com/strike978/matchfetch_ext' });
     });
 
     document.getElementById('discordBtn').addEventListener('click', function() {
         chrome.tabs.create({ url: 'https://discord.com/invite/f5BtHTM2zZ' });
+    });
+
+    document.getElementById('supportBtn').addEventListener('click', function() {
+        chrome.tabs.create({ url: 'https://ko-fi.com/matchfetch' });
     });
 })();

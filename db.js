@@ -172,6 +172,47 @@ var DB = (function() {
                     tx.objectStore('Ancestry').delete(guid);
                 });
             });
+        },
+
+        saveFetchState: function(guid, state) {
+            return _open().then(function(db) {
+                return new Promise(function(resolve, reject) {
+                    var tx = db.transaction('Ancestry', 'readwrite');
+                    tx.oncomplete = function() { resolve(); };
+                    tx.onerror = function() { reject(tx.error); };
+                    tx.objectStore('Ancestry').put({
+                        guid: '__state__' + guid,
+                        status: state.status,
+                        mode: state.mode,
+                        params: state.params,
+                        pageIndex: state.pageIndex
+                    });
+                });
+            });
+        },
+
+        getFetchState: function(guid) {
+            return _open().then(function(db) {
+                return new Promise(function(resolve, reject) {
+                    var req = db.transaction('Ancestry', 'readonly').objectStore('Ancestry').get('__state__' + guid);
+                    req.onsuccess = function() {
+                        var r = req.result;
+                        resolve(r ? { status: r.status, mode: r.mode, params: r.params, pageIndex: r.pageIndex } : null);
+                    };
+                    req.onerror = function() { reject(req.error); };
+                });
+            });
+        },
+
+        deleteFetchState: function(guid) {
+            return _open().then(function(db) {
+                return new Promise(function(resolve, reject) {
+                    var tx = db.transaction('Ancestry', 'readwrite');
+                    tx.oncomplete = function() { resolve(); };
+                    tx.onerror = function() { reject(tx.error); };
+                    tx.objectStore('Ancestry').delete('__state__' + guid);
+                });
+            });
         }
     };
 })();

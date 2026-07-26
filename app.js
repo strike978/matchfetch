@@ -219,7 +219,36 @@
         var currentPage = 1;
         var nameCache = {};
 
+        function saveState(pageIdx) {
+            DB.saveFetchState(guid, { status: 0, mode: 'count', params: { desiredCount: desiredCount }, pageIndex: pageIdx });
+        }
+
+        var fetchBtn = document.getElementById('fetchListBtn');
+        if (fetchBtn) fetchBtn.disabled = true;
+
+        var resumePromise = DB.getFetchState(guid).then(function(fs) {
+            if (fs && fs.status === 0) {
+                return DB.getSession(guid).then(function(session) {
+                    if (session && session.matches) {
+                        var sids = Object.keys(session.matches);
+                        for (var i = 0; i < sids.length; i++) {
+                            var m = session.matches[sids[i]];
+                            allMatches.push({ sampleId: sids[i], relationship: m.relationship || {}, createdDate: m.createdDate || null });
+                            _profileData[sids[i]] = { matchName: m.matchName, matchNameInitials: m.matchNameInitials, displayGender: m.displayGender, photoUrl: m.photoUrl };
+                            if (m.journeys && m.journeys.length) _batchCommunitiesData[sids[i]] = { branches: m.journeys };
+                            if (m.regions) _batchEthnicityData[sids[i]] = { regions: m.regions };
+                        }
+                        _matchListData = { matchList: allMatches };
+                        currentPage = (fs.pageIndex || 0) + 1;
+                        desiredCount = fs.params && fs.params.desiredCount || desiredCount;
+                        if (el) el.innerHTML = '<div class="status-msg">Resuming from page ' + currentPage + '...</div>';
+                    }
+                });
+            }
+        });
+
         function fetchPage() {
+            saveState(currentPage - 1);
             setStatus('Fetching match list... (' + allMatches.length + '/' + desiredCount + ')');
             var url = 'https://www.ancestry.com/discoveryui-matches/parents/list/api/matchList/' + guid + '?itemsPerPage=' + pageSize + '&currentPage=' + currentPage;
             return apiFetch(url, { credentials: 'include', mode: 'cors', headers: { 'Accept': 'application/json' } })
@@ -227,15 +256,29 @@
                     var matches = data.matchList;
                     if (Array.isArray(matches)) {
                         var prevCount = allMatches.length;
-                        allMatches = allMatches.concat(matches);
+                        var sidIndex = {};
+                        for (var ei = 0; ei < allMatches.length; ei++) sidIndex[allMatches[ei].sampleId] = true;
+                        var pageSampleIds = [];
+                        for (var mi = 0; mi < matches.length; mi++) {
+                            if (!sidIndex[matches[mi].sampleId]) {
+                                allMatches.push(matches[mi]);
+                                sidIndex[matches[mi].sampleId] = true;
+                                if (matches[mi].sampleId) pageSampleIds.push(matches[mi].sampleId);
+                            }
+                        }
                         if (allMatches.length > desiredCount) allMatches = allMatches.slice(0, desiredCount);
+                        // trim new sampleIds if sliced
+                        if (allMatches.length < prevCount + pageSampleIds.length) {
+                            pageSampleIds = pageSampleIds.slice(0, allMatches.length - prevCount);
+                        }
+                        // also re-process existing matches from this page that are missing ethnicity/journeys
+                        for (var mi = 0; mi < matches.length; mi++) {
+                            var sid = matches[mi].sampleId;
+                            if (sid && sidIndex[sid] && (!_batchEthnicityData[sid] || !_batchCommunitiesData[sid]) && pageSampleIds.indexOf(sid) === -1) pageSampleIds.push(sid);
+                        }
                         _matchListData = { matchList: allMatches };
                         currentPage++;
                         var matchesFromThisPage = allMatches.length - prevCount;
-                        var pageSampleIds = [];
-                        for (var i = 0; i < matches.length && pageSampleIds.length < matchesFromThisPage; i++) {
-                            if (matches[i].sampleId) pageSampleIds.push(matches[i].sampleId);
-                        }
                         if (pageSampleIds.length === 0 && matches.length < pageSize) return nextPage(false);
                         if (pageSampleIds.length === 0) return nextPage(matches.length >= pageSize);
                         return fetchProfileData(guid, pageSampleIds).then(function() {
@@ -243,6 +286,7 @@
                             storeMatchData(guid, list);
                             return processPageChunks(guid, pageSampleIds);
                         }).then(function() {
+                            saveState(currentPage - 1);
                             return nextPage(matches.length >= pageSize);
                         });
                     } else {
@@ -325,8 +369,12 @@
             });
         }
 
-        fetchPage().then(function() {
+        function finishFetch() {
             setStatus('');
+            if (fetchBtn) { fetchBtn.disabled = false; fetchBtn.innerHTML = '<span>&#x25B6;</span> Fetch'; }
+            var ci = document.getElementById('matchCountInput');
+            if (ci) ci.style.display = '';
+            DB.saveFetchState(guid, { status: 1, mode: 'count', params: { desiredCount: desiredCount }, pageIndex: currentPage - 1 });
             try {
                 chrome.notifications.create({
                     type: 'basic',
@@ -339,10 +387,28 @@
             } catch(e) {
                 console.log('Notification error:', e);
             }
-        }).catch(function(err) {
-            var el = document.getElementById('matchListResult');
-            if (el) el.innerHTML = '<div class="error">' + friendlyError(err.message) + '</div>';
-            setStatus('');
+        }
+
+        resumePromise.then(function() {
+            if (allMatches.length >= desiredCount) {
+                var sids = [];
+                for (var ri = 0; ri < allMatches.length; ri++) {
+                    if (allMatches[ri].sampleId) sids.push(allMatches[ri].sampleId);
+                }
+                setStatus('Resuming: processing data for ' + sids.length + ' matches...');
+                return processPageChunks(guid, sids).then(finishFetch).catch(function(err) {
+                    if (fetchBtn) fetchBtn.disabled = false;
+                    var el = document.getElementById('matchListResult');
+                    if (el) el.innerHTML = '<div class="error">' + friendlyError(err.message) + '</div>';
+                    setStatus('');
+                });
+            }
+            fetchPage().then(finishFetch).catch(function(err) {
+                if (fetchBtn) fetchBtn.disabled = false;
+                var el = document.getElementById('matchListResult');
+                if (el) el.innerHTML = '<div class="error">' + friendlyError(err.message) + '</div>';
+                setStatus('');
+            });
         });
     }
 
@@ -419,6 +485,7 @@
         document.getElementById('testSelect').addEventListener('change', function() {
             var listBtn = document.getElementById('fetchListBtn');
             var clearBtn = document.getElementById('clearKitBtn');
+            var countInput = document.getElementById('matchCountInput');
             var selectedGuid = this.value;
             var matchListEl = document.getElementById('matchListResult');
             _matchListData = null;
@@ -464,10 +531,24 @@
                         }
                     }
                 });
+                DB.getFetchState(selectedGuid).then(function(fs) {
+                    var count = fs && fs.params && fs.params.desiredCount || 0;
+                    if (fs && fs.status === 0 && count > 0) {
+                        listBtn.innerHTML = '<span>&#x25B6;</span> Resume (' + count + ' matches)';
+                        if (countInput) countInput.style.display = 'none';
+                        var msgEl = document.getElementById('statusMsg');
+                        if (msgEl) msgEl.innerHTML = 'Previous fetch incomplete — click Resume to continue';
+                    } else {
+                        listBtn.innerHTML = '<span>&#x25B6;</span> Fetch';
+                        if (countInput) countInput.style.display = '';
+                    }
+                });
             } else {
                 document.getElementById('matchCountBadge').textContent = '';
                 listBtn.disabled = true;
                 if (clearBtn) clearBtn.hidden = true;
+                listBtn.innerHTML = '<span>&#x25B6;</span> Fetch';
+                if (countInput) countInput.style.display = '';
             }
         });
 
@@ -490,11 +571,19 @@
             overlay.querySelector('.modal-confirm').addEventListener('click', function() {
                 overlay.remove();
                 DB.deleteSession(guid).then(function() {
+                    return DB.deleteFetchState(guid);
+                }).then(function() {
                     _matchListData = null;
                     _batchCommunitiesData = null;
                     _profileData = null;
                     _batchEthnicityData = null;
                     document.getElementById('matchListResult').innerHTML = '';
+                    var listBtn = document.getElementById('fetchListBtn');
+                    if (listBtn) listBtn.innerHTML = '<span>&#x25B6;</span> Fetch';
+                    var countInput = document.getElementById('matchCountInput');
+                    if (countInput) countInput.style.display = '';
+                    var msgEl = document.getElementById('statusMsg');
+                    if (msgEl) msgEl.innerHTML = '';
                 });
             });
         });

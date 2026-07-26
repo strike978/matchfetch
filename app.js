@@ -205,7 +205,10 @@
         el.innerHTML = '<span class="spinner-ring" style="width:12px;height:12px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px"></span>' + msg;
     }
 
+    var _debugEnabled = false;
+
     function debugLog(msg) {
+        if (!_debugEnabled) return;
         var el = document.getElementById('debugLog');
         if (!el) return;
         el.style.display = 'block';
@@ -215,36 +218,45 @@
         el.scrollTop = el.scrollHeight;
     }
 
-    function fetchMatchList(guid, desiredCount) {
+    function fetchMatchList(guid, mode, params) {
         _currentPage = 1;
         var el = document.getElementById('matchListResult');
         if (el) el.innerHTML = '';
         var dl = document.getElementById('debugLog');
-        if (dl) { dl.textContent = ''; dl.style.display = 'none'; }
+        if (dl) dl.textContent = '';
         _profileData = {};
         _batchEthnicityData = {};
         _batchCommunitiesData = {};
         _matchListData = null;
 
         var allMatches = [];
-        var pageSize = Math.min(100, desiredCount);
+        var desiredCount = mode === 'cmRange' ? Infinity : (params.desiredCount || 100);
         var currentPage = 1;
         var nameCache = {};
 
         function saveState() {
-            DB.saveFetchState(guid, 0, 'count', { desiredCount: desiredCount }, currentPage);
+            DB.saveFetchState(guid, 0, mode, params, currentPage);
         }
 
         var fetchBtn = document.getElementById('fetchListBtn');
         if (fetchBtn) fetchBtn.disabled = true;
 
+        function anyMissingName(nodes) {
+            for (var i = 0; i < nodes.length; i++) {
+                if (!nodes[i].displayName) return true;
+                if (nodes[i].communities && anyMissingName(nodes[i].communities)) return true;
+            }
+            return false;
+        }
+
         function findIncompleteSampleIds() {
             var result = [];
             for (var i = 0; i < allMatches.length; i++) {
                 var sid = allMatches[i].sampleId;
-                if (sid && (!_batchEthnicityData[sid] || !_batchCommunitiesData[sid])) {
-                    result.push(sid);
-                }
+                if (!sid) continue;
+                if (!_batchEthnicityData[sid] || !_batchCommunitiesData[sid]) { result.push(sid); continue; }
+                var branches = _batchCommunitiesData[sid].branches;
+                if (branches && anyMissingName(branches)) { result.push(sid); }
             }
             return result;
         }
@@ -263,17 +275,26 @@
                         }
                         _matchListData = { matchList: allMatches };
                         currentPage = fs.nextPage || 1;
-                        desiredCount = fs.params && fs.params.desiredCount || desiredCount;
+                        mode = fs.mode || mode;
+                        params = fs.params || params;
+                        desiredCount = mode === 'cmRange' ? Infinity : (params.desiredCount || 100);
                     }
                 });
             }
         });
 
         function fetchPage() {
-            var remaining = desiredCount - allMatches.length;
-            setStatus('Fetching match list... (' + allMatches.length + '/' + desiredCount + ')');
-            debugLog('page ' + currentPage + ' have=' + allMatches.length + ' need=' + remaining);
-            var url = 'https://www.ancestry.com/discoveryui-matches/parents/list/api/matchList/' + guid + '?itemsPerPage=100&currentPage=' + currentPage;
+            if (mode === 'cmRange') {
+                setStatus('Fetching match list for range ' + params.range + ' cM... (' + allMatches.length + ' matches)');
+            } else {
+                setStatus('Fetching match list... (' + allMatches.length + '/' + desiredCount + ')');
+            }
+            var url;
+            url = 'https://www.ancestry.com/discoveryui-matches/parents/list/api/matchList/' + guid + '?itemsPerPage=100&currentPage=' + currentPage;
+            if (mode === 'cmRange') {
+                url += '&sharedDna=' + params.range;
+            }
+            debugLog('page ' + currentPage + ' mode=' + mode + ' url=' + url);
             return apiFetch(url, { credentials: 'include', mode: 'cors', headers: { 'Accept': 'application/json' } })
                 .then(function(data) {
                     var matches = data.matchList;
@@ -281,7 +302,8 @@
                     var newSids = [];
                     var sidIndex = {};
                     for (var i = 0; i < allMatches.length; i++) sidIndex[allMatches[i].sampleId] = true;
-                    for (var i = 0; i < matches.length && allMatches.length < desiredCount; i++) {
+                    var limit = mode === 'cmRange' ? Infinity : desiredCount;
+                    for (var i = 0; i < matches.length && allMatches.length < limit; i++) {
                         var sid = matches[i].sampleId;
                         if (!sid || sidIndex[sid]) continue;
                         sidIndex[sid] = true;
@@ -292,9 +314,16 @@
                     _matchListData = { matchList: allMatches };
                     currentPage++;
                     saveState();
-                    var hasMore = matches.length >= 100;
-                    debugLog('  got ' + newSids.length + ' new, total=' + allMatches.length + ' next=' + currentPage + ' hasMore=' + hasMore);
-                    if (newSids.length === 0) return nextPage(hasMore);
+                    var hasMore;
+                    if (mode === 'cmRange') {
+                        if (data.isLastPage === true) { hasMore = false; }
+                        else if (data.isLastPage === undefined) { hasMore = matches.length >= 100; }
+                        else { hasMore = matches.length > 0; }
+                    } else {
+                        hasMore = matches.length >= 100;
+                    }
+                    debugLog('  got ' + newSids.length + ' new, total=' + allMatches.length + ' next=' + currentPage + ' hasMore=' + hasMore + ' isLastPage=' + data.isLastPage);
+                    if (newSids.length === 0) return nextPage(false);
                     return fetchProfileData(guid, newSids).then(function() {
                         storeMatchData(guid, allMatches);
                         return processPageChunks(guid, newSids);
@@ -305,8 +334,8 @@
         }
 
         function nextPage(hasMore) {
-            var remaining = desiredCount - allMatches.length;
-            debugLog('nextPage: hasMore=' + hasMore + ' remaining=' + remaining);
+            var remaining = mode === 'cmRange' ? 1 : (desiredCount - allMatches.length);
+            debugLog('nextPage: hasMore=' + hasMore + (mode === 'cmRange' ? '' : ' remaining=' + remaining));
             if (remaining > 0 && hasMore) return delay(500).then(fetchPage);
         }
 
@@ -380,18 +409,18 @@
         }
 
         function finishFetch() {
-            debugLog('finishFetch: total=' + allMatches.length + ' target=' + desiredCount);
+            debugLog('finishFetch: total=' + allMatches.length + ' mode=' + mode);
             setStatus('');
             if (fetchBtn) { fetchBtn.disabled = false; fetchBtn.innerHTML = '<span>&#x25B6;</span> Fetch'; }
             var ci = document.getElementById('matchCountInput');
             if (ci) ci.style.display = '';
-            DB.saveFetchState(guid, 1, 'count', { desiredCount: desiredCount });
+            DB.saveFetchState(guid, 1, mode, params);
             try {
                 chrome.notifications.create({
                     type: 'basic',
                     iconUrl: chrome.runtime.getURL('icons/icon48.png'),
                     title: 'MatchFetch',
-                    message: 'Finished fetching ' + allMatches.length + ' matches'
+                    message: mode === 'cmRange' ? 'Finished fetching ' + allMatches.length + ' matches in range ' + params.range + ' cM' : 'Finished fetching ' + allMatches.length + ' matches'
                 }, function() {
                     if (chrome.runtime.lastError) console.log('Notification error:', chrome.runtime.lastError.message);
                 });
@@ -403,7 +432,7 @@
         resumePromise.then(function() {
             saveState();
             var incomplete = findIncompleteSampleIds();
-            debugLog('resume: have=' + allMatches.length + ' target=' + desiredCount + ' incomplete=' + incomplete.length);
+            debugLog('resume: mode=' + mode + ' have=' + allMatches.length + (mode === 'cmRange' ? '' : ' target=' + desiredCount) + ' incomplete=' + incomplete.length);
             if (allMatches.length >= desiredCount) {
                 if (incomplete.length === 0) return finishFetch();
                 setStatus('Resuming: processing data for ' + incomplete.length + ' matches...');
@@ -494,12 +523,40 @@
             html += '<option value="' + guid + '">' + name + '</option>';
         }
         html += '</select><button id="clearKitBtn" class="clear-btn" title="Clear kit data" hidden><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></div>';
-        html += '<div class="label" style="margin-top:16px">Fetch Options</div><div class="fetch-row"><label class="input-label">Matches <input type="number" id="matchCountInput" class="count-input" value="100" min="1" step="1"></label><button class="btn fetch-list-btn" id="fetchListBtn" disabled><span>&#x25B6;</span> Fetch</button></div>';
+        html += '<div class="label" style="margin-top:16px">Fetch Options</div>';
+        html += '<div class="mode-toggle">';
+        html += '<button class="mode-btn active" data-mode="count">Count</button>';
+        html += '<button class="mode-btn" data-mode="cmRange">cM Range</button>';
+        html += '</div>';
+        html += '<div class="fetch-row" id="countModeRow"><label class="input-label">Matches <input type="number" id="matchCountInput" class="count-input" value="100" min="1" step="1"></label></div>';
+        html += '<div class="fetch-row" id="cmRangeModeRow" style="display:none"><label class="input-label">Min <input type="number" id="cmRangeMin" class="count-input" value="90" min="0"></label><label class="input-label">Max <input type="number" id="cmRangeMax" class="count-input" value="400" min="0"></label></div>';
+        html += '<button class="btn fetch-list-btn" id="fetchListBtn" disabled><span>&#x25B6;</span> Fetch</button>';
         html += '<div id="statusMsg" class="status-msg"></div>';
-        html += '<pre id="debugLog"></pre>';
+        html += '<label class="debug-toggle"><input type="checkbox" id="debugToggle"><span class="slider"></span> Debug log</label>';
+        html += '<pre id="debugLog" style="display:none"></pre>';
         html += '<div id="matchListResult"></div>';
 
         results.innerHTML = html;
+
+        function setMode(mode) {
+            var btns = document.querySelectorAll('.mode-btn');
+            for (var bi = 0; bi < btns.length; bi++) btns[bi].classList.toggle('active', btns[bi].getAttribute('data-mode') === mode);
+            document.getElementById('countModeRow').style.display = mode === 'count' ? '' : 'none';
+            document.getElementById('cmRangeModeRow').style.display = mode === 'cmRange' ? '' : 'none';
+        }
+
+        var modeBtns = document.querySelectorAll('.mode-btn');
+        for (var mi = 0; mi < modeBtns.length; mi++) {
+            modeBtns[mi].addEventListener('click', function() {
+                setMode(this.getAttribute('data-mode'));
+            });
+        }
+
+        document.getElementById('debugToggle').addEventListener('change', function() {
+            _debugEnabled = this.checked;
+            var dl = document.getElementById('debugLog');
+            if (dl) dl.style.display = this.checked ? 'block' : 'none';
+        });
 
         document.getElementById('testSelect').addEventListener('change', function() {
             var listBtn = document.getElementById('fetchListBtn');
@@ -508,7 +565,7 @@
             var selectedGuid = this.value;
             var matchListEl = document.getElementById('matchListResult');
             var debugEl = document.getElementById('debugLog');
-            if (debugEl) { debugEl.textContent = ''; debugEl.style.display = 'none'; }
+            if (debugEl) debugEl.textContent = '';
             _matchListData = null;
             _batchCommunitiesData = null;
             _profileData = null;
@@ -553,16 +610,31 @@
                     }
                 });
                 DB.getFetchState(selectedGuid).then(function(fs) {
-                    var count = fs && fs.params && fs.params.desiredCount || 0;
-                    if (fs && fs.status === 0 && count > 0) {
-                        listBtn.innerHTML = '<span>&#x25B6;</span> Resume (' + count + ' matches)';
-                        if (countInput) countInput.style.display = 'none';
-                        var msgEl = document.getElementById('statusMsg');
-                        if (msgEl) msgEl.innerHTML = 'Previous fetch incomplete — click Resume to continue';
-                    } else {
-                        listBtn.innerHTML = '<span>&#x25B6;</span> Fetch';
-                        if (countInput) countInput.style.display = '';
+                    if (fs && fs.status === 0) {
+                        var label = '';
+                        if (fs.mode === 'cmRange') {
+                            var r = fs.params && fs.params.range || '';
+                            label = r ? ' (' + r + ' cM)' : '';
+                            setMode('cmRange');
+                            var parts = r.split('-');
+                            if (parts.length === 2) {
+                                document.getElementById('cmRangeMin').value = parts[0];
+                                document.getElementById('cmRangeMax').value = parts[1];
+                            }
+                        } else {
+                            var count = fs.params && fs.params.desiredCount || 0;
+                            if (count > 0) label = ' (' + count + ' matches)';
+                        }
+                        if (label) {
+                            listBtn.innerHTML = '<span>&#x25B6;</span> Resume' + label;
+                            if (countInput) countInput.style.display = 'none';
+                            var msgEl = document.getElementById('statusMsg');
+                            if (msgEl) msgEl.innerHTML = 'Previous fetch incomplete — click Resume to continue';
+                            return;
+                        }
                     }
+                    listBtn.innerHTML = '<span>&#x25B6;</span> Fetch';
+                    if (countInput) countInput.style.display = '';
                 });
             } else {
                 document.getElementById('matchCountBadge').textContent = '';
@@ -575,9 +647,21 @@
 
         document.getElementById('fetchListBtn').addEventListener('click', function() {
             var sel = document.getElementById('testSelect');
-            var input = document.getElementById('matchCountInput');
-            var count = parseInt(input && input.value, 10) || 100;
-            if (sel && sel.value) fetchMatchList(sel.value, count);
+            if (!sel || !sel.value) return;
+            var activeMode = document.querySelector('.mode-btn.active');
+            var mode = activeMode ? activeMode.getAttribute('data-mode') : 'count';
+            if (mode === 'cmRange') {
+                var min = document.getElementById('cmRangeMin').value;
+                var max = document.getElementById('cmRangeMax').value;
+                if (!min || !max) return;
+                var range = min + '-' + max;
+                if (!range) return;
+                fetchMatchList(sel.value, 'cmRange', { range: range });
+            } else {
+                var input = document.getElementById('matchCountInput');
+                var count = parseInt(input && input.value, 10) || 100;
+                fetchMatchList(sel.value, 'count', { desiredCount: count });
+            }
         });
 
         document.getElementById('clearKitBtn').addEventListener('click', function() {
@@ -605,6 +689,7 @@
                     if (countInput) countInput.style.display = '';
                     var msgEl = document.getElementById('statusMsg');
                     if (msgEl) msgEl.innerHTML = '';
+                    setMode('count');
                 });
             });
         });

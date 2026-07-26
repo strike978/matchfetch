@@ -180,13 +180,12 @@ var DB = (function() {
                     var tx = db.transaction('Ancestry', 'readwrite');
                     tx.oncomplete = function() { resolve(); };
                     tx.onerror = function() { reject(tx.error); };
-                    tx.objectStore('Ancestry').put({
-                        guid: '__state__' + guid,
-                        status: state.status,
-                        mode: state.mode,
-                        params: state.params,
-                        pageIndex: state.pageIndex
-                    });
+                    var getReq = tx.objectStore('Ancestry').get(guid);
+                    getReq.onsuccess = function() {
+                        var obj = getReq.result || { guid: guid, matches: {} };
+                        obj.fetchState = { status: state.status, mode: state.mode, params: state.params, pageIndex: state.pageIndex };
+                        tx.objectStore('Ancestry').put(obj);
+                    };
                 });
             });
         },
@@ -194,10 +193,10 @@ var DB = (function() {
         getFetchState: function(guid) {
             return _open().then(function(db) {
                 return new Promise(function(resolve, reject) {
-                    var req = db.transaction('Ancestry', 'readonly').objectStore('Ancestry').get('__state__' + guid);
+                    var req = db.transaction('Ancestry', 'readonly').objectStore('Ancestry').get(guid);
                     req.onsuccess = function() {
                         var r = req.result;
-                        resolve(r ? { status: r.status, mode: r.mode, params: r.params, pageIndex: r.pageIndex } : null);
+                        resolve(r && r.fetchState ? { status: r.fetchState.status, mode: r.fetchState.mode, params: r.fetchState.params, pageIndex: r.fetchState.pageIndex } : null);
                     };
                     req.onerror = function() { reject(req.error); };
                 });
@@ -210,7 +209,12 @@ var DB = (function() {
                     var tx = db.transaction('Ancestry', 'readwrite');
                     tx.oncomplete = function() { resolve(); };
                     tx.onerror = function() { reject(tx.error); };
-                    tx.objectStore('Ancestry').delete('__state__' + guid);
+                    var getReq = tx.objectStore('Ancestry').get(guid);
+                    getReq.onsuccess = function() {
+                        var obj = getReq.result;
+                        if (obj) { delete obj.fetchState; tx.objectStore('Ancestry').put(obj); }
+                        else resolve();
+                    };
                 });
             });
         }

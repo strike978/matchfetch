@@ -155,22 +155,39 @@
         if (_filters.region) {
             var sm = _sessionMatches && _sessionMatches[m.sampleId];
             var regs = sm && sm.regions;
-            var found = false;
-            if (regs) {
-                for (var ri = 0; ri < regs.length; ri++) {
-                    if ((regs[ri].displayName || regs[ri].key || '') === _filters.region) {
-                        found = true;
-                        var pct = regs[ri].percentage;
-                        if (_filters.regionPctMin != null && (pct == null || pct < _filters.regionPctMin)) found = false;
-                        if (_filters.regionPctMax != null && (pct == null || pct > _filters.regionPctMax)) found = false;
-                        if (found) break;
+            if (_filters.region.indexOf('__macro__') === 0) {
+                var mkey = _filters.region.slice(9);
+                var totalPct = 0;
+                if (regs) {
+                    for (var ri = 0; ri < regs.length; ri++) {
+                        if ((regs[ri].macroRegionKey || '') === mkey) {
+                            totalPct += regs[ri].percentage || 0;
+                        }
                     }
                 }
+                if (totalPct === 0) return false;
+                if (_filters.regionPctMin != null && totalPct < _filters.regionPctMin) return false;
+                if (_filters.regionPctMax != null && totalPct > _filters.regionPctMax) return false;
+            } else {
+                var found = false;
+                if (regs) {
+                    for (var ri = 0; ri < regs.length; ri++) {
+                        if ((regs[ri].displayName || regs[ri].key || '') === _filters.region) {
+                            found = true;
+                            var pct = regs[ri].percentage;
+                            if (_filters.regionPctMin != null && (pct == null || pct < _filters.regionPctMin)) found = false;
+                            if (_filters.regionPctMax != null && (pct == null || pct > _filters.regionPctMax)) found = false;
+                            if (found) break;
+                        }
+                    }
+                }
+                if (!found) return false;
             }
-            if (!found) return false;
         }
         return true;
     }
+
+    var _regionSelectSig = '';
 
     function populateFilterSelects() {
         var journeySel = document.getElementById('filterJourney');
@@ -189,13 +206,8 @@
         if (!journeySel.options.length || journeySel.options[0].value !== '') {
             journeySel.insertAdjacentHTML('afterbegin', '<option value="">All</option>');
         }
-        if (!regionSel.options.length || regionSel.options[0].value !== '') {
-            regionSel.insertAdjacentHTML('afterbegin', '<option value="">All</option>');
-        }
         var knownJourneys = {};
-        var knownRegions = {};
         for (var oi = 0; oi < journeySel.options.length; oi++) knownJourneys[journeySel.options[oi].value] = true;
-        for (var oi = 0; oi < regionSel.options.length; oi++) knownRegions[regionSel.options[oi].value] = true;
         if (_sessionMatches) {
             var sids = Object.keys(_sessionMatches);
             for (var i = 0; i < sids.length; i++) {
@@ -215,25 +227,45 @@
                         }
                     }
                 }
+            }
+            var macroGroups = {};
+            for (var i = 0; i < sids.length; i++) {
+                var sm = _sessionMatches[sids[i]];
                 var regs = sm && sm.regions;
                 if (regs) {
                     for (var ri = 0; ri < regs.length; ri++) {
                         var name = regs[ri].displayName || regs[ri].key;
-                        if (name && !knownRegions[name]) {
-                            knownRegions[name] = true;
-                            var opt = document.createElement('option');
-                            opt.value = name;
-                            opt.textContent = name;
-                            var insertIdx = 1;
-                            while (insertIdx < regionSel.options.length && regionSel.options[insertIdx].value < name) insertIdx++;
-                            regionSel.insertBefore(opt, regionSel.options[insertIdx] || null);
-                        }
+                        var mkey = regs[ri].macroRegionKey || 'other';
+                        if (!name) continue;
+                        if (!macroGroups[mkey]) macroGroups[mkey] = {};
+                        macroGroups[mkey][name] = true;
                     }
                 }
             }
+            var parts = [];
+            var macroKeys = Object.keys(macroGroups).sort();
+            for (var mi = 0; mi < macroKeys.length; mi++) {
+                var mkey = macroKeys[mi];
+                var names = Object.keys(macroGroups[mkey]).sort();
+                parts.push(mkey + ':' + names.join(','));
+            }
+            var sig = parts.join('|');
+            if (sig !== _regionSelectSig) {
+                _regionSelectSig = sig;
+                var html = '<option value="">All</option>';
+                for (var mi = 0; mi < macroKeys.length; mi++) {
+                    var mkey = macroKeys[mi];
+                    var names = Object.keys(macroGroups[mkey]).sort();
+                    html += '<option value="__macro__' + mkey + '">' + titleize(mkey) + '</option>';
+                    for (var ni = 0; ni < names.length; ni++) {
+                        html += '<option value="' + names[ni] + '">\u00A0\u00A0' + names[ni] + '</option>';
+                    }
+                }
+                regionSel.innerHTML = html;
+            }
         }
         journeySel.value = currentJourney && knownJourneys[currentJourney] ? currentJourney : '';
-        regionSel.value = currentRegion && knownRegions[currentRegion] ? currentRegion : '';
+        regionSel.value = currentRegion || '';
     }
 
     function renderCards(guid) {
@@ -357,6 +389,13 @@
     var _debugEnabled = false;
     var _hideNames = false;
     var _filters = { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, region: '', regionPctMin: null, regionPctMax: null };
+
+function titleize(str) {
+    if (!str) return '';
+    return str.replace(/_/g, ' ').replace(/\w\S*/g, function(txt) {
+        return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+    });
+}
 
     function debugLog(msg) {
         if (!_debugEnabled) return;

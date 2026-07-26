@@ -236,6 +236,14 @@
 
         function saveState() {
             DB.saveFetchState(guid, 0, mode, params, currentPage);
+            var pageJustFetched = currentPage - 1;
+            var b = document.getElementById('fetchStateBadge');
+            if (!b) return;
+            if (mode === 'cmRange') {
+                b.textContent = '↻ ' + allMatches.length + ' [' + params.range + ' cM] page ' + pageJustFetched;
+            } else {
+                b.textContent = '↻ ' + allMatches.length + '/' + desiredCount + ' page ' + pageJustFetched;
+            }
         }
 
         var fetchBtn = document.getElementById('fetchListBtn');
@@ -415,6 +423,14 @@
             var ci = document.getElementById('matchCountInput');
             if (ci) ci.style.display = '';
             DB.saveFetchState(guid, 1, mode, params);
+            var b = document.getElementById('fetchStateBadge');
+            if (b) {
+                if (mode === 'cmRange') {
+                    b.textContent = '✓ ' + allMatches.length + ' [' + params.range + ' cM]';
+                } else {
+                    b.textContent = '✓ ' + allMatches.length + '/' + (params.desiredCount || '?') + ' matches';
+                }
+            }
             try {
                 chrome.notifications.create({
                     type: 'basic',
@@ -513,7 +529,7 @@
             return;
         }
 
-        var html = '<div class="label">Select a kit <span id="matchCountBadge" class="badge"></span></div>';
+        var html = '<div class="label">Select a kit <span id="matchCountBadge" class="badge"></span><span id="fetchStateBadge" class="badge"></span></div>';
         html += '<div class="select-row"><select id="testSelect">';
         html += '<option value="">Choose a kit...</option>';
         for (var i = 0; i < data.length; i++) {
@@ -610,6 +626,7 @@
                     }
                 });
                 DB.getFetchState(selectedGuid).then(function(fs) {
+                    var fsBadge = document.getElementById('fetchStateBadge');
                     if (fs && fs.status === 0) {
                         var label = '';
                         if (fs.mode === 'cmRange') {
@@ -630,11 +647,22 @@
                             if (countInput) countInput.style.display = 'none';
                             var msgEl = document.getElementById('statusMsg');
                             if (msgEl) msgEl.innerHTML = 'Previous fetch incomplete — click Resume to continue';
-                            return;
                         }
+                        DB.getSession(selectedGuid).then(function(s) {
+                            var count = s && s.matches ? Object.keys(s.matches).length : 0;
+                            if (fsBadge) fsBadge.textContent = '↻ ' + count + ' fetched (page ' + (fs.nextPage || 1) + ')';
+                        });
+                    } else if (fs && fs.status === 1) {
+                        listBtn.innerHTML = '<span>&#x25B6;</span> Fetch';
+                        if (countInput) countInput.style.display = '';
+                        DB.getSession(selectedGuid).then(function(s) {
+                            if (fsBadge) fsBadge.textContent = s && s.matches ? '✓ ' + Object.keys(s.matches).length + ' matches' : '✓ done';
+                        });
+                    } else {
+                        listBtn.innerHTML = '<span>&#x25B6;</span> Fetch';
+                        if (countInput) countInput.style.display = '';
+                        if (fsBadge) fsBadge.textContent = '';
                     }
-                    listBtn.innerHTML = '<span>&#x25B6;</span> Fetch';
-                    if (countInput) countInput.style.display = '';
                 });
             } else {
                 document.getElementById('matchCountBadge').textContent = '';

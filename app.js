@@ -152,57 +152,116 @@
             }
             if (!found) return false;
         }
-        if (_filters.region) {
+        if (_filters.regions && _filters.regions.length) {
             var sm = _sessionMatches && _sessionMatches[m.sampleId];
             var regs = sm && sm.regions;
-            if (_filters.region.indexOf('__macro__') === 0) {
-                var mkey = _filters.region.slice(9);
-                var totalPct = 0;
-                if (regs) {
-                    for (var ri = 0; ri < regs.length; ri++) {
-                        if ((regs[ri].macroRegionKey || '') === mkey) {
-                            totalPct += regs[ri].percentage || 0;
+            for (var fi = 0; fi < _filters.regions.length; fi++) {
+                var rf = _filters.regions[fi];
+                if (!rf.region) continue;
+                var ok = false;
+                if (rf.region.indexOf('__macro__') === 0) {
+                    var mkey = rf.region.slice(9);
+                    var totalPct = 0;
+                    if (regs) {
+                        for (var ri = 0; ri < regs.length; ri++) {
+                            if ((regs[ri].macroRegionKey || '') === mkey) {
+                                totalPct += regs[ri].percentage || 0;
+                            }
+                        }
+                    }
+                    if (totalPct > 0) {
+                        ok = true;
+                        if (rf.pctMin != null && totalPct < rf.pctMin) ok = false;
+                        if (rf.pctMax != null && totalPct > rf.pctMax) ok = false;
+                    }
+                } else {
+                    if (regs) {
+                        for (var ri = 0; ri < regs.length; ri++) {
+                            if ((regs[ri].displayName || regs[ri].key || '') === rf.region) {
+                                ok = true;
+                                var pct = regs[ri].percentage;
+                                if (rf.pctMin != null && (pct == null || pct < rf.pctMin)) ok = false;
+                                if (rf.pctMax != null && (pct == null || pct > rf.pctMax)) ok = false;
+                                if (ok) break;
+                            }
                         }
                     }
                 }
-                if (totalPct === 0) return false;
-                if (_filters.regionPctMin != null && totalPct < _filters.regionPctMin) return false;
-                if (_filters.regionPctMax != null && totalPct > _filters.regionPctMax) return false;
-            } else {
-                var found = false;
-                if (regs) {
-                    for (var ri = 0; ri < regs.length; ri++) {
-                        if ((regs[ri].displayName || regs[ri].key || '') === _filters.region) {
-                            found = true;
-                            var pct = regs[ri].percentage;
-                            if (_filters.regionPctMin != null && (pct == null || pct < _filters.regionPctMin)) found = false;
-                            if (_filters.regionPctMax != null && (pct == null || pct > _filters.regionPctMax)) found = false;
-                            if (found) break;
-                        }
-                    }
-                }
-                if (!found) return false;
+                if (!ok) return false;
             }
         }
         return true;
     }
 
-    var _regionSelectSig = '';
+    var _regionOptsSig = '';
+
+    function buildRegionOptions() {
+        var html = '<option value="">All</option>';
+        if (!_sessionMatches) return html;
+        var macroGroups = {};
+        var sids = Object.keys(_sessionMatches);
+        for (var i = 0; i < sids.length; i++) {
+            var sm = _sessionMatches[sids[i]];
+            var regs = sm && sm.regions;
+            if (regs) {
+                for (var ri = 0; ri < regs.length; ri++) {
+                    var name = regs[ri].displayName || regs[ri].key;
+                    var mkey = regs[ri].macroRegionKey || 'other';
+                    if (!name) continue;
+                    if (!macroGroups[mkey]) macroGroups[mkey] = {};
+                    macroGroups[mkey][name] = true;
+                }
+            }
+        }
+        var macroKeys = Object.keys(macroGroups).sort();
+        for (var mi = 0; mi < macroKeys.length; mi++) {
+            var mkey = macroKeys[mi];
+            var names = Object.keys(macroGroups[mkey]).sort();
+            html += '<option value="__macro__' + mkey + '">' + titleize(mkey) + '</option>';
+            for (var ni = 0; ni < names.length; ni++) {
+                html += '<option value="' + names[ni] + '">\u00A0\u00A0' + names[ni] + '</option>';
+            }
+        }
+        return html;
+    }
+
+    function renderRegionFilters() {
+        if (_filterSelectFocused) return;
+        var container = document.getElementById('regionFilters');
+        if (!container) return;
+        var newSig = buildRegionOptions();
+        if (newSig === _regionOptsSig && container.children.length) return;
+        _regionOptsSig = newSig;
+        var filters = _filters.regions && _filters.regions.length ? _filters.regions : [{ region: '', pctMin: null, pctMax: null }];
+        var opts = buildRegionOptions();
+        var html = '';
+        for (var i = 0; i < filters.length; i++) {
+            html += '<span class="region-row" data-idx="' + i + '">';
+            html += '<select class="region-select" data-idx="' + i + '">' + opts + '</select>';
+            html += '<span class="filter-sep" style="margin:0 2px">%</span>';
+            html += '<input type="number" class="region-pct-min filter-input filter-cm" data-idx="' + i + '" placeholder="Min" value="' + (filters[i].pctMin || '') + '">';
+            html += '<span class="filter-sep">–</span>';
+            html += '<input type="number" class="region-pct-max filter-input filter-cm" data-idx="' + i + '" placeholder="Max" value="' + (filters[i].pctMax || '') + '">';
+            html += '<button class="region-remove topbar-btn" data-idx="' + i + '" style="font-size:14px;padding:2px 8px' + (filters.length === 1 ? ';display:none' : '') + '">−</button>';
+            html += '</span>';
+        }
+        container.innerHTML = html;
+        for (var i = 0; i < filters.length; i++) {
+            var sel = container.querySelector('.region-select[data-idx="' + i + '"]');
+            if (sel && filters[i].region) sel.value = filters[i].region;
+        }
+    }
 
     function populateFilterSelects() {
         var journeySel = document.getElementById('filterJourney');
-        var regionSel = document.getElementById('filterRegion');
-        if (!journeySel || !regionSel) return;
+        if (!journeySel) return;
         if (_filterSelectFocused) return;
         if (!journeySel._tracking) {
             journeySel._tracking = true;
             journeySel.addEventListener('focus', function() { _filterSelectFocused = true; });
             journeySel.addEventListener('blur', function() { _filterSelectFocused = false; populateFilterSelects(); });
-            regionSel.addEventListener('focus', function() { _filterSelectFocused = true; });
-            regionSel.addEventListener('blur', function() { _filterSelectFocused = false; populateFilterSelects(); });
         }
         var currentJourney = journeySel.value;
-        var currentRegion = regionSel.value;
         if (!journeySel.options.length || journeySel.options[0].value !== '') {
             journeySel.insertAdjacentHTML('afterbegin', '<option value="">All</option>');
         }
@@ -228,44 +287,8 @@
                     }
                 }
             }
-            var macroGroups = {};
-            for (var i = 0; i < sids.length; i++) {
-                var sm = _sessionMatches[sids[i]];
-                var regs = sm && sm.regions;
-                if (regs) {
-                    for (var ri = 0; ri < regs.length; ri++) {
-                        var name = regs[ri].displayName || regs[ri].key;
-                        var mkey = regs[ri].macroRegionKey || 'other';
-                        if (!name) continue;
-                        if (!macroGroups[mkey]) macroGroups[mkey] = {};
-                        macroGroups[mkey][name] = true;
-                    }
-                }
-            }
-            var parts = [];
-            var macroKeys = Object.keys(macroGroups).sort();
-            for (var mi = 0; mi < macroKeys.length; mi++) {
-                var mkey = macroKeys[mi];
-                var names = Object.keys(macroGroups[mkey]).sort();
-                parts.push(mkey + ':' + names.join(','));
-            }
-            var sig = parts.join('|');
-            if (sig !== _regionSelectSig) {
-                _regionSelectSig = sig;
-                var html = '<option value="">All</option>';
-                for (var mi = 0; mi < macroKeys.length; mi++) {
-                    var mkey = macroKeys[mi];
-                    var names = Object.keys(macroGroups[mkey]).sort();
-                    html += '<option value="__macro__' + mkey + '">' + titleize(mkey) + '</option>';
-                    for (var ni = 0; ni < names.length; ni++) {
-                        html += '<option value="' + names[ni] + '">\u00A0\u00A0' + names[ni] + '</option>';
-                    }
-                }
-                regionSel.innerHTML = html;
-            }
         }
         journeySel.value = currentJourney && knownJourneys[currentJourney] ? currentJourney : '';
-        regionSel.value = currentRegion || '';
     }
 
     function renderCards(guid) {
@@ -274,6 +297,7 @@
         var fb = document.getElementById('filterBar');
         if (fb) fb.style.display = '';
         populateFilterSelects();
+        renderRegionFilters();
         var filtered = list.filter(matchesFilter);
         var totalPages = Math.ceil(filtered.length / _pageSize);
         if (_currentPage > totalPages) _currentPage = totalPages || 1;
@@ -390,7 +414,7 @@
 
     var _debugEnabled = false;
     var _hideNames = false;
-    var _filters = { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, region: '', regionPctMin: null, regionPctMax: null };
+    var _filters = { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, regions: [] };
 
 function titleize(str) {
     if (!str) return '';
@@ -799,7 +823,7 @@ function titleize(str) {
         html += '</div>';
         html += '<div class="filter-row">';
         html += '<span class="filter-group">Journey <select id="filterJourney" class="filter-select"><option value="">All</option></select><label class="filter-check"><input type="checkbox" id="filterJourneyOnly"><span class="check-mark"></span> Only this</label></span>';
-        html += '<span class="filter-group">Region <select id="filterRegion" class="filter-select"><option value="">All</option></select><span class="filter-sep" style="margin:0 2px">%</span><input type="number" id="filterRegionPctMin" class="filter-input filter-cm" placeholder="Min"><span class="filter-sep">–</span><input type="number" id="filterRegionPctMax" class="filter-input filter-cm" placeholder="Max"></span>';
+        html += '<span class="filter-group">Region <span id="regionFilters"></span> <button id="addRegionRow" class="topbar-btn" style="font-size:14px;padding:2px 10px" title="Add region filter">+</button></span>';
         html += '<span id="filterReset" class="filter-clear">Clear filters</span>';
         html += '</div></div></div>';
         html += '<div id="matchListResult"></div>';
@@ -839,9 +863,16 @@ function titleize(str) {
             _filters.cmMax = parseFloat(document.getElementById('filterCmMax').value) || null;
             _filters.journey = document.getElementById('filterJourney').value;
             _filters.journeyOnly = document.getElementById('filterJourneyOnly').checked;
-            _filters.region = document.getElementById('filterRegion').value;
-            _filters.regionPctMin = parseFloat(document.getElementById('filterRegionPctMin').value) || null;
-            _filters.regionPctMax = parseFloat(document.getElementById('filterRegionPctMax').value) || null;
+            var rows = document.querySelectorAll('#regionFilters .region-row');
+            _filters.regions = [];
+            for (var ri = 0; ri < rows.length; ri++) {
+                var rowSel = rows[ri].querySelector('.region-select');
+                var pctMin = rows[ri].querySelector('.region-pct-min');
+                var pctMax = rows[ri].querySelector('.region-pct-max');
+                var region = rowSel ? rowSel.value : '';
+                if (!region) continue;
+                _filters.regions.push({ region: region, pctMin: parseFloat(pctMin.value) || null, pctMax: parseFloat(pctMax.value) || null });
+            }
             _currentPage = 1;
             renderCards(sel.value);
         }
@@ -851,9 +882,6 @@ function titleize(str) {
         document.getElementById('filterCmMax').addEventListener('input', applyFiltersAndRender);
         document.getElementById('filterJourney').addEventListener('change', applyFiltersAndRender);
         document.getElementById('filterJourneyOnly').addEventListener('change', applyFiltersAndRender);
-        document.getElementById('filterRegion').addEventListener('change', applyFiltersAndRender);
-        document.getElementById('filterRegionPctMin').addEventListener('input', applyFiltersAndRender);
-        document.getElementById('filterRegionPctMax').addEventListener('input', applyFiltersAndRender);
         document.getElementById('filterToggle').addEventListener('click', function() {
             var body = document.getElementById('filterBody');
             var arrow = document.getElementById('filterArrow');
@@ -866,15 +894,50 @@ function titleize(str) {
             }
         });
 
+        document.getElementById('regionFilters').addEventListener('change', function(e) {
+            if (e.target.classList.contains('region-select') || e.target.classList.contains('region-pct-min') || e.target.classList.contains('region-pct-max')) {
+                applyFiltersAndRender();
+            }
+        });
+
+        document.getElementById('regionFilters').addEventListener('focus', function(e) {
+            if (e.target.classList.contains('region-select') || e.target.classList.contains('region-pct-min') || e.target.classList.contains('region-pct-max')) {
+                _filterSelectFocused = true;
+            }
+        }, true);
+
+        document.getElementById('regionFilters').addEventListener('blur', function(e) {
+            if (e.target.classList.contains('region-select') || e.target.classList.contains('region-pct-min') || e.target.classList.contains('region-pct-max')) {
+                _filterSelectFocused = false;
+                setTimeout(function() { renderRegionFilters(); }, 0);
+            }
+        }, true);
+
+        document.getElementById('regionFilters').addEventListener('click', function(e) {
+            if (e.target.classList.contains('region-remove')) {
+                var idx = parseInt(e.target.getAttribute('data-idx'), 10);
+                _filters.regions.splice(idx, 1);
+                _regionOptsSig = '';
+                renderRegionFilters();
+                applyFiltersAndRender();
+            }
+        });
+
+        document.getElementById('addRegionRow').addEventListener('click', function() {
+            _filters.regions.push({ region: '', pctMin: null, pctMax: null });
+            _regionOptsSig = '';
+            renderRegionFilters();
+        });
+
         document.getElementById('filterReset').addEventListener('click', function() {
             document.getElementById('filterName').value = '';
             document.getElementById('filterCmMin').value = '';
             document.getElementById('filterCmMax').value = '';
             document.getElementById('filterJourney').value = '';
             document.getElementById('filterJourneyOnly').checked = false;
-            document.getElementById('filterRegion').value = '';
-            document.getElementById('filterRegionPctMin').value = '';
-            document.getElementById('filterRegionPctMax').value = '';
+            _filters.regions = [];
+            _regionOptsSig = '';
+            renderRegionFilters();
             applyFiltersAndRender();
         });
 
@@ -888,13 +951,14 @@ function titleize(str) {
             if (debugEl) debugEl.textContent = '';
             _matchListData = null;
             _sessionMatches = null;
+            _regionOptsSig = '';
             _batchCommunitiesData = null;
             _batchEthnicityData = null;
             _profileData = null;
             if (matchListEl) matchListEl.innerHTML = '';
             var filterBar = document.getElementById('filterBar');
-            if (filterBar) { filterBar.style.display = 'none'; document.getElementById('filterName').value = ''; document.getElementById('filterCmMin').value = ''; document.getElementById('filterCmMax').value = ''; document.getElementById('filterJourney').value = ''; document.getElementById('filterJourneyOnly').checked = false; document.getElementById('filterRegion').value = ''; document.getElementById('filterRegionPctMin').value = ''; document.getElementById('filterRegionPctMax').value = ''; }
-            _filters = { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, region: '', regionPctMin: null, regionPctMax: null };
+            if (filterBar) { filterBar.style.display = 'none'; document.getElementById('filterName').value = ''; document.getElementById('filterCmMin').value = ''; document.getElementById('filterCmMax').value = ''; document.getElementById('filterJourney').value = ''; document.getElementById('filterJourneyOnly').checked = false; _filters.regions = []; _regionOptsSig = ''; renderRegionFilters(); }
+            _filters = { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, regions: [] };
             if (selectedGuid) {
                 listBtn.disabled = false;
                 if (clearBtn) clearBtn.hidden = false;
@@ -1045,12 +1109,13 @@ function titleize(str) {
                 }).then(function() {
                     _matchListData = null;
                     _sessionMatches = null;
+                    _regionOptsSig = '';
                     _batchCommunitiesData = null;
                     _profileData = null;
                     _batchEthnicityData = null;
                     document.getElementById('matchListResult').innerHTML = '';
                     var fbClear = document.getElementById('filterBar');
-                    if (fbClear) { fbClear.style.display = 'none'; document.getElementById('filterJourney').innerHTML = '<option value="">All</option>'; document.getElementById('filterRegion').innerHTML = '<option value="">All</option>'; }
+                    if (fbClear) { fbClear.style.display = 'none'; document.getElementById('filterJourney').innerHTML = '<option value="">All</option>'; _filters.regions = []; _regionOptsSig = ''; renderRegionFilters(); }
                     var fetchGroupEl = document.getElementById('fetchGroup');
                     if (fetchGroupEl) fetchGroupEl.style.display = '';
                     var fetchOptionsEl = document.getElementById('fetchOptions');

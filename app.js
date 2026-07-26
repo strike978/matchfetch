@@ -1,5 +1,6 @@
 (function() {
     var _regionMap = null;
+    var _journeyNameMap = null;
 
     function loadRegionMap() {
         return fetch(chrome.runtime.getURL('ancestry_region_names.json')).then(function(r) { return r.json(); }).then(function(data) {
@@ -10,12 +11,26 @@
         });
     }
 
-    function resolveJourneyNames(nodes, nameMap) {
+    function loadJourneyNameMap() {
+        return fetch(chrome.runtime.getURL('ancestry_journey_names.json')).then(function(r) { return r.json(); }).then(function(data) {
+            _journeyNameMap = {};
+            for (var id in data) {
+                _journeyNameMap[id] = data[id].name;
+                var subs = data[id].subjourneys;
+                if (subs) {
+                    for (var subId in subs) _journeyNameMap[subId] = subs[subId];
+                }
+            }
+        });
+    }
+
+    function resolveJourneyNames(nodes) {
+        if (!_journeyNameMap) return;
         for (var i = 0; i < nodes.length; i++) {
             var n = nodes[i];
-            n.displayName = nameMap[n.id] || n.id;
+            n.displayName = _journeyNameMap[n.id] || n.displayName || n.id;
             if (n.communities && n.communities.length > 0) {
-                resolveJourneyNames(n.communities, nameMap);
+                resolveJourneyNames(n.communities);
             }
         }
     }
@@ -87,21 +102,130 @@
     var _profileData = null;
     var _batchEthnicityData = null;
     var _batchCommunitiesData = null;
+    var _sessionMatches = null;
     var _pageSize = 20;
     var _currentPage = 1;
 
     function storeMatchData(guid, matchList) {
+        if (!_sessionMatches) _sessionMatches = {};
+        if (matchList) {
+            for (var mi = 0; mi < matchList.length; mi++) {
+                var sid = matchList[mi].sampleId;
+                if (!sid) continue;
+                if (!_sessionMatches[sid]) _sessionMatches[sid] = {};
+                if (_profileData && _profileData[sid]) {
+                    _sessionMatches[sid].matchName = _profileData[sid].matchName;
+                    _sessionMatches[sid].matchNameInitials = _profileData[sid].matchNameInitials;
+                    _sessionMatches[sid].displayGender = _profileData[sid].displayGender;
+                    _sessionMatches[sid].photoUrl = _profileData[sid].photoUrl;
+                }
+                if (_batchEthnicityData && _batchEthnicityData[sid]) _sessionMatches[sid].regions = _batchEthnicityData[sid].regions;
+                if (_batchCommunitiesData && _batchCommunitiesData[sid]) _sessionMatches[sid].journeys = _batchCommunitiesData[sid].branches;
+            }
+        }
         if (typeof DB !== 'undefined') DB.saveSession(guid, matchList, _profileData, _batchEthnicityData, _batchCommunitiesData);
+    }
+
+    function matchesFilter(m) {
+        var p = _profileData && _profileData[m.sampleId] || {};
+        if (_filters.name) {
+            var n = (p.matchName || '').toLowerCase();
+            if (n.indexOf(_filters.name.toLowerCase()) === -1 && (p.matchNameInitials || '').toLowerCase().indexOf(_filters.name.toLowerCase()) === -1) return false;
+        }
+        if (_filters.cmMin != null || _filters.cmMax != null) {
+            var cm = m.relationship && m.relationship.sharedCentimorgans;
+            if (cm == null) return false;
+            if (_filters.cmMin != null && cm < _filters.cmMin) return false;
+            if (_filters.cmMax != null && cm > _filters.cmMax) return false;
+        }
+        if (_filters.journey) {
+            var sm = _sessionMatches && _sessionMatches[m.sampleId];
+            var branches = sm && sm.journeys;
+            var found = false;
+            if (branches) {
+                var q = _filters.journey;
+                for (var bi = 0; bi < branches.length; bi++) {
+                    if ((branches[bi].displayName || '') === q) { found = true; break; }
+                }
+                if (_filters.journeyOnly && branches.length > 1) found = false;
+            }
+            if (!found) return false;
+        }
+        if (_filters.region) {
+            var sm = _sessionMatches && _sessionMatches[m.sampleId];
+            var regs = sm && sm.regions;
+            var found = false;
+            if (regs) {
+                for (var ri = 0; ri < regs.length; ri++) {
+                    if ((regs[ri].displayName || regs[ri].key || '') === _filters.region) {
+                        found = true;
+                        var pct = regs[ri].percentage;
+                        if (_filters.regionPctMin != null && (pct == null || pct < _filters.regionPctMin)) found = false;
+                        if (_filters.regionPctMax != null && (pct == null || pct > _filters.regionPctMax)) found = false;
+                        if (found) break;
+                    }
+                }
+            }
+            if (!found) return false;
+        }
+        return true;
+    }
+
+    function populateFilterSelects() {
+        var journeySel = document.getElementById('filterJourney');
+        var regionSel = document.getElementById('filterRegion');
+        if (!journeySel || !regionSel) return;
+        var currentJourney = journeySel.value;
+        var currentRegion = regionSel.value;
+        var journeys = {};
+        var regions = {};
+        if (_sessionMatches) {
+            var sids = Object.keys(_sessionMatches);
+            for (var i = 0; i < sids.length; i++) {
+                var sm = _sessionMatches[sids[i]];
+                var branches = sm && sm.journeys;
+                if (branches) {
+                    for (var bi = 0; bi < branches.length; bi++) {
+                        if (branches[bi].displayName) journeys[branches[bi].displayName] = true;
+                    }
+                }
+                var regs = sm && sm.regions;
+                if (regs) {
+                    for (var ri = 0; ri < regs.length; ri++) {
+                        var name = regs[ri].displayName || regs[ri].key;
+                        if (name) regions[name] = true;
+                    }
+                }
+            }
+        }
+        var sortedJourneys = Object.keys(journeys).sort();
+        var sortedRegions = Object.keys(regions).sort();
+        journeySel.innerHTML = '<option value="">All</option>';
+        for (var ji = 0; ji < sortedJourneys.length; ji++) {
+            journeySel.innerHTML += '<option value="' + sortedJourneys[ji].replace(/"/g, '&quot;') + '">' + sortedJourneys[ji] + '</option>';
+        }
+        journeySel.value = currentJourney && journeys[currentJourney] ? currentJourney : '';
+        regionSel.innerHTML = '<option value="">All</option>';
+        for (var ri2 = 0; ri2 < sortedRegions.length; ri2++) {
+            regionSel.innerHTML += '<option value="' + sortedRegions[ri2].replace(/"/g, '&quot;') + '">' + sortedRegions[ri2] + '</option>';
+        }
+        regionSel.value = currentRegion && regions[currentRegion] ? currentRegion : '';
     }
 
     function renderCards(guid) {
         var list = _matchListData && _matchListData.matchList;
-        if (!list) return;
-        var totalPages = Math.ceil(list.length / _pageSize);
+        if (!list) { var fb = document.getElementById('filterBar'); if (fb) fb.style.display = 'none'; return; }
+        var fb = document.getElementById('filterBar');
+        if (fb) fb.style.display = '';
+        populateFilterSelects();
+        var filtered = list.filter(matchesFilter);
+        var fc = document.getElementById('filterCount');
+        if (fc) fc.textContent = filtered.length < list.length ? filtered.length + ' of ' + list.length : '';
+        var totalPages = Math.ceil(filtered.length / _pageSize);
         if (_currentPage > totalPages) _currentPage = totalPages || 1;
         var start = (_currentPage - 1) * _pageSize;
-        var end = Math.min(start + _pageSize, list.length);
-        var page = list.slice(start, end);
+        var end = Math.min(start + _pageSize, filtered.length);
+        var page = filtered.slice(start, end);
         var html = '<div class="cards">';
         for (var i = 0; i < page.length; i++) {
             var m = page[i];
@@ -134,7 +258,8 @@
             if (r.numSharedSegments) relStr += '<span class="num">' + r.numSharedSegments + '</span> segments';
             if (relStr) html += '<div class="rel-text">' + relStr + '</div>';
             html += '</div>';
-            var journeys = _batchCommunitiesData && _batchCommunitiesData[m.sampleId] && _batchCommunitiesData[m.sampleId].branches;
+            var sm = _sessionMatches && _sessionMatches[m.sampleId];
+            var journeys = sm && sm.journeys;
             if (journeys && journeys.length > 0) {
                 var sorted = journeys.slice().sort(function(a, b) { return (b.connectionPercent || 0) - (a.connectionPercent || 0); });
                 var maxPills = 3;
@@ -207,6 +332,7 @@
 
     var _debugEnabled = false;
     var _hideNames = false;
+    var _filters = { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, region: '', regionPctMin: null, regionPctMax: null };
 
     function debugLog(msg) {
         if (!_debugEnabled) return;
@@ -322,12 +448,19 @@
             if (fs && fs.status === 0) {
                 return DB.getSession(guid).then(function(session) {
                     if (session && session.matches) {
+                        _sessionMatches = session.matches;
                         var sids = Object.keys(session.matches);
                         for (var i = 0; i < sids.length; i++) {
                             var m = session.matches[sids[i]];
                             allMatches.push({ sampleId: sids[i], relationship: m.relationship || {}, createdDate: m.createdDate || null });
                             _profileData[sids[i]] = { matchName: m.matchName, matchNameInitials: m.matchNameInitials, displayGender: m.displayGender, photoUrl: m.photoUrl };
-                            if (m.journeys && m.journeys.length) _batchCommunitiesData[sids[i]] = { branches: m.journeys };
+                            if (m.journeys && m.journeys.length) {
+                                _batchCommunitiesData[sids[i]] = { branches: m.journeys };
+                                resolveJourneyNames(_batchCommunitiesData[sids[i]].branches);
+                                if (_sessionMatches && _sessionMatches[sids[i]]) {
+                                    _sessionMatches[sids[i]].journeys = _batchCommunitiesData[sids[i]].branches;
+                                }
+                            }
                             if (m.regions) _batchEthnicityData[sids[i]] = { regions: m.regions };
                         }
                         _matchListData = { matchList: allMatches };
@@ -428,36 +561,10 @@
                 return fetchBatchCommunities(guid, chunk);
             }).then(function(comData) {
                 for (var k in comData) _batchCommunitiesData[k] = comData[k];
-                var newBranchIds = [];
-                for (var k in comData) {
-                    var branches = comData[k] && comData[k].branches;
-                    if (!branches) continue;
-                    for (var bi = 0; bi < branches.length; bi++) {
-                        if (!nameCache[branches[bi].id]) {
-                            nameCache[branches[bi].id] = null;
-                            newBranchIds.push(branches[bi].id);
-                        }
-                    }
-                }
-                if (newBranchIds.length === 0) return;
-                return delay(500).then(function() {
-                    var namesUrl = 'https://www.ancestry.com/dna/origins/communities/names';
-                    return apiFetch(namesUrl, {
-                        method: 'POST', credentials: 'include', mode: 'cors',
-                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                        body: JSON.stringify(newBranchIds)
-                    }).then(function(nameData) {
-                        for (var ghostId in nameData) {
-                            var subDict = nameData[ghostId];
-                            for (var subId in subDict) nameCache[subId] = subDict[subId];
-                        }
-                    });
-                });
-            }).then(function() {
                 var sKeys = Object.keys(_batchCommunitiesData);
                 for (var si = 0; si < sKeys.length; si++) {
                     var branches = _batchCommunitiesData[sKeys[si]] && _batchCommunitiesData[sKeys[si]].branches;
-                    if (branches) resolveJourneyNames(branches, nameCache);
+                    if (branches) resolveJourneyNames(branches);
                 }
                 var list = _matchListData && _matchListData.matchList;
                 storeMatchData(guid, list);
@@ -604,6 +711,18 @@
         html += '</div>';
         html += '<div id="statusMsg" class="status-msg"></div>';
         html += '<pre id="debugLog" style="display:none"></pre>';
+        html += '<div id="filterBar" style="display:none">';
+        html += '<div class="filter-toggle" id="filterToggle"><span id="filterArrow">&#x25B6;</span> Filtering Options</div>';
+        html += '<div id="filterBody" style="display:none">';
+        html += '<div class="filter-row">';
+        html += '<label class="filter-group">Name <input type="text" id="filterName" class="filter-input" placeholder="Filter by name"></label>';
+        html += '<label class="filter-group">cM <input type="number" id="filterCmMin" class="filter-input filter-cm" placeholder="Min"><span class="filter-sep">–</span><input type="number" id="filterCmMax" class="filter-input filter-cm" placeholder="Max"></label>';
+        html += '<span id="filterCount" class="filter-count"></span>';
+        html += '</div>';
+        html += '<div class="filter-row">';
+        html += '<span class="filter-group">Journey <select id="filterJourney" class="filter-select"><option value="">All</option></select><label class="filter-check"><input type="checkbox" id="filterJourneyOnly"><span class="check-mark"></span> Only this</label></span>';
+        html += '<span class="filter-group">Region <select id="filterRegion" class="filter-select"><option value="">All</option></select><span class="filter-sep" style="margin:0 2px">%</span><input type="number" id="filterRegionPctMin" class="filter-input filter-cm" placeholder="Min"><span class="filter-sep">–</span><input type="number" id="filterRegionPctMax" class="filter-input filter-cm" placeholder="Max"></span>';
+        html += '</div></div></div>';
         html += '<div id="matchListResult"></div>';
         html += '<div id="doneMsg" class="status-msg" style="display:none"></div>';
 
@@ -634,6 +753,41 @@
             if (sel && sel.value) renderCards(sel.value);
         });
 
+        function applyFiltersAndRender() {
+            var sel = document.getElementById('testSelect');
+            if (!sel || !sel.value) return;
+            _filters.name = document.getElementById('filterName').value;
+            _filters.cmMin = parseFloat(document.getElementById('filterCmMin').value) || null;
+            _filters.cmMax = parseFloat(document.getElementById('filterCmMax').value) || null;
+            _filters.journey = document.getElementById('filterJourney').value;
+            _filters.journeyOnly = document.getElementById('filterJourneyOnly').checked;
+            _filters.region = document.getElementById('filterRegion').value;
+            _filters.regionPctMin = parseFloat(document.getElementById('filterRegionPctMin').value) || null;
+            _filters.regionPctMax = parseFloat(document.getElementById('filterRegionPctMax').value) || null;
+            _currentPage = 1;
+            renderCards(sel.value);
+        }
+
+        document.getElementById('filterName').addEventListener('input', applyFiltersAndRender);
+        document.getElementById('filterCmMin').addEventListener('input', applyFiltersAndRender);
+        document.getElementById('filterCmMax').addEventListener('input', applyFiltersAndRender);
+        document.getElementById('filterJourney').addEventListener('change', applyFiltersAndRender);
+        document.getElementById('filterJourneyOnly').addEventListener('change', applyFiltersAndRender);
+        document.getElementById('filterRegion').addEventListener('change', applyFiltersAndRender);
+        document.getElementById('filterRegionPctMin').addEventListener('input', applyFiltersAndRender);
+        document.getElementById('filterRegionPctMax').addEventListener('input', applyFiltersAndRender);
+        document.getElementById('filterToggle').addEventListener('click', function() {
+            var body = document.getElementById('filterBody');
+            var arrow = document.getElementById('filterArrow');
+            if (body.style.display === 'none') {
+                body.style.display = '';
+                arrow.classList.add('open');
+            } else {
+                body.style.display = 'none';
+                arrow.classList.remove('open');
+            }
+        });
+
         document.getElementById('testSelect').addEventListener('change', function() {
             var listBtn = document.getElementById('fetchListBtn');
             var clearBtn = document.getElementById('clearKitBtn');
@@ -643,15 +797,21 @@
             var debugEl = document.getElementById('debugLog');
             if (debugEl) debugEl.textContent = '';
             _matchListData = null;
+            _sessionMatches = null;
             _batchCommunitiesData = null;
+            _batchEthnicityData = null;
             _profileData = null;
             if (matchListEl) matchListEl.innerHTML = '';
+            var filterBar = document.getElementById('filterBar');
+            if (filterBar) { filterBar.style.display = 'none'; document.getElementById('filterName').value = ''; document.getElementById('filterCmMin').value = ''; document.getElementById('filterCmMax').value = ''; document.getElementById('filterJourney').value = ''; document.getElementById('filterJourneyOnly').checked = false; document.getElementById('filterRegion').value = ''; document.getElementById('filterRegionPctMin').value = ''; document.getElementById('filterRegionPctMax').value = ''; var fc = document.getElementById('filterCount'); if (fc) fc.textContent = ''; }
+            _filters = { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, region: '', regionPctMin: null, regionPctMax: null };
             if (selectedGuid) {
                 listBtn.disabled = false;
                 if (clearBtn) clearBtn.hidden = false;
                 fetchMatchCount(selectedGuid);
                 DB.getSession(selectedGuid).then(function(session) {
                     if (session && session.matches) {
+                        _sessionMatches = session.matches;
                         var matchList = [];
                         var sampleIds = Object.keys(session.matches);
                         for (var si = 0; si < sampleIds.length; si++) {
@@ -665,13 +825,21 @@
                         if (matchList.length > 0) {
                             _matchListData = { matchList: matchList };
                             _batchCommunitiesData = {};
+                            _batchEthnicityData = {};
+                            _profileData = {};
                             for (var si2 = 0; si2 < sampleIds.length; si2++) {
                                 var m = session.matches[sampleIds[si2]];
                                 if (m.journeys && m.journeys.length > 0) {
                                     _batchCommunitiesData[sampleIds[si2]] = { branches: m.journeys };
+                                    resolveJourneyNames(_batchCommunitiesData[sampleIds[si2]].branches);
+                                    if (_sessionMatches && _sessionMatches[sampleIds[si2]]) {
+                                        _sessionMatches[sampleIds[si2]].journeys = _batchCommunitiesData[sampleIds[si2]].branches;
+                                    }
+                                }
+                                if (m.regions && m.regions.length > 0) {
+                                    _batchEthnicityData[sampleIds[si2]] = { regions: m.regions };
                                 }
                             }
-                            _profileData = {};
                             for (var si3 = 0; si3 < sampleIds.length; si3++) {
                                 var m = session.matches[sampleIds[si3]];
                                 _profileData[sampleIds[si3]] = {
@@ -793,10 +961,13 @@
                     return DB.deleteFetchState(guid);
                 }).then(function() {
                     _matchListData = null;
+                    _sessionMatches = null;
                     _batchCommunitiesData = null;
                     _profileData = null;
                     _batchEthnicityData = null;
                     document.getElementById('matchListResult').innerHTML = '';
+                    var fbClear = document.getElementById('filterBar');
+                    if (fbClear) { fbClear.style.display = 'none'; document.getElementById('filterJourney').innerHTML = '<option value="">All</option>'; document.getElementById('filterRegion').innerHTML = '<option value="">All</option>'; var fc = document.getElementById('filterCount'); if (fc) fc.textContent = ''; }
                     var fetchGroupEl = document.getElementById('fetchGroup');
                     if (fetchGroupEl) fetchGroupEl.style.display = '';
                     var fetchOptionsEl = document.getElementById('fetchOptions');
@@ -815,7 +986,7 @@
         });
     }
 
-    loadRegionMap().then(function() {
+    Promise.all([loadRegionMap(), loadJourneyNameMap()]).then(function() {
         fetchTests();
     });
 

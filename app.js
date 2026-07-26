@@ -410,6 +410,8 @@
         }
     }
 
+    var FETCH_DELAY = 500;
+
     function delay(ms) { return new Promise(function(resolve) { setTimeout(resolve, ms); }); }
 
     function chunkArray(arr, size) {
@@ -676,7 +678,7 @@ function titleize(str) {
         function nextPage(hasMore) {
             var remaining = mode === 'cmRange' ? 1 : (desiredCount - allMatches.length);
             debugLog('nextPage: hasMore=' + hasMore + (mode === 'cmRange' ? '' : ' remaining=' + remaining));
-            if (remaining > 0 && hasMore) return delay(1500).then(fetchPage);
+            if (remaining > 0 && hasMore) return delay(FETCH_DELAY).then(fetchPage);
         }
 
         function processPageChunks(guid, pageSampleIds) {
@@ -706,7 +708,7 @@ function titleize(str) {
                     }
                 }
                 if (mode !== 'cmRange') { _progressDone += chunk.length; setProgress(_progressDone, _progressTotal); }
-                return delay(1500);
+                return delay(FETCH_DELAY);
             }).then(function() {
                 setStatus('Fetching journeys for matches ' + rangeStart + '-' + (rangeStart + chunk.length - 1) + ' of ' + total + '...');
                 return fetchBatchCommunities(guid, chunk);
@@ -812,7 +814,7 @@ function titleize(str) {
                 }).then(function(profiles) {
                     for (var k in profiles) allProfiles[k] = profiles[k];
                     idx++;
-                    delay(1500).then(next);
+                    delay(FETCH_DELAY).then(next);
                 }).catch(function(err) {
                     var el = document.getElementById('matchListResult');
                     if (el) el.innerHTML = '<div class="error">' + friendlyError(err.message) + '</div>';

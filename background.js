@@ -54,5 +54,6 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 });
 
 chrome.action.onClicked.addListener(function() {
+    chrome.tabs.create({ url: 'https://www.ancestry.com/dna/matches/list' });
     chrome.tabs.create({ url: 'app.html' });
 });

@@ -550,7 +550,7 @@
         function nextPage(hasMore) {
             var remaining = mode === 'cmRange' ? 1 : (desiredCount - allMatches.length);
             debugLog('nextPage: hasMore=' + hasMore + (mode === 'cmRange' ? '' : ' remaining=' + remaining));
-            if (remaining > 0 && hasMore) return delay(500).then(fetchPage);
+            if (remaining > 0 && hasMore) return delay(1500).then(fetchPage);
         }
 
         function processPageChunks(guid, pageSampleIds) {
@@ -579,7 +579,7 @@
                         }
                     }
                 }
-                return delay(500);
+                return delay(1500);
             }).then(function() {
                 setStatus('Fetching communities for matches ' + rangeStart + '-' + (rangeStart + chunk.length - 1) + ' of ' + total + '...');
                 return fetchBatchCommunities(guid, chunk);
@@ -678,7 +678,7 @@
                 }).then(function(profiles) {
                     for (var k in profiles) allProfiles[k] = profiles[k];
                     idx++;
-                    delay(500).then(next);
+                    delay(1500).then(next);
                 }).catch(function(err) {
                     var el = document.getElementById('matchListResult');
                     if (el) el.innerHTML = '<div class="error">' + friendlyError(err.message) + '</div>';

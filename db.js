@@ -94,10 +94,33 @@ var DB = (function() {
 
     return {
         saveSession: function(guid, matchList, profiles, ethnicity, communities) {
-            return db.Ancestry.get(guid).then(function(existing) {
-                var data = mergeMatchData(existing || { guid: guid, matches: {} }, matchList, profiles, ethnicity, communities);
-                data.guid = guid;
-                return db.Ancestry.put(data);
+            return db.transaction('rw', db.Ancestry, function() {
+                return db.Ancestry.get(guid).then(function(existing) {
+                    var data = mergeMatchData(existing || { guid: guid, matches: {} }, matchList, profiles, ethnicity, communities);
+                    data.guid = guid;
+                    return db.Ancestry.put(data);
+                });
+            });
+        },
+
+        saveFetchState: function(guid, status, mode, params, nextPage) {
+            return db.transaction('rw', db.Ancestry, function() {
+                return db.Ancestry.get(guid).then(function(existing) {
+                    var data = existing || { guid: guid, matches: {} };
+                    data.guid = guid;
+                    data.fetchState = { status: status, mode: mode, params: params, nextPage: nextPage || null };
+                    return db.Ancestry.put(data);
+                });
+            });
+        },
+
+        deleteFetchState: function(guid) {
+            return db.transaction('rw', db.Ancestry, function() {
+                return db.Ancestry.get(guid).then(function(existing) {
+                    if (!existing) return;
+                    delete existing.fetchState;
+                    return db.Ancestry.put(existing);
+                });
             });
         },
 
@@ -119,15 +142,6 @@ var DB = (function() {
             });
         },
 
-        saveFetchState: function(guid, status, mode, params, nextPage) {
-            return db.Ancestry.get(guid).then(function(existing) {
-                var data = existing || { guid: guid, matches: {} };
-                data.guid = guid;
-                data.fetchState = { status: status, mode: mode, params: params, nextPage: nextPage || null };
-                return db.Ancestry.put(data);
-            });
-        },
-
         getFetchState: function(guid) {
             return db.Ancestry.get(guid).then(function(r) {
                 if (!r || !r.fetchState) return null;
@@ -137,14 +151,6 @@ var DB = (function() {
 
         deleteSession: function(guid) {
             return db.Ancestry.delete(guid);
-        },
-
-        deleteFetchState: function(guid) {
-            return db.Ancestry.get(guid).then(function(existing) {
-                if (!existing) return;
-                delete existing.fetchState;
-                return db.Ancestry.put(existing);
-            });
         },
 
         exportDatabase: function() {

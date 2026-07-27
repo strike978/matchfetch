@@ -1,1270 +1,1028 @@
-(function() {
-    var _regionMap = null;
-    var _journeyNameMap = null;
-    var _filterSelectFocused = false;
+(function () {
+  var s = {
+    regionMap: null,
+    journeyNameMap: null,
+    tests: [],
+    selectedGuid: '',
+    matchListData: null,
+    profileData: {},
+    batchEthnicityData: {},
+    batchCommunitiesData: {},
+    sessionMatches: null,
+    filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, regions: [] },
+    currentPage: 1,
+    pageSize: 20,
+    debugEnabled: false,
+    hideNames: false,
+    showFilterBody: false,
+    fetchMsg: '',
+    fetchPct: '',
+    fetchProgress: 0,
+    isFetching: false,
+    mode: 'count',
+    matchCount: null,
+    fetchStateBadge: '',
+    showFetchOptions: true,
+    fetchComplete: false,
+    buttonLabel: null,
+    modal: null,
+    cmRangeMin: '90',
+    cmRangeMax: '400',
+    desiredCount: '100',
+    statusMsg: '',
+    testsLoading: true,
+  }
 
-    function loadRegionMap() {
-        return fetch(chrome.runtime.getURL('ancestry_region_names.json')).then(function(r) { return r.json(); }).then(function(data) {
-            _regionMap = {};
-            for (var i = 0; i < data.items.length; i++) {
-                _regionMap[data.items[i].region] = data.items[i].name;
-            }
-        });
+  function setState(o) { Object.assign(s, o); m.redraw() }
+
+  function friendlyError(msg) {
+    if (/Status 30[137]/.test(msg)) return 'Make sure you are logged into Ancestry.com, then try again.'
+    if (/Status 40[13]/.test(msg)) return 'Access denied. Make sure you are logged into Ancestry.com.'
+    if (/Status 403/.test(msg)) return 'Access denied. You may not have permission to view this data.'
+    if (/Status 404/.test(msg)) return 'Data not found. The test or match may no longer be available.'
+    if (/Status 429/.test(msg)) return 'Too many requests. Please wait a moment and try again.'
+    if (/Status 5\d\d/.test(msg)) return 'Ancestry server error. Please try again later.'
+    if (/Fetch failed/.test(msg)) return 'Could not reach Ancestry. Check your internet connection.'
+    return msg
+  }
+
+  function titleize(str) {
+    if (!str) return ''
+    return str.replace(/_/g, ' ').replace(/\w\S*/g, function (txt) { return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase() })
+  }
+
+  function delay(ms) { return new Promise(function (r) { setTimeout(r, ms) }) }
+
+  function chunkArray(arr, size) { var c = []; for (var i = 0; i < arr.length; i += size) c.push(arr.slice(i, i + size)); return c }
+
+  function loadRegionMap() {
+    return fetch(chrome.runtime.getURL('ancestry_region_names.json')).then(function (r) { return r.json() }).then(function (data) {
+      var m = {};
+      for (var i = 0; i < data.items.length; i++) m[data.items[i].region] = data.items[i].name
+      setState({ regionMap: m })
+    })
+  }
+
+  function loadJourneyNameMap() {
+    return fetch(chrome.runtime.getURL('ancestry_journey_names.json')).then(function (r) { return r.json() }).then(function (data) {
+      var m = {};
+      for (var id in data) {
+        m[id] = data[id].name
+        var subs = data[id].subjourneys
+        if (subs) { for (var subId in subs) m[subId] = subs[subId] }
+      }
+      setState({ journeyNameMap: m })
+    })
+  }
+
+  function resolveJourneyNames(nodes) {
+    if (!s.journeyNameMap) return
+    for (var i = 0; i < nodes.length; i++) {
+      var n = nodes[i]
+      n.displayName = s.journeyNameMap[n.id] || n.displayName || n.id
+      if (n.communities && n.communities.length > 0) resolveJourneyNames(n.communities)
+    }
+  }
+
+  function apiFetch(url, options) {
+    return new Promise(function (resolve, reject) {
+      chrome.runtime.sendMessage({
+        action: 'apiFetch', url: url, options: options, domain: 'ancestry.com'
+      }, function (response) {
+        if (chrome.runtime.lastError) return reject(new Error(chrome.runtime.lastError.message))
+        if (!response || !response.success) return reject(new Error(response ? response.error : 'No response'))
+        resolve(response.data)
+      })
+    })
+  }
+
+  function fetchTests() {
+    setState({ tests: [], testsLoading: true, statusMsg: '', matchCount: null, fetchStateBadge: '', fetchMsg: '', isFetching: false })
+    apiFetch('https://www.ancestry.com/dna/insights/api/dnaSubnav/tests', { credentials: 'include', mode: 'cors' })
+      .then(function (data) { setState({ tests: Array.isArray(data) ? data : [], testsLoading: false }) })
+      .catch(function (err) { setState({ statusMsg: friendlyError(err.message), testsLoading: false }) })
+  }
+
+  function fetchMatchCount(guid) {
+    var url = 'https://www.ancestry.com/discoveryui-matches/parents/list/api/matchCount/' + guid
+    var opts = {
+      method: 'POST', credentials: 'include', mode: 'cors',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ lower: 0, upper: 10 })
+    }
+    setState({ matchCount: null, matchCountLoading: true })
+    apiFetch(url, opts)
+      .then(function (data) { setState({ matchCount: data, matchCountLoading: false }) })
+      .catch(function (err) { setState({ matchCount: { error: friendlyError(err.message) }, matchCountLoading: false }) })
+  }
+
+  var FETCH_DELAY = 500
+
+  function fetchMatchList(guid, mode, params) {
+    s.currentPage = 1
+    s.matchListData = null
+    s.profileData = {}
+    s.batchEthnicityData = {}
+    s.batchCommunitiesData = {}
+    s.sessionMatches = null
+    var dl = document.getElementById('debugLog')
+    if (dl) dl.textContent = ''
+    var allMatches = []
+    var desiredCount = mode === 'cmRange' ? Infinity : (params.desiredCount || 100)
+    var currentPage = 1
+    var _progressDone = 0
+    var _progressTotal = mode === 'cmRange' ? 300 : desiredCount * 3
+
+    function setBadgeFetching() { try { chrome.action.setBadgeText({ text: '\u21bb' }); chrome.action.setBadgeBackgroundColor({ color: '#3b82f6' }) } catch (e) { } }
+
+    function clearBadge() { try { chrome.action.setBadgeText({ text: '' }) } catch (e) { } }
+
+    function saveState() {
+      DB.saveFetchState(guid, 0, mode, params, currentPage)
+      var label = mode === 'cmRange' ? allMatches.length + ' [' + params.range + ' cM] page ' + (currentPage - 1) : allMatches.length + '/' + desiredCount + ' page ' + (currentPage - 1)
+      setState({ fetchStateBadge: '\u21bb ' + label })
     }
 
-    function loadJourneyNameMap() {
-        return fetch(chrome.runtime.getURL('ancestry_journey_names.json')).then(function(r) { return r.json(); }).then(function(data) {
-            _journeyNameMap = {};
-            for (var id in data) {
-                _journeyNameMap[id] = data[id].name;
-                var subs = data[id].subjourneys;
-                if (subs) {
-                    for (var subId in subs) _journeyNameMap[subId] = subs[subId];
-                }
-            }
-        });
+    function anyMissingName(nodes) {
+      for (var i = 0; i < nodes.length; i++) { if (!nodes[i].displayName) return true; if (nodes[i].communities && anyMissingName(nodes[i].communities)) return true }
+      return false
     }
 
-    function resolveJourneyNames(nodes) {
-        if (!_journeyNameMap) return;
-        for (var i = 0; i < nodes.length; i++) {
-            var n = nodes[i];
-            n.displayName = _journeyNameMap[n.id] || n.displayName || n.id;
-            if (n.communities && n.communities.length > 0) {
-                resolveJourneyNames(n.communities);
-            }
-        }
+    function findIncompleteSampleIds() {
+      var result = []
+      for (var i = 0; i < allMatches.length; i++) {
+        var sid = allMatches[i].sampleId
+        if (!sid) continue
+        if (!s.batchEthnicityData[sid] || !s.batchCommunitiesData[sid]) { result.push(sid); continue }
+        var branches = s.batchCommunitiesData[sid].branches
+        if (branches && anyMissingName(branches)) result.push(sid)
+      }
+      return result
     }
 
-    var results = document.getElementById('results');
-
-    function showSpinner() {
-        results.innerHTML = '<div class="spinner"><div class="spinner-ring"></div><div class="spinner-text">Loading...</div></div>';
-    }
-
-    function friendlyError(msg) {
-        if (/Status 30[137]/.test(msg)) return 'Make sure you are logged into Ancestry.com, then try again.';
-        if (/Status 40[13]/.test(msg)) return 'Access denied. Make sure you are logged into Ancestry.com.';
-        if (/Status 403/.test(msg)) return 'Access denied. You may not have permission to view this data.';
-        if (/Status 404/.test(msg)) return 'Data not found. The test or match may no longer be available.';
-        if (/Status 429/.test(msg)) return 'Too many requests. Please wait a moment and try again.';
-        if (/Status 5\d\d/.test(msg)) return 'Ancestry server error. Please try again later.';
-        if (/Fetch failed/.test(msg)) return 'Could not reach Ancestry. Check your internet connection.';
-        return msg;
-    }
-
-    function showError(msg) {
-        results.innerHTML = '<div class="error">' + friendlyError(msg) + '</div>';
-    }
-
-    function apiFetch(url, options) {
-        return new Promise(function(resolve, reject) {
-            chrome.runtime.sendMessage({
-                action: 'apiFetch', url: url, options: options, domain: 'ancestry.com'
-            }, function(response) {
-                if (chrome.runtime.lastError) return reject(new Error(chrome.runtime.lastError.message));
-                if (!response || !response.success) return reject(new Error(response ? response.error : 'No response'));
-                resolve(response.data);
-            });
-        });
-    }
-
-    function fetchTests() {
-        showSpinner();
-
-        apiFetch('https://www.ancestry.com/dna/insights/api/dnaSubnav/tests', { credentials: 'include', mode: 'cors' })
-            .then(function(data) { displayTests(data); })
-            .catch(function(err) { showError(err.message); });
-    }
-
-    function fetchMatchCount(guid) {
-        var url = 'https://www.ancestry.com/discoveryui-matches/parents/list/api/matchCount/' + guid;
-        var opts = {
-            method: 'POST',
-            credentials: 'include',
-            mode: 'cors',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify({ lower: 0, upper: 10 })
-        };
-        var el = document.getElementById('matchCountBadge');
-        if (el) el.innerHTML = '<span class="spinner-ring" style="width:12px;height:12px;border-width:2px;display:inline-block;vertical-align:middle"></span>';
-        apiFetch(url, opts)
-            .then(function(data) {
-                var el = document.getElementById('matchCountBadge');
-                if (el) el.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28" width="16" height="16" fill="none"><circle cx="10" cy="9" r="3.5" stroke="#94a3b8" stroke-width="2"/><circle cx="18" cy="9" r="3.5" stroke="#94a3b8" stroke-width="2"/><path d="M4 23c0-4 2-6.5 6-6.5s6 2.5 6 6.5" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/><path d="M14 23c0-4 2-6.5 6-6.5s6 2.5 6 6.5" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/></svg><span class="count">' + data.count.toLocaleString() + '</span> MATCHES';
-            })
-            .catch(function(err) {
-                var el = document.getElementById('matchCountBadge');
-                if (el) el.innerHTML = '<span style="color:#f87171">' + friendlyError(err.message) + '</span>';
-            });
-    }
-
-    var _matchListData = null;
-    var _profileData = null;
-    var _batchEthnicityData = null;
-    var _batchCommunitiesData = null;
-    var _sessionMatches = null;
-    var _pageSize = 20;
-    var _currentPage = 1;
-
-    function storeMatchData(guid, matchList) {
-        if (!_sessionMatches) _sessionMatches = {};
-        if (matchList) {
-            for (var mi = 0; mi < matchList.length; mi++) {
-                var sid = matchList[mi].sampleId;
-                if (!sid) continue;
-                if (!_sessionMatches[sid]) _sessionMatches[sid] = {};
-                if (_profileData && _profileData[sid]) {
-                    _sessionMatches[sid].matchName = _profileData[sid].matchName;
-                    _sessionMatches[sid].matchNameInitials = _profileData[sid].matchNameInitials;
-                    _sessionMatches[sid].displayGender = _profileData[sid].displayGender;
-                    _sessionMatches[sid].photoUrl = _profileData[sid].photoUrl;
-                }
-                if (_batchEthnicityData && _batchEthnicityData[sid]) _sessionMatches[sid].regions = _batchEthnicityData[sid].regions;
-                if (_batchCommunitiesData && _batchCommunitiesData[sid]) _sessionMatches[sid].journeys = _batchCommunitiesData[sid].branches;
-            }
-        }
-        if (typeof DB !== 'undefined') DB.saveSession(guid, matchList, _profileData, _batchEthnicityData, _batchCommunitiesData);
-    }
-
-    function matchesFilter(m) {
-        var p = _profileData && _profileData[m.sampleId] || {};
-        if (_filters.name) {
-            var n = (p.matchName || '').toLowerCase();
-            if (n.indexOf(_filters.name.toLowerCase()) === -1 && (p.matchNameInitials || '').toLowerCase().indexOf(_filters.name.toLowerCase()) === -1) return false;
-        }
-        if (_filters.cmMin != null || _filters.cmMax != null) {
-            var cm = m.relationship && m.relationship.sharedCentimorgans;
-            if (cm == null) return false;
-            if (_filters.cmMin != null && cm < _filters.cmMin) return false;
-            if (_filters.cmMax != null && cm > _filters.cmMax) return false;
-        }
-        if (_filters.journey) {
-            var sm = _sessionMatches && _sessionMatches[m.sampleId];
-            var branches = sm && sm.journeys;
-            var found = false;
-            if (branches) {
-                var q = _filters.journey;
-                for (var bi = 0; bi < branches.length; bi++) {
-                    if ((branches[bi].displayName || '') === q) { found = true; break; }
-                }
-                if (_filters.journeyOnly && branches.length > 1) found = false;
-            }
-            if (!found) return false;
-        }
-        if (_filters.regions && _filters.regions.length) {
-            var sm = _sessionMatches && _sessionMatches[m.sampleId];
-            var regs = sm && sm.regions;
-            for (var fi = 0; fi < _filters.regions.length; fi++) {
-                var rf = _filters.regions[fi];
-                if (!rf.region) continue;
-                var ok = false;
-                if (rf.region.indexOf('__macro__') === 0) {
-                    var mkey = rf.region.slice(9);
-                    var totalPct = 0;
-                    if (regs) {
-                        for (var ri = 0; ri < regs.length; ri++) {
-                            if ((regs[ri].macroRegionKey || '') === mkey) {
-                                totalPct += regs[ri].percentage || 0;
-                            }
-                        }
-                    }
-                    if (totalPct > 0) {
-                        ok = true;
-                        if (rf.pctMin != null && totalPct < rf.pctMin) ok = false;
-                        if (rf.pctMax != null && totalPct > rf.pctMax) ok = false;
-                    }
-                } else {
-                    if (regs) {
-                        for (var ri = 0; ri < regs.length; ri++) {
-                            if ((regs[ri].displayName || regs[ri].key || '') === rf.region) {
-                                ok = true;
-                                var pct = regs[ri].percentage;
-                                if (rf.pctMin != null && (pct == null || pct < rf.pctMin)) ok = false;
-                                if (rf.pctMax != null && (pct == null || pct > rf.pctMax)) ok = false;
-                                if (ok) break;
-                            }
-                        }
-                    }
-                }
-                if (!ok) return false;
-            }
-        }
-        return true;
-    }
-
-    var _regionOptsSig = '';
-
-    function buildRegionOptions() {
-        var html = '<option value="">All</option>';
-        if (!_sessionMatches) return html;
-        var macroGroups = {};
-        var sids = Object.keys(_sessionMatches);
-        for (var i = 0; i < sids.length; i++) {
-            var sm = _sessionMatches[sids[i]];
-            var regs = sm && sm.regions;
-            if (regs) {
-                for (var ri = 0; ri < regs.length; ri++) {
-                    var name = regs[ri].displayName || regs[ri].key;
-                    var mkey = regs[ri].macroRegionKey || 'other';
-                    if (!name) continue;
-                    if (!macroGroups[mkey]) macroGroups[mkey] = {};
-                    macroGroups[mkey][name] = true;
-                }
-            }
-        }
-        var macroKeys = Object.keys(macroGroups).sort();
-        for (var mi = 0; mi < macroKeys.length; mi++) {
-            var mkey = macroKeys[mi];
-            var names = Object.keys(macroGroups[mkey]).sort();
-            html += '<option value="__macro__' + mkey + '">' + titleize(mkey) + '</option>';
-            for (var ni = 0; ni < names.length; ni++) {
-                html += '<option value="' + names[ni] + '">\u00A0\u00A0' + names[ni] + '</option>';
-            }
-        }
-        return html;
-    }
-
-    function renderRegionFilters(force) {
-        if (!force && _filterSelectFocused) return;
-        var container = document.getElementById('regionFilters');
-        if (!container) return;
-        if (!force && _regionOptsSig === buildRegionOptions() && container.children.length) return;
-        _regionOptsSig = buildRegionOptions();
-        var filters = _filters.regions && _filters.regions.length ? _filters.regions : [{ region: '', pctMin: null, pctMax: null }];
-        var opts = buildRegionOptions();
-        var html = '';
-        for (var i = 0; i < filters.length; i++) {
-            html += regionRowHtml(i, opts, filters[i]);
-        }
-        container.innerHTML = html;
-        for (var i = 0; i < filters.length; i++) {
-            restoreRegionRow(i, filters[i]);
-        }
-        var rows = container.querySelectorAll('.region-row');
-        if (rows.length === 1) {
-            var btn = rows[0].querySelector('.region-remove');
-            if (btn) btn.style.display = 'none';
-        }
-    }
-
-    function regionRowHtml(idx, opts, filter) {
-        return '<span class="region-row" data-idx="' + idx + '">' +
-            '<select class="region-select" data-idx="' + idx + '">' + opts + '</select>' +
-            '<span class="filter-sep" style="margin:0 2px">%</span>' +
-            '<input type="number" class="region-pct-min filter-input filter-cm" data-idx="' + idx + '" placeholder="Min" value="' + (filter.pctMin || '') + '">' +
-            '<span class="filter-sep">–</span>' +
-            '<input type="number" class="region-pct-max filter-input filter-cm" data-idx="' + idx + '" placeholder="Max" value="' + (filter.pctMax || '') + '">' +
-            '<button class="region-remove topbar-btn" data-idx="' + idx + '" style="font-size:14px;padding:2px 8px">−</button>' +
-            '</span>';
-    }
-
-    function restoreRegionRow(idx, filter) {
-        if (!filter.region) return;
-        var sel = document.querySelector('#regionFilters .region-select[data-idx="' + idx + '"]');
-        if (sel) sel.value = filter.region;
-    }
-
-    function populateFilterSelects() {
-        var journeySel = document.getElementById('filterJourney');
-        if (!journeySel) return;
-        if (_filterSelectFocused) return;
-        if (!journeySel._tracking) {
-            journeySel._tracking = true;
-            journeySel.addEventListener('focus', function() { _filterSelectFocused = true; });
-            journeySel.addEventListener('blur', function() { _filterSelectFocused = false; populateFilterSelects(); });
-        }
-        var currentJourney = journeySel.value;
-        if (!journeySel.options.length || journeySel.options[0].value !== '') {
-            journeySel.insertAdjacentHTML('afterbegin', '<option value="">All</option>');
-        }
-        var knownJourneys = {};
-        for (var oi = 0; oi < journeySel.options.length; oi++) knownJourneys[journeySel.options[oi].value] = true;
-        if (_sessionMatches) {
-            var sids = Object.keys(_sessionMatches);
+    var resumePromise = DB.getFetchState(guid).then(function (fs) {
+      if (fs && fs.status === 0) {
+        return DB.getSession(guid).then(function (session) {
+          if (session && session.matches) {
+            var sm = session.matches
+            var sids = Object.keys(sm)
             for (var i = 0; i < sids.length; i++) {
-                var sm = _sessionMatches[sids[i]];
-                var branches = sm && sm.journeys;
-                if (branches) {
-                    for (var bi = 0; bi < branches.length; bi++) {
-                        var name = branches[bi].displayName;
-                        if (name && !knownJourneys[name]) {
-                            knownJourneys[name] = true;
-                            var opt = document.createElement('option');
-                            opt.value = name;
-                            opt.textContent = name;
-                            var insertIdx = 1;
-                            while (insertIdx < journeySel.options.length && journeySel.options[insertIdx].value < name) insertIdx++;
-                            journeySel.insertBefore(opt, journeySel.options[insertIdx] || null);
-                        }
-                    }
-                }
+              var m = sm[sids[i]]
+              allMatches.push({ sampleId: sids[i], relationship: m.relationship || {}, createdDate: m.createdDate || null })
+              s.profileData[sids[i]] = { matchName: m.matchName, matchNameInitials: m.matchNameInitials, displayGender: m.displayGender, photoUrl: m.photoUrl }
+              if (m.journeys && m.journeys.length) {
+                s.batchCommunitiesData[sids[i]] = { branches: m.journeys }
+                resolveJourneyNames(s.batchCommunitiesData[sids[i]].branches)
+                if (sm[sids[i]]) sm[sids[i]].journeys = s.batchCommunitiesData[sids[i]].branches
+              }
+              if (m.regions) s.batchEthnicityData[sids[i]] = { regions: m.regions }
             }
-        }
-        journeySel.value = currentJourney && knownJourneys[currentJourney] ? currentJourney : '';
+            s.matchListData = { matchList: allMatches }
+            s.sessionMatches = sm
+            currentPage = fs.nextPage || 1
+            mode = fs.mode || mode
+            params = fs.params || params
+            desiredCount = mode === 'cmRange' ? Infinity : (params.desiredCount || 100)
+            setState({ matchListData: s.matchListData, profileData: s.profileData, batchEthnicityData: s.batchEthnicityData, batchCommunitiesData: s.batchCommunitiesData, sessionMatches: s.sessionMatches })
+          }
+        })
+      }
+    })
+
+    function fetchPage() {
+      var msg = mode === 'cmRange' ? 'Fetching match list for range ' + params.range + ' cM... (' + allMatches.length + ' matches)' : 'Fetching match list... (' + allMatches.length + '/' + desiredCount + ')'
+      setState({ fetchMsg: msg })
+      var url = 'https://www.ancestry.com/discoveryui-matches/parents/list/api/matchList/' + guid + '?itemsPerPage=100&currentPage=' + currentPage
+      if (mode === 'cmRange') url += '&sharedDna=' + params.range
+      debugLog('page ' + currentPage + ' mode=' + mode + ' url=' + url)
+      return apiFetch(url, { credentials: 'include', mode: 'cors', headers: { 'Accept': 'application/json' } })
+        .then(function (data) {
+          var matches = data.matchList
+          if (!Array.isArray(matches)) return nextPage(false)
+          var newSids = []
+          var sidIndex = {}
+          for (var i = 0; i < allMatches.length; i++) sidIndex[allMatches[i].sampleId] = true
+          var limit = mode === 'cmRange' ? Infinity : desiredCount
+          for (var i = 0; i < matches.length && allMatches.length < limit; i++) {
+            var sid = matches[i].sampleId
+            if (!sid || sidIndex[sid]) continue
+            sidIndex[sid] = true
+            allMatches.push(matches[i])
+            newSids.push(sid)
+          }
+          if (allMatches.length > desiredCount) allMatches = allMatches.slice(0, desiredCount)
+          s.matchListData = { matchList: allMatches }
+          setState({ matchListData: s.matchListData })
+          if (mode !== 'cmRange') { _progressDone += newSids.length; setProgress(_progressDone, _progressTotal) }
+          var hasMore
+          if (mode === 'cmRange') {
+            if (data.isLastPage === true) hasMore = false
+            else if (data.isLastPage === undefined) hasMore = matches.length >= 100
+            else hasMore = matches.length > 0
+          } else {
+            hasMore = matches.length >= 100
+          }
+          debugLog('  got ' + newSids.length + ' new, total=' + allMatches.length + ' next=' + (currentPage + 1) + ' hasMore=' + hasMore + ' isLastPage=' + data.isLastPage)
+          if (newSids.length === 0) {
+            currentPage++
+            saveState()
+            return nextPage(false)
+          }
+          return fetchProfileData(guid, newSids).then(function () {
+            storeMatchData(guid, allMatches)
+            currentPage++
+            saveState()
+            return processPageChunks(guid, newSids)
+          }).then(function () {
+            return nextPage(hasMore)
+          })
+        })
     }
 
-    function renderCards(guid) {
-        var list = _matchListData && _matchListData.matchList;
-        if (!list) { var fb = document.getElementById('filterBar'); if (fb) fb.style.display = 'none'; return; }
-        var fb = document.getElementById('filterBar');
-        if (fb) fb.style.display = '';
-        populateFilterSelects();
-        renderRegionFilters();
-        var filtered = list.filter(matchesFilter);
-        var totalPages = Math.ceil(filtered.length / _pageSize);
-        if (_currentPage > totalPages) _currentPage = totalPages || 1;
-        var start = (_currentPage - 1) * _pageSize;
-        var end = Math.min(start + _pageSize, filtered.length);
-        var page = filtered.slice(start, end);
-        var total = list.length;
-        var shown = filtered.length;
-        var html = '';
-        if (shown < total) html += '<div class="match-count">Showing <strong>' + shown + '</strong> of <strong>' + total + '</strong> matches</div>';
-        html += '<div class="cards">';
-        for (var i = 0; i < page.length; i++) {
-            var m = page[i];
-            var p = _profileData && _profileData[m.sampleId] || {};
-            var date = new Date(m.createdDate);
-            var dateStr = (date.getMonth()+1) + '/' + date.getDate() + '/' + date.getFullYear();
-            var r = m.relationship || {};
-            var tagCodes = [];
-            if (m.tags) {
-                var tagKeys = Object.keys(m.tags);
-                for (var ti = 0; ti < tagKeys.length; ti++) {
-                    if (m.tags[tagKeys[ti]]) tagCodes.push(m.tags[tagKeys[ti]]);
-                }
-            }
-            html += '<div class="card match-card" data-guid="' + guid + '" data-sample="' + m.sampleId + '">';
-            html += '<div class="card-top">';
-            var gc = 'gender-n';
-            if (p.displayGender === 'M') gc = 'gender-m';
-            else if (p.displayGender === 'F') gc = 'gender-f';
-            if (p.photoUrl) {
-                html += '<img src="' + p.photoUrl + '" class="avatar">';
-            } else {
-                html += '<div class="avatar avatar-initials ' + gc + '">' + (p.matchNameInitials || '?') + '</div>';
-            }
-            html += '<span class="card-name">' + (_hideNames ? (p.matchNameInitials || '??') : (p.matchName || 'Unknown')) + '</span></div>';
-            html += '<div class="card-details">';
-            var relStr = '';
-            if (r.sharedCentimorgans) relStr += '<span class="num">' + r.sharedCentimorgans + '</span> cM';
-            if (r.sharedCentimorgans && r.numSharedSegments) relStr += ' across ';
-            if (r.numSharedSegments) relStr += '<span class="num">' + r.numSharedSegments + '</span> segments';
-            if (relStr) html += '<div class="rel-text">' + relStr + '</div>';
-            html += '</div>';
-            var sm = _sessionMatches && _sessionMatches[m.sampleId];
-            var journeys = sm && sm.journeys;
-            if (journeys && journeys.length > 0) {
-                var sorted = journeys.slice().sort(function(a, b) { return (b.connectionPercent || 0) - (a.connectionPercent || 0); });
-                var maxPills = 3;
-                var showCount = Math.min(sorted.length, maxPills);
-                html += '<div class="journey-strip">';
-                for (var ji = 0; ji < showCount; ji++) {
-                    var j = sorted[ji];
-                    html += '<span class="journey-pill ' + (j.connection || '').toLowerCase() + '"><span class="jp-name">' + (j.displayName || j.id || '') + '</span> <span class="jp-pct">' + (j.connectionPercent || '?') + '%</span></span>';
-                }
-                if (sorted.length > maxPills) html += '<span style="font-size:10px;color:#64748b;padding:1px 4px;">+' + (sorted.length - maxPills) + ' more</span>';
-                html += '</div>';
-            }
-            html += '</div>';
-        }
-        html += '</div>';
-        if (totalPages > 1) {
-            html += '<div class="pagination">';
-            html += '<button class="page-btn" data-page="' + (_currentPage - 1) + '"' + (_currentPage <= 1 ? ' disabled' : '') + '>&#9664;</button>';
-            var pageRange = [];
-            var startPage = Math.max(1, _currentPage - 2);
-            var endPage = Math.min(totalPages, _currentPage + 2);
-            if (startPage > 1) { pageRange.push(1); if (startPage > 2) pageRange.push('...'); }
-            for (var pi = startPage; pi <= endPage; pi++) pageRange.push(pi);
-            if (endPage < totalPages) { if (endPage < totalPages - 1) pageRange.push('...'); pageRange.push(totalPages); }
-            for (var pi2 = 0; pi2 < pageRange.length; pi2++) {
-                var p = pageRange[pi2];
-                if (p === '...') {
-                    html += '<span class="page-dots">...</span>';
-                } else {
-                    html += '<button class="page-btn' + (p === _currentPage ? ' page-active' : '') + '" data-page="' + p + '">' + p + '</button>';
-                }
-            }
-            html += '<button class="page-btn" data-page="' + (_currentPage + 1) + '"' + (_currentPage >= totalPages ? ' disabled' : '') + '>&#9654;</button>';
-            html += '</div>';
-        }
-        var el = document.getElementById('matchListResult');
-        if (el) el.innerHTML = html;
-        if (el) {
-            el.onclick = function(e) {
-                var btn = e.target.closest('.page-btn');
-                if (btn && !btn.disabled) {
-                    _currentPage = parseInt(btn.getAttribute('data-page'), 10);
-                    renderCards(guid);
-                    return;
-                }
-                var card = e.target.closest('.match-card');
-                if (card) {
-                    var g = card.getAttribute('data-guid');
-                    var s = card.getAttribute('data-sample');
-                    if (g && s) window.open('match.html?guid=' + g + '&sampleId=' + s, '_blank');
-                }
-            };
-        }
+    function nextPage(hasMore) {
+      var remaining = mode === 'cmRange' ? 1 : (desiredCount - allMatches.length)
+      debugLog('nextPage: hasMore=' + hasMore + (mode === 'cmRange' ? '' : ' remaining=' + remaining))
+      if (remaining > 0 && hasMore) return delay(FETCH_DELAY).then(fetchPage)
     }
 
-    var FETCH_DELAY = 500;
-
-    function delay(ms) { return new Promise(function(resolve) { setTimeout(resolve, ms); }); }
-
-    function chunkArray(arr, size) {
-        var chunks = [];
-        for (var i = 0; i < arr.length; i += size) chunks.push(arr.slice(i, i + size));
-        return chunks;
+    function processPageChunks(guid, pageSampleIds) {
+      var chunks = chunkArray(pageSampleIds, 24)
+      var chain = Promise.resolve()
+      for (var ci = 0; ci < chunks.length; ci++) {
+        chain = chain.then((function (chunk, idx) {
+          return function () { return processChunk24(guid, chunk, idx * 24 + 1, pageSampleIds.length) }
+        })(chunks[ci], ci))
+      }
+      return chain
     }
 
-    function setStatus(msg) {
-        var el = document.getElementById('fetchStatus');
-        if (!el) return;
-        if (!msg) { el.style.display = 'none'; return; }
-        el.style.display = '';
-        document.getElementById('fetchMsg').textContent = msg;
-        var activeMode = document.querySelector('.mode-btn.active');
-        var isCm = activeMode && activeMode.getAttribute('data-mode') === 'cmRange';
-        var bar = document.getElementById('fetchBarWrap');
-        var pct = document.getElementById('fetchPct');
-        if (bar) bar.style.display = isCm ? 'none' : '';
-        if (pct) pct.style.display = isCm ? 'none' : '';
+    function processChunk24(guid, chunk, rangeStart, total) {
+      setState({ fetchMsg: 'Fetching regions for matches ' + rangeStart + '-' + (rangeStart + chunk.length - 1) + ' of ' + total + '...' })
+      return fetchBatchEthnicity(guid, chunk).then(function (ethData) {
+        for (var k in ethData) s.batchEthnicityData[k] = ethData[k]
+        if (s.regionMap) {
+          for (var k in ethData) {
+            var regions = ethData[k] && ethData[k].regions
+            if (!regions) continue
+            for (var ri = 0; ri < regions.length; ri++) regions[ri].displayName = s.regionMap[regions[ri].key] || regions[ri].key
+          }
+        }
+        setState({ batchEthnicityData: s.batchEthnicityData })
+        if (mode !== 'cmRange') { _progressDone += chunk.length; setProgress(_progressDone, _progressTotal) }
+        return delay(FETCH_DELAY)
+      }).then(function () {
+        setState({ fetchMsg: 'Fetching journeys for matches ' + rangeStart + '-' + (rangeStart + chunk.length - 1) + ' of ' + total + '...' })
+        return fetchBatchCommunities(guid, chunk)
+      }).then(function (comData) {
+        for (var k in comData) s.batchCommunitiesData[k] = comData[k]
+        var sKeys = Object.keys(s.batchCommunitiesData)
+        for (var si = 0; si < sKeys.length; si++) {
+          var branches = s.batchCommunitiesData[sKeys[si]] && s.batchCommunitiesData[sKeys[si]].branches
+          if (branches) resolveJourneyNames(branches)
+        }
+        storeMatchData(guid, s.matchListData && s.matchListData.matchList)
+        if (mode !== 'cmRange') { _progressDone += chunk.length; setProgress(_progressDone, _progressTotal) }
+        setState({ batchCommunitiesData: s.batchCommunitiesData })
+      })
     }
 
-    function setProgress(current, total) {
-        var fill = document.getElementById('fetchBarFill');
-        var pctEl = document.getElementById('fetchPct');
-        if (!fill || !pctEl) return;
-        var pct = total > 0 ? Math.min(current / total * 100, 100) : 0;
-        fill.style.width = pct + '%';
-        var t = pct / 100;
-        var r, g, b;
-        if (t < 0.5) {
-            var f = t * 2;
-            r = 239; g = Math.round(68 + f * (168 - 68)); b = Math.round(68 + f * (129 - 68));
+  function storeMatchData(guid, matchList) {
+    if (!s.sessionMatches) s.sessionMatches = {}
+    if (matchList) {
+      for (var mi = 0; mi < matchList.length; mi++) {
+        var sid = matchList[mi].sampleId
+        if (!sid) continue
+        if (!s.sessionMatches[sid]) s.sessionMatches[sid] = {}
+        if (s.profileData && s.profileData[sid]) {
+          s.sessionMatches[sid].matchName = s.profileData[sid].matchName
+          s.sessionMatches[sid].matchNameInitials = s.profileData[sid].matchNameInitials
+          s.sessionMatches[sid].displayGender = s.profileData[sid].displayGender
+          s.sessionMatches[sid].photoUrl = s.profileData[sid].photoUrl
+        }
+        if (s.batchEthnicityData && s.batchEthnicityData[sid]) s.sessionMatches[sid].regions = s.batchEthnicityData[sid].regions
+        if (s.batchCommunitiesData && s.batchCommunitiesData[sid]) s.sessionMatches[sid].journeys = s.batchCommunitiesData[sid].branches
+      }
+    }
+    setState({ sessionMatches: s.sessionMatches })
+    if (typeof DB !== 'undefined') DB.saveSession(guid, matchList, s.profileData, s.batchEthnicityData, s.batchCommunitiesData)
+  }
+
+    function finishFetch() {
+      clearBadge()
+      setState({ fetchMsg: '', fetchPct: '', isFetching: false, fetchComplete: true, buttonLabel: null })
+      DB.saveFetchState(guid, 1, mode, params)
+      var label = mode === 'cmRange' ? '\u2713 ' + allMatches.length + ' [' + params.range + ' cM]' : '\u2713 ' + allMatches.length + '/' + (params.desiredCount || '?') + ' matches'
+      setState({ fetchStateBadge: label })
+      try {
+        chrome.notifications.create({
+          type: 'basic', iconUrl: chrome.runtime.getURL('icons/icon48.png'),
+          title: 'MatchFetch',
+          message: mode === 'cmRange' ? 'Finished fetching ' + allMatches.length + ' matches in range ' + params.range + ' cM' : 'Finished fetching ' + allMatches.length + ' matches'
+        })
+      } catch (e) { console.log('Notification error:', e) }
+    }
+
+    resumePromise.then(function () {
+      setBadgeFetching()
+      saveState()
+      if (mode !== 'cmRange') { _progressDone = allMatches.length; setProgress(_progressDone, _progressTotal) }
+      var incomplete = findIncompleteSampleIds()
+      debugLog('resume: mode=' + mode + ' have=' + allMatches.length + (mode === 'cmRange' ? '' : ' target=' + desiredCount) + ' incomplete=' + incomplete.length)
+      if (allMatches.length >= desiredCount) {
+        if (incomplete.length === 0) return finishFetch()
+        setState({ fetchMsg: 'Resuming: processing data for ' + incomplete.length + ' matches...' })
+        return processPageChunks(guid, incomplete).then(finishFetch).catch(function (err) {
+          clearBadge(); setState({ isFetching: false, fetchMsg: '' }); restoreFetchUI(guid)
+        })
+      }
+      var chain = Promise.resolve()
+      if (incomplete.length > 0) {
+        setState({ fetchMsg: 'Resuming: processing ' + incomplete.length + ' existing matches first...' })
+        chain = processPageChunks(guid, incomplete)
+      }
+      return chain.then(function () { return fetchPage() }).then(finishFetch).catch(function (err) {
+        clearBadge(); setState({ isFetching: false, fetchMsg: '' }); restoreFetchUI(guid)
+      })
+    })
+  }
+
+  function restoreFetchUI(guid) {
+    DB.getFetchState(guid).then(function (fs) {
+      if (fs && fs.status === 0) {
+        if (fs.mode === 'cmRange') {
+          setState({ mode: 'cmRange', cmRangeMin: '', cmRangeMax: '' })
+          var parts = (fs.params && fs.params.range || '').split('-')
+          if (parts.length === 2) setState({ cmRangeMin: parts[0], cmRangeMax: parts[1] })
         } else {
-            var f = (t - 0.5) * 2;
-            r = Math.round(239 - f * (239 - 34)); g = Math.round(168 + f * (197 - 168)); b = Math.round(129 - f * (129 - 94));
+          var count = fs.params && fs.params.desiredCount || 0
+          if (count > 0) setState({ mode: 'count', desiredCount: String(count) })
         }
-        var color = 'rgb(' + r + ',' + g + ',' + b + ')';
-        fill.style.background = color;
-        pctEl.textContent = Math.round(pct) + '%';
-        pctEl.style.color = color;
-        var svg = document.querySelector('#fetchStatus svg');
-        if (svg) {
-            var paths = svg.querySelectorAll('path, line');
-            var c2 = 'rgb(' + Math.round(r * 0.8) + ',' + Math.round(g * 0.8) + ',' + Math.round(b * 0.8) + ')';
-            if (paths.length) paths[0].setAttribute('stroke', color);
-            for (var pi = 1; pi < paths.length; pi++) paths[pi].setAttribute('stroke', c2);
+        setState({ showFetchOptions: false, buttonLabel: 'Resume', statusMsg: 'Previous fetch incomplete \u2014 click Resume to continue' })
+        DB.getSession(guid).then(function (session) {
+          var c = session && session.matches ? Object.keys(session.matches).length : 0
+          setState({ fetchStateBadge: '\u21bb ' + c + ' fetched (page ' + (fs.nextPage || 1) + ')' })
+        })
+      } else if (fs && fs.status === 1) {
+        DB.getSession(guid).then(function (session) {
+          var c = session && session.matches ? Object.keys(session.matches).length : 0
+          setState({ showFetchOptions: false, fetchComplete: true, fetchStateBadge: '\u2713 ' + c + ' matches' })
+        })
+      } else {
+        setState({ showFetchOptions: true, fetchComplete: false, buttonLabel: null, fetchStateBadge: '' })
+      }
+    })
+  }
+
+  function setProgress(current, total) {
+    var pct = total > 0 ? Math.min(current / total * 100, 100) : 0
+    var t = pct / 100
+    var r, g, b
+    if (t < 0.5) { var f = t * 2; r = 239; g = Math.round(68 + f * (168 - 68)); b = Math.round(68 + f * (129 - 68)) }
+    else { var f = (t - 0.5) * 2; r = Math.round(239 - f * (239 - 34)); g = Math.round(168 + f * (197 - 168)); b = Math.round(129 - f * (129 - 94)) }
+    setState({ fetchProgress: pct, fetchPct: 'progress' })
+    var el = document.getElementById('fetchBarFill')
+    if (el) { el.style.width = pct + '%'; el.style.background = 'rgb(' + r + ',' + g + ',' + b + ')' }
+    var pctEl = document.getElementById('fetchPct')
+    if (pctEl) { pctEl.textContent = Math.round(pct) + '%'; pctEl.style.color = 'rgb(' + r + ',' + g + ',' + b + ')' }
+  }
+
+  function fetchProfileData(guid, sampleIds) {
+    return new Promise(function (resolve, reject) {
+      var chunks = chunkArray(sampleIds, 100)
+      var allProfiles = {}
+      var idx = 0
+
+      function next() {
+        if (idx >= chunks.length) {
+          for (var k in allProfiles) s.profileData[k] = allProfiles[k]
+          setState({ profileData: s.profileData })
+          resolve()
+          return
         }
+        setState({ fetchMsg: 'Fetching profile data... (' + (idx * 100 + 1) + '-' + Math.min((idx + 1) * 100, sampleIds.length) + ' of ' + sampleIds.length + ')' })
+        apiFetch('https://www.ancestry.com/discoveryui-matches/cluster/api/profileData/' + guid, {
+          method: 'POST', credentials: 'include', mode: 'cors',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({ matchSampleIds: chunks[idx] })
+        }).then(function (profiles) {
+          for (var k in profiles) allProfiles[k] = profiles[k]
+          idx++
+          delay(FETCH_DELAY).then(next)
+        }).catch(reject)
+      }
+      next()
+    })
+  }
+
+  function fetchBatchEthnicity(guid, sampleIds) {
+    return apiFetch('https://www.ancestry.com/dna/origins/secure/compare/' + guid + '/batchEthnicity', {
+      method: 'PUT', credentials: 'include', mode: 'cors',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify(sampleIds)
+    })
+  }
+
+  function fetchBatchCommunities(guid, sampleIds) {
+    return apiFetch('https://www.ancestry.com/dna/origins/secure/compare/' + guid + '/batchCommunities', {
+      method: 'POST', credentials: 'include', mode: 'cors',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify(sampleIds)
+    })
+  }
+
+  function debugLog(msg) {
+    if (!s.debugEnabled) return
+    var el = document.getElementById('debugLog')
+    if (!el) return
+    el.style.display = 'block'
+    var t = new Date()
+    var ts = t.getHours().toString().padStart(2, '0') + ':' + t.getMinutes().toString().padStart(2, '0') + ':' + t.getSeconds().toString().padStart(2, '0')
+    el.textContent += '[' + ts + '] ' + msg + '\n'
+    el.scrollTop = el.scrollHeight
+  }
+
+  function matchesFilter(m) {
+    var p = s.profileData && s.profileData[m.sampleId] || {}
+    var f = s.filters
+    if (f.name) {
+      var n = (p.matchName || '').toLowerCase()
+      if (n.indexOf(f.name.toLowerCase()) === -1 && (p.matchNameInitials || '').toLowerCase().indexOf(f.name.toLowerCase()) === -1) return false
     }
-
-    var _debugEnabled = false;
-    var _hideNames = false;
-    var _filters = { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, regions: [] };
-
-function titleize(str) {
-    if (!str) return '';
-    return str.replace(/_/g, ' ').replace(/\w\S*/g, function(txt) {
-        return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
-    });
-}
-
-    function debugLog(msg) {
-        if (!_debugEnabled) return;
-        var el = document.getElementById('debugLog');
-        if (!el) return;
-        el.style.display = 'block';
-        var t = new Date();
-        var ts = t.getHours().toString().padStart(2,'0') + ':' + t.getMinutes().toString().padStart(2,'0') + ':' + t.getSeconds().toString().padStart(2,'0');
-        el.textContent += '[' + ts + '] ' + msg + '\n';
-        el.scrollTop = el.scrollHeight;
+    if (f.cmMin != null || f.cmMax != null) {
+      var cm = m.relationship && m.relationship.sharedCentimorgans
+      if (cm == null) return false
+      if (f.cmMin != null && cm < f.cmMin) return false
+      if (f.cmMax != null && cm > f.cmMax) return false
     }
+    if (f.journey) {
+      var sm = s.sessionMatches && s.sessionMatches[m.sampleId]
+      var branches = sm && sm.journeys
+      var found = false
+      if (branches) {
+        for (var bi = 0; bi < branches.length; bi++) {
+          if ((branches[bi].displayName || '') === f.journey) { found = true; break }
+        }
+        if (f.journeyOnly && branches.length > 1) found = false
+      }
+      if (!found) return false
+    }
+    if (f.regions && f.regions.length) {
+      var sm = s.sessionMatches && s.sessionMatches[m.sampleId]
+      var regs = sm && sm.regions
+      for (var fi = 0; fi < f.regions.length; fi++) {
+        var rf = f.regions[fi]
+        if (!rf.region) continue
+        var ok = false
+        if (rf.region.indexOf('__macro__') === 0) {
+          var mkey = rf.region.slice(9)
+          var totalPct = 0
+          if (regs) {
+            for (var ri = 0; ri < regs.length; ri++) {
+              if ((regs[ri].macroRegionKey || '') === mkey) totalPct += regs[ri].percentage || 0
+            }
+          }
+          if (totalPct > 0) {
+            ok = true
+            if (rf.pctMin != null && totalPct < rf.pctMin) ok = false
+            if (rf.pctMax != null && totalPct > rf.pctMax) ok = false
+          }
+        } else {
+          if (regs) {
+            for (var ri = 0; ri < regs.length; ri++) {
+              if ((regs[ri].displayName || regs[ri].key || '') === rf.region) {
+                ok = true
+                var pct = regs[ri].percentage
+                if (rf.pctMin != null && (pct == null || pct < rf.pctMin)) ok = false
+                if (rf.pctMax != null && (pct == null || pct > rf.pctMax)) ok = false
+                if (ok) break
+              }
+            }
+          }
+        }
+        if (!ok) return false
+      }
+    }
+    return true
+  }
 
-    function restoreFetchUI(guid) {
-        var fetchGroupEl = document.getElementById('fetchGroup');
-        if (fetchGroupEl) fetchGroupEl.style.display = '';
-        DB.getFetchState(guid).then(function(fs) {
-            var listBtn = document.getElementById('fetchListBtn');
-            var countInput = document.getElementById('matchCountInput');
-            var fsBadge = document.getElementById('fetchStateBadge');
-            var fetchOptionsEl = document.getElementById('fetchOptions');
-            if (fs && fs.status === 0) {
-                if (fetchOptionsEl) fetchOptionsEl.style.display = 'none';
-                var label = '';
-                if (fs.mode === 'cmRange') {
-                    var r = fs.params && fs.params.range || '';
-                    label = r ? ' (' + r + ' cM)' : '';
-                    var parts = r.split('-');
-                    if (parts.length === 2) {
-                        document.getElementById('cmRangeMin').value = parts[0];
-                        document.getElementById('cmRangeMax').value = parts[1];
-                    }
-                } else {
-                    var count = fs.params && fs.params.desiredCount || 0;
-                    if (count > 0) label = ' (' + count + ' matches)';
+  function getFilteredMatches() {
+    var list = s.matchListData && s.matchListData.matchList
+    if (!list) return []
+    return list.filter(matchesFilter)
+  }
+
+  function getPageMatches() {
+    var filtered = getFilteredMatches()
+    var totalPages = Math.max(1, Math.ceil(filtered.length / s.pageSize))
+    if (s.currentPage > totalPages) s.currentPage = totalPages
+    var start = (s.currentPage - 1) * s.pageSize
+    return { filtered: filtered, start: start, end: Math.min(start + s.pageSize, filtered.length), totalPages: totalPages }
+  }
+
+  function buildRegionOptions() {
+    var opts = [{ value: '', label: 'All' }]
+    if (!s.sessionMatches) return opts
+    var macroGroups = {}
+    var sids = Object.keys(s.sessionMatches)
+    for (var i = 0; i < sids.length; i++) {
+      var sm = s.sessionMatches[sids[i]]
+      var regs = sm && sm.regions
+      if (regs) {
+        for (var ri = 0; ri < regs.length; ri++) {
+          var name = regs[ri].displayName || regs[ri].key
+          var mkey = regs[ri].macroRegionKey || 'other'
+          if (!name) continue
+          if (!macroGroups[mkey]) macroGroups[mkey] = {}
+          macroGroups[mkey][name] = true
+        }
+      }
+    }
+    var macroKeys = Object.keys(macroGroups).sort()
+    for (var mi = 0; mi < macroKeys.length; mi++) {
+      var mkey = macroKeys[mi]
+      var names = Object.keys(macroGroups[mkey]).sort()
+      opts.push({ value: '__macro__' + mkey, label: titleize(mkey), isMacro: true })
+      for (var ni = 0; ni < names.length; ni++) opts.push({ value: names[ni], label: '\u00A0\u00A0' + names[ni] })
+    }
+    return opts
+  }
+
+  function getJourneyOptions() {
+    var opts = [{ value: '', label: 'All' }]
+    if (!s.sessionMatches) return opts
+    var known = {}
+    var sids = Object.keys(s.sessionMatches)
+    for (var i = 0; i < sids.length; i++) {
+      var branches = s.sessionMatches[sids[i]] && s.sessionMatches[sids[i]].journeys
+      if (branches) {
+        for (var bi = 0; bi < branches.length; bi++) {
+          var name = branches[bi].displayName
+          if (name && !known[name]) { known[name] = true; opts.push({ value: name, label: name }) }
+        }
+      }
+    }
+    return opts
+  }
+
+  function readFilters() {
+    var el = document.getElementById('filterName')
+    var f = s.filters
+    f.name = el ? el.value : ''
+    f.cmMin = parseFloat(document.getElementById('filterCmMin') ? document.getElementById('filterCmMin').value : '') || null
+    f.cmMax = parseFloat(document.getElementById('filterCmMax') ? document.getElementById('filterCmMax').value : '') || null
+    var journeyEl = document.getElementById('filterJourney')
+    f.journey = journeyEl ? journeyEl.value : ''
+    f.journeyOnly = document.getElementById('filterJourneyOnly') ? document.getElementById('filterJourneyOnly').checked : false
+    var rows = document.querySelectorAll('#regionFilters .region-row')
+    f.regions = []
+    for (var ri = 0; ri < rows.length; ri++) {
+      var rowSel = rows[ri].querySelector('.region-select')
+      var pctMin = rows[ri].querySelector('.region-pct-min')
+      var pctMax = rows[ri].querySelector('.region-pct-max')
+      var region = rowSel ? rowSel.value : ''
+      if (!region) continue
+      f.regions.push({ region: region, pctMin: parseFloat(pctMin.value) || null, pctMax: parseFloat(pctMax.value) || null })
+    }
+  }
+
+  function applyFilterChange() {
+    readFilters()
+    s.currentPage = 1
+  }
+
+  var App = {
+    oninit: function () {
+      document.getElementById('exportBtn').addEventListener('click', function () { if (typeof DB !== 'undefined' && DB.exportDatabase) DB.exportDatabase() })
+      document.getElementById('importBtn').addEventListener('click', function () { document.getElementById('importFileInput').click() })
+      document.getElementById('importFileInput').addEventListener('change', function (e) {
+        var file = e.target.files[0]
+        if (!file || !file.name.endsWith('.json')) { e.target.value = ''; return }
+        var reader = new FileReader()
+        reader.onload = function (ev) {
+          try {
+            var data = JSON.parse(ev.target.result)
+            if (!Array.isArray(data)) throw new Error('Invalid format: expected an array')
+            s.modal = {
+              title: 'Import database?',
+              text: 'This will overwrite your entire database with ' + data.length + ' kit(s) from this file. This cannot be undone.',
+              confirmText: 'Import',
+              cancelText: 'Cancel',
+              onConfirm: function () {
+                setState({ statusMsg: 'Importing...' })
+                DB.importDatabase(data).then(function (count) {
+                  setState({ statusMsg: 'Imported ' + count + ' kit(s)' })
+                  fetchTests()
+                })
+              }
+            }
+            m.redraw()
+          } catch (err) {
+            s.modal = { title: 'Import failed', text: err.message, cancelText: 'OK' }
+            m.redraw()
+          }
+        }
+        reader.readAsText(file)
+        e.target.value = ''
+      })
+      document.getElementById('githubBtn').addEventListener('click', function () { chrome.tabs.create({ url: 'https://github.com/strike978/matchfetch_ext' }) })
+      document.getElementById('discordBtn').addEventListener('click', function () { chrome.tabs.create({ url: 'https://discord.com/invite/f5BtHTM2zZ' }) })
+      document.getElementById('supportBtn').addEventListener('click', function () { chrome.tabs.create({ url: 'https://ko-fi.com/matchfetch' }) })
+      document.getElementById('debugToggle').addEventListener('change', function () {
+        setState({ debugEnabled: this.checked })
+        var dl = document.getElementById('debugLog')
+        if (dl) dl.style.display = this.checked ? 'block' : 'none'
+      })
+      document.getElementById('hideNamesToggle').addEventListener('change', function () {
+        setState({ hideNames: this.checked })
+        m.redraw()
+      })
+      Promise.all([loadRegionMap(), loadJourneyNameMap()]).then(fetchTests)
+    },
+    view: function () {
+      return [m(KitSelector), m(FilterBar), m(MatchList), m(Modal)]
+    }
+  }
+
+  var Modal = {
+    view: function () {
+      if (!s.modal) return null
+      return m('.modal-overlay', { onclick: function (e) { if (e.target === e.currentTarget) { s.modal = null; m.redraw() } } }, [
+        m('.modal', [
+          s.modal.icon ? m('.modal-icon', m.trust(s.modal.icon)) : null,
+          s.modal.title ? m('.modal-title', s.modal.title) : null,
+          s.modal.text ? m('.modal-text', s.modal.text) : null,
+          m('.modal-actions', [
+            s.modal.cancelText ? m('button.modal-btn.modal-cancel', { onclick: function () { s.modal = null; m.redraw() } }, s.modal.cancelText) : null,
+            s.modal.confirmText ? m('button.modal-btn.modal-confirm', { onclick: function () { var cb = s.modal.onConfirm; s.modal = null; m.redraw(); if (cb) cb() } }, s.modal.confirmText) : null,
+          ])
+        ])
+      ])
+    }
+  }
+
+  var KitSelector = {
+    view: function () {
+      if (s.testsLoading) return m('.spinner', [m('.spinner-ring'), m('.spinner-text', 'Loading...')])
+      if (s.tests.length === 0 && s.statusMsg) return m('.error', s.statusMsg)
+      if (s.tests.length === 0) return m('.empty', 'No tests found')
+      return [
+        m('.label', [
+          'Select a kit',
+          s.matchCount ? m('.badge', [
+            m.trust('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28" width="16" height="16" fill="none"><circle cx="10" cy="9" r="3.5" stroke="#94a3b8" stroke-width="2"/><circle cx="18" cy="9" r="3.5" stroke="#94a3b8" stroke-width="2"/><path d="M4 23c0-4 2-6.5 6-6.5s6 2.5 6 6.5" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/><path d="M14 23c0-4 2-6.5 6-6.5s6 2.5 6 6.5" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/></svg>'),
+            m('span.count', s.matchCount.count ? s.matchCount.count.toLocaleString() : '?'),
+            ' MATCHES'
+          ]) : null,
+          s.matchCount && s.matchCount.error ? m('.badge', { style: { color: '#f87171' } }, s.matchCount.error) : null,
+          s.matchCountLoading ? m('.badge', m('.spinner-ring', { style: { width: '12px', height: '12px', borderWidth: '2px', display: 'inline-block', verticalAlign: 'middle' } })) : null,
+          s.fetchStateBadge ? m('.badge#fetchStateBadge', s.fetchStateBadge) : null
+        ]),
+        m('.select-row', [
+          m('select#testSelect', {
+            value: s.selectedGuid,
+            onchange: function (e) { onKitSelect(e.target.value) }
+          }, [
+            m('option', { value: '' }, 'Choose a kit...'),
+            s.tests.map(function (t, i) {
+              var name = t.subjectName || t.displayName || t.name || 'Kit ' + (i + 1)
+              var guid = t.testGuid || t.testId || t.guid || t.id || ''
+              return m('option', { value: guid }, name)
+            })
+          ]),
+          s.selectedGuid ? m('button.clear-btn#clearKitBtn', {
+            title: 'Clear kit data',
+            onclick: function () {
+              s.modal = {
+                icon: '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+                title: 'Clear kit data?',
+                text: 'This will remove all matches, regions, and journeys for this kit from local storage.',
+                confirmText: 'Clear',
+                cancelText: 'Cancel',
+                onConfirm: function () {
+                  DB.deleteSession(s.selectedGuid).then(function () { return DB.deleteFetchState(s.selectedGuid) }).then(function () {
+                    s.matchListData = null
+                    s.sessionMatches = null
+                    s.profileData = {}
+                    s.batchEthnicityData = {}
+                    s.batchCommunitiesData = {}
+                    s.filters.regions = []
+                    s.fetchStateBadge = ''
+                    s.showFetchOptions = true
+                    s.currentPage = 1
+                    setState({ matchListData: null, sessionMatches: null, profileData: {}, batchEthnicityData: {}, batchCommunitiesData: {}, filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, regions: [] }, fetchStateBadge: '', showFetchOptions: true, fetchComplete: false, buttonLabel: null, currentPage: 1, statusMsg: '' })
+                    document.getElementById('filterJourney').innerHTML = '<option value="">All</option>'
+                  })
                 }
-                if (label && listBtn) {
-                    listBtn.innerHTML = '<span>&#x25B6;</span> Resume' + label;
-                }
-                if (countInput) countInput.style.display = 'none';
-                var msgEl = document.getElementById('statusMsg');
-                if (msgEl) msgEl.innerHTML = 'Previous fetch incomplete — click Resume to continue';
-                DB.getSession(guid).then(function(s) {
-                    var c = s && s.matches ? Object.keys(s.matches).length : 0;
-                    if (fsBadge) fsBadge.textContent = '↻ ' + c + ' fetched (page ' + (fs.nextPage || 1) + ')';
-                });
-            } else {
-                if (fetchOptionsEl) fetchOptionsEl.style.display = '';
-                if (listBtn) listBtn.innerHTML = '<span>&#x25B6;</span> Fetch';
-                if (countInput) countInput.style.display = '';
-                if (fsBadge) fsBadge.textContent = '';
+              }
+              m.redraw()
             }
-        });
+          }, m.trust('<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>')) : null
+        ]),
+        m('#fetchGroup', s.selectedGuid && !s.isFetching && !s.fetchComplete ? [
+          s.showFetchOptions ? m('#fetchOptions', [
+            m('.label', { style: { marginTop: '16px' } }, 'Fetch Options'),
+            m('.mode-toggle', [
+              m('button.mode-btn', { class: s.mode === 'count' ? 'active' : '', 'data-mode': 'count', onclick: function () { setState({ mode: 'count' }) } }, 'Count'),
+              m('button.mode-btn', { class: s.mode === 'cmRange' ? 'active' : '', 'data-mode': 'cmRange', onclick: function () { setState({ mode: 'cmRange' }) } }, 'cM Range'),
+            ]),
+            m('.fetch-row#countModeRow', { style: { display: s.mode === 'count' ? '' : 'none' } }, [
+              m('label.input-label', ['Matches ', m('input#matchCountInput.count-input', { type: 'number', value: s.desiredCount, min: '1', step: '1', oninput: function (e) { s.desiredCount = e.target.value } })])
+            ]),
+            m('.fetch-row#cmRangeModeRow', { style: { display: s.mode === 'cmRange' ? '' : 'none' } }, [
+              m('label.input-label', ['Min ', m('input#cmRangeMin.count-input', { type: 'number', value: s.cmRangeMin, min: '0', oninput: function (e) { s.cmRangeMin = e.target.value } })]),
+              m('label.input-label', ['Max ', m('input#cmRangeMax.count-input', { type: 'number', value: s.cmRangeMax, min: '0', oninput: function (e) { s.cmRangeMax = e.target.value } })]),
+            ]),
+          ]) : null,
+          m('button.btn.fetch-list-btn#fetchListBtn', {
+            disabled: s.isFetching,
+            onclick: function () {
+              if (s.isFetching) return
+              s.isFetching = true
+              s.statusMsg = ''
+              m.redraw()
+              if (s.mode === 'cmRange') {
+                var min = s.cmRangeMin
+                var max = s.cmRangeMax
+                if (min && max) fetchMatchList(s.selectedGuid, 'cmRange', { range: min + '-' + max })
+              } else {
+                fetchMatchList(s.selectedGuid, 'count', { desiredCount: parseInt(s.desiredCount, 10) || 100 })
+              }
+            }
+          }, s.isFetching ? [m('.spinner-ring', { style: { width: '16px', height: '16px', borderWidth: '2px' } }), ' Fetching...'] : [m.trust('<span>&#x25B6;</span>'), ' ' + (s.buttonLabel || 'Fetch')]),
+        ] : null),
+        s.fetchMsg ? m('#fetchStatus', { style: { textAlign: 'center', padding: '6px 0' } }, [
+          m('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' } }, [
+            m.trust('<svg class="helix-svg" viewBox="0 0 18 18" width="18" height="18"><g><animateTransform attributeName="transform" type="rotate" from="0 9 9" to="360 9 9" dur="2s" repeatCount="indefinite"/><path d="M2,4 C4,1 7,1 9,4 C11,7 14,7 16,4" stroke="#3b82f6" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M2,14 C4,17 7,17 9,14 C11,11 14,11 16,14" stroke="#60a5fa" stroke-width="1.5" fill="none" stroke-linecap="round" opacity=".6"/><line x1="2" y1="4" x2="2" y2="14" stroke="#60a5fa" stroke-width=".7" opacity=".35"/><line x1="5.5" y1="2.5" x2="5.5" y2="15.5" stroke="#60a5fa" stroke-width=".7" opacity=".35"/><line x1="9" y1="4" x2="9" y2="14" stroke="#60a5fa" stroke-width=".7" opacity=".35"/><line x1="12.5" y1="5.5" x2="12.5" y2="12.5" stroke="#60a5fa" stroke-width=".7" opacity=".35"/><line x1="16" y1="4" x2="16" y2="14" stroke="#60a5fa" stroke-width=".7" opacity=".35"/></g></svg>'),
+            m('span#fetchMsg', { style: { fontSize: '12px', color: '#94a3b8' } }, s.fetchMsg),
+            s.fetchPct ? m('span#fetchPct', { style: { fontSize: '12px', fontWeight: '700', color: '#e2e8f0' } }) : null
+          ]),
+          m('#fetchBarWrap', { style: { height: '4px', background: '#0f1724', borderRadius: '4px', overflow: 'hidden', marginTop: '6px', maxWidth: '300px', marginLeft: 'auto', marginRight: 'auto' } }, [
+            m('#fetchBarFill', { style: { height: '100%', width: s.fetchProgress + '%', borderRadius: '4px', transition: 'width .3s, background .3s' } })
+          ])
+        ]) : null,
+        s.statusMsg ? m('.status-msg', s.statusMsg) : null,
+        m('pre#debugLog', { style: { display: s.debugEnabled ? 'block' : 'none' } })
+      ]
     }
+  }
 
-    function fetchMatchList(guid, mode, params) {
-        _currentPage = 1;
-        var el = document.getElementById('matchListResult');
-        if (el) el.innerHTML = '';
-        var dl = document.getElementById('debugLog');
-        if (dl) dl.textContent = '';
-        _profileData = {};
-        _batchEthnicityData = {};
-        _batchCommunitiesData = {};
-        _matchListData = null;
-        var fetchGroupEl = document.getElementById('fetchGroup');
-        if (fetchGroupEl) fetchGroupEl.style.display = 'none';
-
-
-
-        var allMatches = [];
-        var desiredCount = mode === 'cmRange' ? Infinity : (params.desiredCount || 100);
-        var currentPage = 1;
-        var nameCache = {};
-        var _progressDone = 0;
-        var _progressTotal = mode === 'cmRange' ? 300 : desiredCount * 3;
-
-        function setBadgeFetching() {
-            try { chrome.action.setBadgeText({ text: '↻' }); chrome.action.setBadgeBackgroundColor({ color: '#3b82f6' }); } catch(e) {}
-        }
-
-        function clearBadge() {
-            try { chrome.action.setBadgeText({ text: '' }); } catch(e) {}
-        }
-
-        function saveState() {
-            DB.saveFetchState(guid, 0, mode, params, currentPage);
-            var pageJustFetched = currentPage - 1;
-            var b = document.getElementById('fetchStateBadge');
-            if (!b) return;
-            if (mode === 'cmRange') {
-                b.textContent = '↻ ' + allMatches.length + ' [' + params.range + ' cM] page ' + pageJustFetched;
-            } else {
-                b.textContent = '↻ ' + allMatches.length + '/' + desiredCount + ' page ' + pageJustFetched;
-            }
-        }
-
-        var fetchBtn = document.getElementById('fetchListBtn');
-        if (fetchBtn) fetchBtn.disabled = true;
-
-        function anyMissingName(nodes) {
-            for (var i = 0; i < nodes.length; i++) {
-                if (!nodes[i].displayName) return true;
-                if (nodes[i].communities && anyMissingName(nodes[i].communities)) return true;
-            }
-            return false;
-        }
-
-        function findIncompleteSampleIds() {
-            var result = [];
-            for (var i = 0; i < allMatches.length; i++) {
-                var sid = allMatches[i].sampleId;
-                if (!sid) continue;
-                if (!_batchEthnicityData[sid] || !_batchCommunitiesData[sid]) { result.push(sid); continue; }
-                var branches = _batchCommunitiesData[sid].branches;
-                if (branches && anyMissingName(branches)) { result.push(sid); }
-            }
-            return result;
-        }
-
-        var resumePromise = DB.getFetchState(guid).then(function(fs) {
-            if (fs && fs.status === 0) {
-                return DB.getSession(guid).then(function(session) {
-                    if (session && session.matches) {
-                        _sessionMatches = session.matches;
-                        var sids = Object.keys(session.matches);
-                        for (var i = 0; i < sids.length; i++) {
-                            var m = session.matches[sids[i]];
-                            allMatches.push({ sampleId: sids[i], relationship: m.relationship || {}, createdDate: m.createdDate || null });
-                            _profileData[sids[i]] = { matchName: m.matchName, matchNameInitials: m.matchNameInitials, displayGender: m.displayGender, photoUrl: m.photoUrl };
-                            if (m.journeys && m.journeys.length) {
-                                _batchCommunitiesData[sids[i]] = { branches: m.journeys };
-                                resolveJourneyNames(_batchCommunitiesData[sids[i]].branches);
-                                if (_sessionMatches && _sessionMatches[sids[i]]) {
-                                    _sessionMatches[sids[i]].journeys = _batchCommunitiesData[sids[i]].branches;
-                                }
-                            }
-                            if (m.regions) _batchEthnicityData[sids[i]] = { regions: m.regions };
-                        }
-                        _matchListData = { matchList: allMatches };
-                        currentPage = fs.nextPage || 1;
-                        mode = fs.mode || mode;
-                        params = fs.params || params;
-                        desiredCount = mode === 'cmRange' ? Infinity : (params.desiredCount || 100);
-                    }
-                });
-            }
-        });
-
-        function fetchPage() {
-            if (mode === 'cmRange') {
-                setStatus('Fetching match list for range ' + params.range + ' cM... (' + allMatches.length + ' matches)');
-            } else {
-                setStatus('Fetching match list... (' + allMatches.length + '/' + desiredCount + ')');
-            }
-            var url;
-            url = 'https://www.ancestry.com/discoveryui-matches/parents/list/api/matchList/' + guid + '?itemsPerPage=100&currentPage=' + currentPage;
-            if (mode === 'cmRange') {
-                url += '&sharedDna=' + params.range;
-            }
-            debugLog('page ' + currentPage + ' mode=' + mode + ' url=' + url);
-            return apiFetch(url, { credentials: 'include', mode: 'cors', headers: { 'Accept': 'application/json' } })
-                .then(function(data) {
-                    var matches = data.matchList;
-                    if (!Array.isArray(matches)) return nextPage(false);
-                    var newSids = [];
-                    var sidIndex = {};
-                    for (var i = 0; i < allMatches.length; i++) sidIndex[allMatches[i].sampleId] = true;
-                    var limit = mode === 'cmRange' ? Infinity : desiredCount;
-                    for (var i = 0; i < matches.length && allMatches.length < limit; i++) {
-                        var sid = matches[i].sampleId;
-                        if (!sid || sidIndex[sid]) continue;
-                        sidIndex[sid] = true;
-                        allMatches.push(matches[i]);
-                        newSids.push(sid);
-                    }
-                    if (allMatches.length > desiredCount) allMatches = allMatches.slice(0, desiredCount);
-                    _matchListData = { matchList: allMatches };
-                    if (mode !== 'cmRange') { _progressDone += newSids.length; setProgress(_progressDone, _progressTotal); }
-                    var hasMore;
-                    if (mode === 'cmRange') {
-                        if (data.isLastPage === true) { hasMore = false; }
-                        else if (data.isLastPage === undefined) { hasMore = matches.length >= 100; }
-                        else { hasMore = matches.length > 0; }
-                    } else {
-                        hasMore = matches.length >= 100;
-                    }
-                    debugLog('  got ' + newSids.length + ' new, total=' + allMatches.length + ' next=' + (currentPage + 1) + ' hasMore=' + hasMore + ' isLastPage=' + data.isLastPage);
-                    if (newSids.length === 0) {
-                        currentPage++;
-                        saveState();
-                        return nextPage(false);
-                    }
-                    return fetchProfileData(guid, newSids).then(function() {
-                        storeMatchData(guid, allMatches);
-                        currentPage++;
-                        saveState();
-                        return processPageChunks(guid, newSids);
-                    }).then(function() {
-                        return nextPage(hasMore);
-                    });
-                });
-        }
-
-        function nextPage(hasMore) {
-            var remaining = mode === 'cmRange' ? 1 : (desiredCount - allMatches.length);
-            debugLog('nextPage: hasMore=' + hasMore + (mode === 'cmRange' ? '' : ' remaining=' + remaining));
-            if (remaining > 0 && hasMore) return delay(FETCH_DELAY).then(fetchPage);
-        }
-
-        function processPageChunks(guid, pageSampleIds) {
-            var chunks = chunkArray(pageSampleIds, 24);
-            var chain = Promise.resolve();
-            for (var ci = 0; ci < chunks.length; ci++) {
-                chain = chain.then((function(chunk, idx) {
-                    return function() {
-                        return processChunk24(guid, chunk, idx * 24 + 1, pageSampleIds.length);
-                    };
-                })(chunks[ci], ci));
-            }
-            return chain;
-        }
-
-        function processChunk24(guid, chunk, rangeStart, total) {
-            setStatus('Fetching regions for matches ' + rangeStart + '-' + (rangeStart + chunk.length - 1) + ' of ' + total + '...');
-            return fetchBatchEthnicity(guid, chunk).then(function(ethData) {
-                for (var k in ethData) _batchEthnicityData[k] = ethData[k];
-                if (_regionMap) {
-                    for (var k in ethData) {
-                        var regions = ethData[k] && ethData[k].regions;
-                        if (!regions) continue;
-                        for (var ri = 0; ri < regions.length; ri++) {
-                            regions[ri].displayName = _regionMap[regions[ri].key] || regions[ri].key;
-                        }
-                    }
+  var FilterBar = {
+    view: function () {
+      var list = s.matchListData && s.matchListData.matchList
+      if (!list) return null
+      return m('#filterBar', [
+        m('.filter-toggle#filterToggle', {
+          onclick: function () {
+            s.showFilterBody = !s.showFilterBody
+            var arrow = document.getElementById('filterArrow')
+            if (arrow) arrow.classList.toggle('open')
+          }
+        }, [
+          m('span#filterArrow', { style: { fontSize: '10px', transition: 'transform .2s' } }, '\u25B6'),
+          ' Filtering Options'
+        ]),
+        m('#filterBody', { style: { display: s.showFilterBody ? '' : 'none' } }, [
+          m('.filter-row', [
+            m('label.filter-group', ['Name ',         m('input#filterName.filter-input', { type: 'text', placeholder: 'Filter by name', oninput: function () { applyFilterChange(); m.redraw() } })]),
+            m('label.filter-group', [
+              'cM ',
+              m('input#filterCmMin.filter-input.filter-cm', { type: 'number', placeholder: 'Min', oninput: function () { applyFilterChange(); m.redraw() } }),
+              m('span.filter-sep', '\u2013'),
+              m('input#filterCmMax.filter-input.filter-cm', { type: 'number', placeholder: 'Max', oninput: function () { applyFilterChange(); m.redraw() } })
+            ])
+          ]),
+          m('.filter-row', [
+            m('span.filter-group', [
+              'Journey ',
+              m('select#filterJourney.filter-select', { value: s.filters.journey, onchange: function (e) { s.filters.journey = e.target.value; applyFilterChange(); m.redraw() } }, [
+                getJourneyOptions().map(function (o) { return m('option', { value: o.value }, o.label) })
+              ]),
+              m('label.filter-check', [
+                m('input#filterJourneyOnly', { type: 'checkbox', onchange: function () { applyFilterChange(); m.redraw() } }),
+                m('span.check-mark'),
+                ' Only this'
+              ])
+            ]),
+            m('span.filter-group', [
+              'Region ',
+              m('span#regionFilters', renderRegionFilterRows()),
+              m('button#addRegionRow.topbar-btn', {
+                style: { fontSize: '14px', padding: '2px 10px' },
+                onclick: function () {
+                  s.filters.regions.push({ region: '', pctMin: null, pctMax: null })
+                  m.redraw()
                 }
-                if (mode !== 'cmRange') { _progressDone += chunk.length; setProgress(_progressDone, _progressTotal); }
-                return delay(FETCH_DELAY);
-            }).then(function() {
-                setStatus('Fetching journeys for matches ' + rangeStart + '-' + (rangeStart + chunk.length - 1) + ' of ' + total + '...');
-                return fetchBatchCommunities(guid, chunk);
-            }).then(function(comData) {
-                for (var k in comData) _batchCommunitiesData[k] = comData[k];
-                var sKeys = Object.keys(_batchCommunitiesData);
-                for (var si = 0; si < sKeys.length; si++) {
-                    var branches = _batchCommunitiesData[sKeys[si]] && _batchCommunitiesData[sKeys[si]].branches;
-                    if (branches) resolveJourneyNames(branches);
-                }
-                var list = _matchListData && _matchListData.matchList;
-                storeMatchData(guid, list);
-                if (mode !== 'cmRange') { _progressDone += chunk.length; setProgress(_progressDone, _progressTotal); }
-                renderCards(guid);
-            });
-        }
-
-        function finishFetch() {
-            clearBadge();
-            debugLog('finishFetch: total=' + allMatches.length + ' mode=' + mode);
-            setStatus('');
-            document.getElementById('fetchStatus').style.display = 'none';
-            if (fetchBtn) { fetchBtn.disabled = false; fetchBtn.innerHTML = '<span>&#x25B6;</span> Fetch'; }
-            var ci = document.getElementById('matchCountInput');
-            if (ci) ci.style.display = '';
-            DB.saveFetchState(guid, 1, mode, params);
-            var b = document.getElementById('fetchStateBadge');
-            if (b) {
-                if (mode === 'cmRange') {
-                    b.textContent = '✓ ' + allMatches.length + ' [' + params.range + ' cM]';
-                } else {
-                    b.textContent = '✓ ' + allMatches.length + '/' + (params.desiredCount || '?') + ' matches';
-                }
-            }
-            try {
-                chrome.notifications.create({
-                    type: 'basic',
-                    iconUrl: chrome.runtime.getURL('icons/icon48.png'),
-                    title: 'MatchFetch',
-                    message: mode === 'cmRange' ? 'Finished fetching ' + allMatches.length + ' matches in range ' + params.range + ' cM' : 'Finished fetching ' + allMatches.length + ' matches'
-                }, function() {
-                    if (chrome.runtime.lastError) console.log('Notification error:', chrome.runtime.lastError.message);
-                });
-            } catch(e) {
-                console.log('Notification error:', e);
-            }
-        }
-
-        resumePromise.then(function() {
-            setBadgeFetching();
-            saveState();
-            if (mode !== 'cmRange') { _progressDone = allMatches.length; setProgress(_progressDone, _progressTotal); }
-            var incomplete = findIncompleteSampleIds();
-            debugLog('resume: mode=' + mode + ' have=' + allMatches.length + (mode === 'cmRange' ? '' : ' target=' + desiredCount) + ' incomplete=' + incomplete.length);
-            if (allMatches.length >= desiredCount) {
-                if (incomplete.length === 0) return finishFetch();
-                setStatus('Resuming: processing data for ' + incomplete.length + ' matches...');
-                return processPageChunks(guid, incomplete).then(finishFetch).catch(function(err) {
-                    clearBadge();
-                    if (fetchBtn) fetchBtn.disabled = false;
-                    restoreFetchUI(guid);
-                    var el = document.getElementById('matchListResult');
-                    if (el) el.innerHTML = '<div class="error">' + friendlyError(err.message) + '</div>';
-                    setStatus('');
-                });
-            }
-            var chain = Promise.resolve();
-            if (incomplete.length > 0) {
-                setStatus('Resuming: processing ' + incomplete.length + ' existing matches first...');
-                chain = processPageChunks(guid, incomplete);
-            }
-            return chain.then(function() {
-                return fetchPage();
-            }).then(finishFetch).catch(function(err) {
-                clearBadge();
-                if (fetchBtn) fetchBtn.disabled = false;
-                restoreFetchUI(guid);
-                var el = document.getElementById('matchListResult');
-                if (el) el.innerHTML = '<div class="error">' + friendlyError(err.message) + '</div>';
-                setStatus('');
-            });
-        });
+              }, '+')
+            ]),
+            m('span#filterReset.filter-clear', {
+              onclick: function () {
+                document.getElementById('filterName').value = ''
+                document.getElementById('filterCmMin').value = ''
+                document.getElementById('filterCmMax').value = ''
+                document.getElementById('filterJourney').value = ''
+                document.getElementById('filterJourneyOnly').checked = false
+                s.filters.regions = []
+                s.currentPage = 1
+                m.redraw()
+              }
+            }, 'Clear filters')
+          ])
+        ])
+      ])
     }
+  }
 
-    function fetchProfileData(guid, sampleIds) {
-        return new Promise(function(resolve, reject) {
-            var chunks = chunkArray(sampleIds, 100);
-            var allProfiles = {};
-            var idx = 0;
+  function renderRegionFilterRows() {
+    var filters = s.filters.regions && s.filters.regions.length ? s.filters.regions : [{ region: '', pctMin: null, pctMax: null }]
+    var opts = buildRegionOptions()
+    return filters.map(function (f, idx) {
+      return m('span.region-row', { key: idx, 'data-idx': idx }, [
+        m('select.region-select', {
+          'data-idx': idx,
+          value: f.region,
+          onchange: function (e) {
+            s.filters.regions[idx] = s.filters.regions[idx] || { region: '', pctMin: null, pctMax: null }
+            s.filters.regions[idx].region = e.target.value
+            applyFilterChange()
+            m.redraw()
+          }
+        }, opts.map(function (o) { return m('option', { value: o.value }, o.label) })),
+        m('span.filter-sep', { style: { margin: '0 2px' } }, '%'),
+        m('input.region-pct-min.filter-input.filter-cm', {
+          type: 'number', placeholder: 'Min',
+          value: f.pctMin || '',
+          oninput: function (e) {
+            s.filters.regions[idx].pctMin = parseFloat(e.target.value) || null
+            applyFilterChange()
+            m.redraw()
+          }
+        }),
+        m('span.filter-sep', '\u2013'),
+        m('input.region-pct-max.filter-input.filter-cm', {
+          type: 'number', placeholder: 'Max',
+          value: f.pctMax || '',
+          oninput: function (e) {
+            s.filters.regions[idx].pctMax = parseFloat(e.target.value) || null
+            applyFilterChange()
+            m.redraw()
+          }
+        }),
+        m('button.region-remove.topbar-btn', {
+          'data-idx': idx,
+          style: { fontSize: '14px', padding: '2px 8px', display: filters.length === 1 ? 'none' : '' },
+          onclick: function () {
+            s.filters.regions.splice(idx, 1)
+            s.currentPage = 1
+            m.redraw()
+          }
+        }, '\u2212')
+      ])
+    })
+  }
 
-            function next() {
-                if (idx >= chunks.length) {
-                    for (var k in allProfiles) _profileData[k] = allProfiles[k];
-                    resolve();
-                    return;
-                }
-                setStatus('Fetching profile data... (' + (idx * 100 + 1) + '-' + Math.min((idx + 1) * 100, sampleIds.length) + ' of ' + sampleIds.length + ')');
-                var url = 'https://www.ancestry.com/discoveryui-matches/cluster/api/profileData/' + guid;
-                apiFetch(url, {
-                    method: 'POST', credentials: 'include', mode: 'cors',
-                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                    body: JSON.stringify({ matchSampleIds: chunks[idx] })
-                }).then(function(profiles) {
-                    for (var k in profiles) allProfiles[k] = profiles[k];
-                    idx++;
-                    delay(FETCH_DELAY).then(next);
-                }).catch(function(err) {
-                    var el = document.getElementById('matchListResult');
-                    if (el) el.innerHTML = '<div class="error">' + friendlyError(err.message) + '</div>';
-                    reject(err);
-                });
-            }
-            next();
-        });
+  var MatchList = {
+    view: function () {
+      var list = s.matchListData && s.matchListData.matchList
+      if (!list) return m('#matchListResult')
+      readFilters()
+      var pg = getPageMatches()
+      var filtered = pg.filtered
+      var start = pg.start
+      var end = pg.end
+      var total = list.length
+      var shown = filtered.length
+      var page = filtered.slice(start, end)
+      var totalPages = pg.totalPages
+      var cards = page.map(function (match) { return m(MatchCard, { match: match, guid: s.selectedGuid }) })
+      return m('#matchListResult', [
+        shown < total ? m('.match-count', ['Showing ', m('strong', shown), ' of ', m('strong', total), ' matches']) : null,
+        m('.cards', cards),
+        totalPages > 1 ? m(Pagination, { currentPage: s.currentPage, totalPages: totalPages }) : null
+      ])
     }
+  }
 
-    function fetchBatchEthnicity(guid, sampleIds) {
-        return apiFetch('https://www.ancestry.com/dna/origins/secure/compare/' + guid + '/batchEthnicity', {
-            method: 'PUT', credentials: 'include', mode: 'cors',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify(sampleIds)
-        });
+  var MatchCard = {
+    view: function (vnode) {
+      var matchObj = vnode.attrs.match
+      var guid = vnode.attrs.guid
+      var p = s.profileData && s.profileData[matchObj.sampleId] || {}
+      var date = new Date(matchObj.createdDate)
+      var dateStr = (date.getMonth() + 1) + '/' + date.getDate() + '/' + date.getFullYear()
+      var r = matchObj.relationship || {}
+      var gc = 'gender-n'
+      if (p.displayGender === 'M') gc = 'gender-m'
+      else if (p.displayGender === 'F') gc = 'gender-f'
+      var sm = s.sessionMatches && s.sessionMatches[matchObj.sampleId]
+      var journeys = sm && sm.journeys
+      return m('.card.match-card', {
+        'data-guid': guid,
+        'data-sample': matchObj.sampleId,
+        onclick: function () { if (guid && matchObj.sampleId) window.open('match.html?guid=' + guid + '&sampleId=' + matchObj.sampleId, '_blank') }
+      }, [
+        m('.card-top', [
+          p.photoUrl ? m('img.avatar', { src: p.photoUrl }) : m('.avatar.avatar-initials.' + gc, p.matchNameInitials || '?'),
+          m('span.card-name', s.hideNames ? (p.matchNameInitials || '??') : (p.matchName || 'Unknown'))
+        ]),
+        m('.card-details', buildRelText(r)),
+        journeys && journeys.length > 0 ? m('.journey-strip', renderJourneyPills(journeys)) : null
+      ])
     }
+  }
 
-    function fetchBatchCommunities(guid, sampleIds) {
-        return apiFetch('https://www.ancestry.com/dna/origins/secure/compare/' + guid + '/batchCommunities', {
-            method: 'POST', credentials: 'include', mode: 'cors',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify(sampleIds)
-        });
+  function buildRelText(r) {
+    var parts = []
+    if (r.sharedCentimorgans) parts.push(m('span', [m('span.num', r.sharedCentimorgans), ' cM']))
+    if (r.sharedCentimorgans && r.numSharedSegments) parts.push(' across ')
+    if (r.numSharedSegments) parts.push(m('span', [m('span.num', r.numSharedSegments), ' segments']))
+    return parts.length ? m('.rel-text', parts) : null
+  }
+
+  function renderJourneyPills(journeys) {
+    var sorted = journeys.slice().sort(function (a, b) { return (b.connectionPercent || 0) - (a.connectionPercent || 0) })
+    var maxPills = 3
+    var pills = sorted.slice(0, maxPills).map(function (j) {
+      return m('span.journey-pill.' + (j.connection || '').toLowerCase(), [
+        m('span.jp-name', j.displayName || j.id || ''),
+        ' ',
+        m('span.jp-pct', (j.connectionPercent || '?') + '%')
+      ])
+    })
+    if (sorted.length > maxPills) pills.push(m('span', { style: { fontSize: '10px', color: '#64748b', padding: '1px 4px' } }, '+' + (sorted.length - maxPills) + ' more'))
+    return pills
+  }
+
+  function onKitSelect(guid) {
+    s.selectedGuid = guid
+    s.matchListData = null
+    s.sessionMatches = null
+    s.profileData = {}
+    s.batchEthnicityData = {}
+    s.batchCommunitiesData = {}
+    s.fetchStateBadge = ''
+    s.statusMsg = ''
+    s.currentPage = 1
+    s.filters = { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, regions: [] }
+    s.buttonLabel = null
+    s.fetchComplete = false
+    m.redraw()
+    if (guid) {
+      fetchMatchCount(guid)
+      DB.getSession(guid).then(function (session) {
+        if (session && session.matches) {
+          s.sessionMatches = session.matches
+          var matchList = []
+          var sampleIds = Object.keys(session.matches)
+          for (var si = 0; si < sampleIds.length; si++) {
+            var m2 = session.matches[sampleIds[si]]
+            matchList.push({ sampleId: sampleIds[si], relationship: m2.relationship || {}, createdDate: m2.createdDate || null })
+          }
+          if (matchList.length > 0) {
+            s.matchListData = { matchList: matchList }
+            s.batchCommunitiesData = {}
+            s.batchEthnicityData = {}
+            s.profileData = {}
+            for (var si = 0; si < sampleIds.length; si++) {
+              var m2 = session.matches[sampleIds[si]]
+              if (m2.journeys && m2.journeys.length > 0) {
+                s.batchCommunitiesData[sampleIds[si]] = { branches: m2.journeys }
+                resolveJourneyNames(s.batchCommunitiesData[sampleIds[si]].branches)
+                if (s.sessionMatches && s.sessionMatches[sampleIds[si]]) s.sessionMatches[sampleIds[si]].journeys = s.batchCommunitiesData[sampleIds[si]].branches
+              }
+              if (m2.regions && m2.regions.length > 0) s.batchEthnicityData[sampleIds[si]] = { regions: m2.regions }
+            }
+            for (var si = 0; si < sampleIds.length; si++) {
+              var m2 = session.matches[sampleIds[si]]
+              s.profileData[sampleIds[si]] = { matchName: m2.matchName, matchNameInitials: m2.matchNameInitials, displayGender: m2.displayGender, photoUrl: m2.photoUrl }
+            }
+            setState({ sessionMatches: s.sessionMatches, matchListData: s.matchListData, batchCommunitiesData: s.batchCommunitiesData, batchEthnicityData: s.batchEthnicityData, profileData: s.profileData })
+          }
+        }
+      })
+      restoreFetchUI(guid)
     }
+  }
 
-    function displayTests(data) {
-        if (!Array.isArray(data) || data.length === 0) {
-            results.innerHTML = '<div class="empty">No tests found</div>';
-            return;
-        }
-
-        var html = '<div class="label">Select a kit <span id="matchCountBadge" class="badge"></span><span id="fetchStateBadge" class="badge"></span></div>';
-        html += '<div class="select-row"><select id="testSelect">';
-        html += '<option value="">Choose a kit...</option>';
-        for (var i = 0; i < data.length; i++) {
-            var t = data[i];
-            var name = t.subjectName || t.displayName || t.name || 'Kit ' + (i + 1);
-            var guid = t.testGuid || t.testId || t.guid || t.id || '';
-            html += '<option value="' + guid + '">' + name + '</option>';
-        }
-        html += '</select><button id="clearKitBtn" class="clear-btn" title="Clear kit data" hidden><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></div>';
-        html += '<div id="fetchGroup">';
-        html += '<div id="fetchOptions">';
-        html += '<div class="label" style="margin-top:16px">Fetch Options</div>';
-        html += '<div class="mode-toggle">';
-        html += '<button class="mode-btn active" data-mode="count">Count</button>';
-        html += '<button class="mode-btn" data-mode="cmRange">cM Range</button>';
-        html += '</div>';
-        html += '<div class="fetch-row" id="countModeRow"><label class="input-label">Matches <input type="number" id="matchCountInput" class="count-input" value="100" min="1" step="1"></label></div>';
-        html += '<div class="fetch-row" id="cmRangeModeRow" style="display:none"><label class="input-label">Min <input type="number" id="cmRangeMin" class="count-input" value="90" min="0"></label><label class="input-label">Max <input type="number" id="cmRangeMax" class="count-input" value="400" min="0"></label></div>';
-        html += '</div>';
-        html += '<button class="btn fetch-list-btn" id="fetchListBtn" disabled><span>&#x25B6;</span> Fetch</button>';
-        html += '</div>';
-        html += '<div id="fetchStatus" style="display:none;text-align:center;padding:6px 0">';
-        html += '<div style="display:flex;align-items:center;justify-content:center;gap:8px"><svg class="helix-svg" viewBox="0 0 18 18" width="18" height="18"><g><animateTransform attributeName="transform" type="rotate" from="0 9 9" to="360 9 9" dur="2s" repeatCount="indefinite"/><path d="M2,4 C4,1 7,1 9,4 C11,7 14,7 16,4" stroke="#3b82f6" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M2,14 C4,17 7,17 9,14 C11,11 14,11 16,14" stroke="#60a5fa" stroke-width="1.5" fill="none" stroke-linecap="round" opacity=".6"/><line x1="2" y1="4" x2="2" y2="14" stroke="#60a5fa" stroke-width=".7" opacity=".35"/><line x1="5.5" y1="2.5" x2="5.5" y2="15.5" stroke="#60a5fa" stroke-width=".7" opacity=".35"/><line x1="9" y1="4" x2="9" y2="14" stroke="#60a5fa" stroke-width=".7" opacity=".35"/><line x1="12.5" y1="5.5" x2="12.5" y2="12.5" stroke="#60a5fa" stroke-width=".7" opacity=".35"/><line x1="16" y1="4" x2="16" y2="14" stroke="#60a5fa" stroke-width=".7" opacity=".35"/></g></svg><span id="fetchMsg" style="font-size:12px;color:#94a3b8"></span><span id="fetchPct" style="font-size:12px;font-weight:700;color:#e2e8f0"></span></div>';
-        html += '<div id="fetchBarWrap" style="height:4px;background:#0f1724;border-radius:4px;overflow:hidden;margin-top:6px;max-width:300px;margin-left:auto;margin-right:auto"><div id="fetchBarFill" style="height:100%;width:0%;border-radius:4px;transition:width .3s,background .3s"></div></div>';
-        html += '</div>';
-        html += '<div id="statusMsg" class="status-msg"></div>';
-        html += '<pre id="debugLog" style="display:none"></pre>';
-        html += '<div id="filterBar" style="display:none">';
-        html += '<div class="filter-toggle" id="filterToggle"><span id="filterArrow">&#x25B6;</span> Filtering Options</div>';
-        html += '<div id="filterBody" style="display:none">';
-        html += '<div class="filter-row">';
-        html += '<label class="filter-group">Name <input type="text" id="filterName" class="filter-input" placeholder="Filter by name"></label>';
-        html += '<label class="filter-group">cM <input type="number" id="filterCmMin" class="filter-input filter-cm" placeholder="Min"><span class="filter-sep">–</span><input type="number" id="filterCmMax" class="filter-input filter-cm" placeholder="Max"></label>';
-        html += '</div>';
-        html += '<div class="filter-row">';
-        html += '<span class="filter-group">Journey <select id="filterJourney" class="filter-select"><option value="">All</option></select><label class="filter-check"><input type="checkbox" id="filterJourneyOnly"><span class="check-mark"></span> Only this</label></span>';
-        html += '<span class="filter-group">Region <span id="regionFilters"></span> <button id="addRegionRow" class="topbar-btn" style="font-size:14px;padding:2px 10px" title="Add region filter">+</button></span>';
-        html += '<span id="filterReset" class="filter-clear">Clear filters</span>';
-        html += '</div></div></div>';
-        html += '<div id="matchListResult"></div>';
-
-        results.innerHTML = html;
-
-        function setMode(mode) {
-            var btns = document.querySelectorAll('.mode-btn');
-            for (var bi = 0; bi < btns.length; bi++) btns[bi].classList.toggle('active', btns[bi].getAttribute('data-mode') === mode);
-            document.getElementById('countModeRow').style.display = mode === 'count' ? '' : 'none';
-            document.getElementById('cmRangeModeRow').style.display = mode === 'cmRange' ? '' : 'none';
-        }
-
-        var modeBtns = document.querySelectorAll('.mode-btn');
-        for (var mi = 0; mi < modeBtns.length; mi++) {
-            modeBtns[mi].addEventListener('click', function() {
-                setMode(this.getAttribute('data-mode'));
-            });
-        }
-
-        document.getElementById('debugToggle').addEventListener('change', function() {
-            _debugEnabled = this.checked;
-            var dl = document.getElementById('debugLog');
-            if (dl) dl.style.display = this.checked ? 'block' : 'none';
-        });
-        document.getElementById('hideNamesToggle').addEventListener('change', function() {
-            _hideNames = this.checked;
-            var sel = document.getElementById('testSelect');
-            if (sel && sel.value) renderCards(sel.value);
-        });
-
-        function applyFiltersAndRender() {
-            var sel = document.getElementById('testSelect');
-            if (!sel || !sel.value) return;
-            _filters.name = document.getElementById('filterName').value;
-            _filters.cmMin = parseFloat(document.getElementById('filterCmMin').value) || null;
-            _filters.cmMax = parseFloat(document.getElementById('filterCmMax').value) || null;
-            _filters.journey = document.getElementById('filterJourney').value;
-            _filters.journeyOnly = document.getElementById('filterJourneyOnly').checked;
-            var rows = document.querySelectorAll('#regionFilters .region-row');
-            _filters.regions = [];
-            for (var ri = 0; ri < rows.length; ri++) {
-                var rowSel = rows[ri].querySelector('.region-select');
-                var pctMin = rows[ri].querySelector('.region-pct-min');
-                var pctMax = rows[ri].querySelector('.region-pct-max');
-                var region = rowSel ? rowSel.value : '';
-                if (!region) continue;
-                _filters.regions.push({ region: region, pctMin: parseFloat(pctMin.value) || null, pctMax: parseFloat(pctMax.value) || null });
-            }
-            _currentPage = 1;
-            renderCards(sel.value);
-        }
-
-        document.getElementById('filterName').addEventListener('input', applyFiltersAndRender);
-        document.getElementById('filterCmMin').addEventListener('input', applyFiltersAndRender);
-        document.getElementById('filterCmMax').addEventListener('input', applyFiltersAndRender);
-        document.getElementById('filterJourney').addEventListener('change', applyFiltersAndRender);
-        document.getElementById('filterJourneyOnly').addEventListener('change', applyFiltersAndRender);
-        document.getElementById('filterToggle').addEventListener('click', function() {
-            var body = document.getElementById('filterBody');
-            var arrow = document.getElementById('filterArrow');
-            if (body.style.display === 'none') {
-                body.style.display = '';
-                arrow.classList.add('open');
-            } else {
-                body.style.display = 'none';
-                arrow.classList.remove('open');
-            }
-        });
-
-        document.getElementById('regionFilters').addEventListener('change', function(e) {
-            if (e.target.classList.contains('region-select') || e.target.classList.contains('region-pct-min') || e.target.classList.contains('region-pct-max')) {
-                applyFiltersAndRender();
-            }
-        });
-
-        document.getElementById('regionFilters').addEventListener('focus', function(e) {
-            if (e.target.classList.contains('region-select') || e.target.classList.contains('region-pct-min') || e.target.classList.contains('region-pct-max')) {
-                _filterSelectFocused = true;
-            }
-        }, true);
-
-        document.getElementById('regionFilters').addEventListener('blur', function(e) {
-            if (e.target.classList.contains('region-select') || e.target.classList.contains('region-pct-min') || e.target.classList.contains('region-pct-max')) {
-                _filterSelectFocused = false;
-                setTimeout(function() { renderRegionFilters(); }, 0);
-            }
-        }, true);
-
-        document.getElementById('regionFilters').addEventListener('click', function(e) {
-            if (e.target.classList.contains('region-remove')) {
-                var row = e.target.closest('.region-row');
-                if (row) row.remove();
-                var rows = document.querySelectorAll('#regionFilters .region-row');
-                if (rows.length === 1) {
-                    var btn = rows[0].querySelector('.region-remove');
-                    if (btn) btn.style.display = 'none';
-                }
-                applyFiltersAndRender();
-            }
-        });
-
-        document.getElementById('addRegionRow').addEventListener('click', function() {
-            var opts = buildRegionOptions();
-            var rows = document.querySelectorAll('#regionFilters .region-row');
-            var idx = rows.length;
-            _filters.regions.push({ region: '', pctMin: null, pctMax: null });
-            document.getElementById('regionFilters').insertAdjacentHTML('beforeend', regionRowHtml(idx, opts, { region: '', pctMin: null, pctMax: null }));
-            for (var ri = 0; ri <= idx; ri++) {
-                var btn = document.querySelector('#regionFilters .region-row[data-idx="' + ri + '"] .region-remove');
-                if (btn) btn.style.display = '';
-            }
-            applyFiltersAndRender();
-        });
-
-        document.getElementById('filterReset').addEventListener('click', function() {
-            document.getElementById('filterName').value = '';
-            document.getElementById('filterCmMin').value = '';
-            document.getElementById('filterCmMax').value = '';
-            document.getElementById('filterJourney').value = '';
-            document.getElementById('filterJourneyOnly').checked = false;
-            _filters.regions = [];
-            _regionOptsSig = '';
-            renderRegionFilters(true);
-            applyFiltersAndRender();
-        });
-
-        document.getElementById('testSelect').addEventListener('change', function() {
-            var listBtn = document.getElementById('fetchListBtn');
-            var clearBtn = document.getElementById('clearKitBtn');
-            var countInput = document.getElementById('matchCountInput');
-            var selectedGuid = this.value;
-            var matchListEl = document.getElementById('matchListResult');
-            var debugEl = document.getElementById('debugLog');
-            if (debugEl) debugEl.textContent = '';
-            _matchListData = null;
-            _sessionMatches = null;
-            _regionOptsSig = '';
-            _batchCommunitiesData = null;
-            _batchEthnicityData = null;
-            _profileData = null;
-            if (matchListEl) matchListEl.innerHTML = '';
-            var filterBar = document.getElementById('filterBar');
-            if (filterBar) { filterBar.style.display = 'none'; document.getElementById('filterName').value = ''; document.getElementById('filterCmMin').value = ''; document.getElementById('filterCmMax').value = ''; document.getElementById('filterJourney').value = ''; document.getElementById('filterJourneyOnly').checked = false; _filters.regions = []; _regionOptsSig = ''; renderRegionFilters(true); }
-            _filters = { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, regions: [] };
-            if (selectedGuid) {
-                listBtn.disabled = false;
-                if (clearBtn) clearBtn.hidden = false;
-                fetchMatchCount(selectedGuid);
-                DB.getSession(selectedGuid).then(function(session) {
-                    if (session && session.matches) {
-                        _sessionMatches = session.matches;
-                        var matchList = [];
-                        var sampleIds = Object.keys(session.matches);
-                        for (var si = 0; si < sampleIds.length; si++) {
-                            var m = session.matches[sampleIds[si]];
-                            matchList.push({
-                                sampleId: sampleIds[si],
-                                relationship: m.relationship || {},
-                                createdDate: m.createdDate || null
-                            });
-                        }
-                        if (matchList.length > 0) {
-                            _matchListData = { matchList: matchList };
-                            _batchCommunitiesData = {};
-                            _batchEthnicityData = {};
-                            _profileData = {};
-                            for (var si2 = 0; si2 < sampleIds.length; si2++) {
-                                var m = session.matches[sampleIds[si2]];
-                                if (m.journeys && m.journeys.length > 0) {
-                                    _batchCommunitiesData[sampleIds[si2]] = { branches: m.journeys };
-                                    resolveJourneyNames(_batchCommunitiesData[sampleIds[si2]].branches);
-                                    if (_sessionMatches && _sessionMatches[sampleIds[si2]]) {
-                                        _sessionMatches[sampleIds[si2]].journeys = _batchCommunitiesData[sampleIds[si2]].branches;
-                                    }
-                                }
-                                if (m.regions && m.regions.length > 0) {
-                                    _batchEthnicityData[sampleIds[si2]] = { regions: m.regions };
-                                }
-                            }
-                            for (var si3 = 0; si3 < sampleIds.length; si3++) {
-                                var m = session.matches[sampleIds[si3]];
-                                _profileData[sampleIds[si3]] = {
-                                    matchName: m.matchName,
-                                    matchNameInitials: m.matchNameInitials,
-                                    displayGender: m.displayGender,
-                                    photoUrl: m.photoUrl
-                                };
-                            }
-                            renderCards(selectedGuid);
-                        }
-                    }
-                });
-                DB.getFetchState(selectedGuid).then(function(fs) {
-                    var fsBadge = document.getElementById('fetchStateBadge');
-                    if (fs && fs.status === 0) {
-                        var fetchGroupEl = document.getElementById('fetchGroup');
-                        if (fetchGroupEl) fetchGroupEl.style.display = '';
-                        var fetchOptionsEl = document.getElementById('fetchOptions');
-                        if (fetchOptionsEl) fetchOptionsEl.style.display = 'none';
-                
-                
-                        var label = '';
-                        if (fs.mode === 'cmRange') {
-                            var r = fs.params && fs.params.range || '';
-                            label = r ? ' (' + r + ' cM)' : '';
-                            setMode('cmRange');
-                            var parts = r.split('-');
-                            if (parts.length === 2) {
-                                document.getElementById('cmRangeMin').value = parts[0];
-                                document.getElementById('cmRangeMax').value = parts[1];
-                            }
-                        } else {
-                            var count = fs.params && fs.params.desiredCount || 0;
-                            if (count > 0) label = ' (' + count + ' matches)';
-                        }
-                        if (label) {
-                            listBtn.innerHTML = '<span>&#x25B6;</span> Resume' + label;
-                            if (countInput) countInput.style.display = 'none';
-                            var msgEl = document.getElementById('statusMsg');
-                            if (msgEl) msgEl.innerHTML = 'Previous fetch incomplete — click Resume to continue';
-                        }
-                        DB.getSession(selectedGuid).then(function(s) {
-                            var count = s && s.matches ? Object.keys(s.matches).length : 0;
-                            if (fsBadge) fsBadge.textContent = '↻ ' + count + ' fetched (page ' + (fs.nextPage || 1) + ')';
-                        });
-                    } else if (fs && fs.status === 1) {
-                        var fetchGroupEl = document.getElementById('fetchGroup');
-                        if (fetchGroupEl) fetchGroupEl.style.display = 'none';
-                
-                        DB.getSession(selectedGuid).then(function(s) {
-                            if (fsBadge) fsBadge.textContent = s && s.matches ? '✓ ' + Object.keys(s.matches).length + ' matches' : '✓ done';
-                        });
-                    } else {
-                        var fetchGroupEl = document.getElementById('fetchGroup');
-                        if (fetchGroupEl) fetchGroupEl.style.display = '';
-                        var fetchOptionsEl = document.getElementById('fetchOptions');
-                        if (fetchOptionsEl) fetchOptionsEl.style.display = '';
-                
-                
-                        listBtn.innerHTML = '<span>&#x25B6;</span> Fetch';
-                        if (countInput) countInput.style.display = '';
-                        if (fsBadge) fsBadge.textContent = '';
-                    }
-                });
-            } else {
-                document.getElementById('matchCountBadge').textContent = '';
-                var fetchGroupEl = document.getElementById('fetchGroup');
-                if (fetchGroupEl) fetchGroupEl.style.display = '';
-                var fetchOptionsEl = document.getElementById('fetchOptions');
-                if (fetchOptionsEl) fetchOptionsEl.style.display = '';
-        
-        
-                listBtn.disabled = true;
-                if (clearBtn) clearBtn.hidden = true;
-                listBtn.innerHTML = '<span>&#x25B6;</span> Fetch';
-                if (countInput) countInput.style.display = '';
-            }
-        });
-
-        document.getElementById('fetchListBtn').addEventListener('click', function() {
-            var sel = document.getElementById('testSelect');
-            if (!sel || !sel.value) return;
-            var activeMode = document.querySelector('.mode-btn.active');
-            var mode = activeMode ? activeMode.getAttribute('data-mode') : 'count';
-            if (mode === 'cmRange') {
-                var min = document.getElementById('cmRangeMin').value;
-                var max = document.getElementById('cmRangeMax').value;
-                if (!min || !max) return;
-                var range = min + '-' + max;
-                if (!range) return;
-                fetchMatchList(sel.value, 'cmRange', { range: range });
-            } else {
-                var input = document.getElementById('matchCountInput');
-                var count = parseInt(input && input.value, 10) || 100;
-                fetchMatchList(sel.value, 'count', { desiredCount: count });
-            }
-        });
-
-        document.getElementById('clearKitBtn').addEventListener('click', function() {
-            var sel = document.getElementById('testSelect');
-            var guid = sel && sel.value;
-            if (!guid) return;
-            var overlay = document.createElement('div');
-            overlay.className = 'modal-overlay';
-            overlay.innerHTML = '<div class="modal"><div class="modal-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></div><div class="modal-title">Clear kit data?</div><div class="modal-text">This will remove all matches, regions, and journeys for this kit from local storage.</div><div class="modal-actions"><button class="modal-btn modal-cancel">Cancel</button><button class="modal-btn modal-confirm">Clear</button></div></div>';
-            document.body.appendChild(overlay);
-            overlay.querySelector('.modal-cancel').addEventListener('click', function() { overlay.remove(); });
-            overlay.querySelector('.modal-confirm').addEventListener('click', function() {
-                overlay.remove();
-                DB.deleteSession(guid).then(function() {
-                    return DB.deleteFetchState(guid);
-                }).then(function() {
-                    _matchListData = null;
-                    _sessionMatches = null;
-                    _regionOptsSig = '';
-                    _batchCommunitiesData = null;
-                    _profileData = null;
-                    _batchEthnicityData = null;
-                    document.getElementById('matchListResult').innerHTML = '';
-                    var fbClear = document.getElementById('filterBar');
-                    if (fbClear) { fbClear.style.display = 'none'; document.getElementById('filterJourney').innerHTML = '<option value="">All</option>'; _filters.regions = []; _regionOptsSig = ''; renderRegionFilters(true); }
-                    var fetchGroupEl = document.getElementById('fetchGroup');
-                    if (fetchGroupEl) fetchGroupEl.style.display = '';
-                    var fetchOptionsEl = document.getElementById('fetchOptions');
-                    if (fetchOptionsEl) fetchOptionsEl.style.display = '';
-            
-            
-                    var listBtn = document.getElementById('fetchListBtn');
-                    if (listBtn) listBtn.innerHTML = '<span>&#x25B6;</span> Fetch';
-                    var countInput = document.getElementById('matchCountInput');
-                    if (countInput) countInput.style.display = '';
-                    var msgEl = document.getElementById('statusMsg');
-                    if (msgEl) msgEl.innerHTML = '';
-                    setMode('count');
-                });
-            });
-        });
+  var Pagination = {
+    view: function (vnode) {
+      var cp = vnode.attrs.currentPage
+      var tp = vnode.attrs.totalPages
+      var range = []
+      var startPage = Math.max(1, cp - 2)
+      var endPage = Math.min(tp, cp + 2)
+      if (startPage > 1) { range.push(1); if (startPage > 2) range.push('...') }
+      for (var pi = startPage; pi <= endPage; pi++) range.push(pi)
+      if (endPage < tp) { if (endPage < tp - 1) range.push('...'); range.push(tp) }
+      return m('.pagination', [
+        m('button.page-btn', { disabled: cp <= 1, onclick: function () { s.currentPage = cp - 1; m.redraw() } }, '\u25C0'),
+        range.map(function (p) {
+          if (p === '...') return m('span.page-dots', '...')
+          return m('button.page-btn' + (p === cp ? '.page-active' : ''), { onclick: function () { s.currentPage = p; m.redraw() } }, String(p))
+        }),
+        m('button.page-btn', { disabled: cp >= tp, onclick: function () { s.currentPage = cp + 1; m.redraw() } }, '\u25B6')
+      ])
     }
+  }
 
-    Promise.all([loadRegionMap(), loadJourneyNameMap()]).then(function() {
-        fetchTests();
-    });
-
-    document.getElementById('exportBtn').addEventListener('click', function() {
-        if (typeof DB !== 'undefined' && DB.exportDatabase) {
-            DB.exportDatabase();
-        }
-    });
-
-    document.getElementById('importBtn').addEventListener('click', function() {
-        document.getElementById('importFileInput').click();
-    });
-
-    document.getElementById('importFileInput').addEventListener('change', function(e) {
-        var file = e.target.files[0];
-        if (!file) return;
-        if (!file.name.endsWith('.json')) { e.target.value = ''; return; }
-        var reader = new FileReader();
-        reader.onload = function(ev) {
-            try {
-                var data = JSON.parse(ev.target.result);
-                if (!Array.isArray(data)) throw new Error('Invalid format: expected an array');
-                var overlay = document.createElement('div');
-                overlay.className = 'modal-overlay';
-                overlay.innerHTML = '<div class="modal"><div class="modal-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div><div class="modal-title">Import database?</div><div class="modal-text">This will overwrite your entire database with ' + data.length + ' kit(s) from this file. This cannot be undone.</div><div class="modal-actions"><button class="modal-btn modal-cancel">Cancel</button><button class="modal-btn modal-confirm">Import</button></div></div>';
-                document.body.appendChild(overlay);
-                overlay.querySelector('.modal-cancel').addEventListener('click', function() { overlay.remove(); });
-                overlay.querySelector('.modal-confirm').addEventListener('click', function() {
-                    overlay.remove();
-                    if (typeof DB !== 'undefined' && DB.importDatabase) {
-                        var msg = document.getElementById('statusMsg');
-                        if (msg) msg.textContent = 'Importing...';
-                        DB.importDatabase(data).then(function(count) {
-                            if (msg) msg.textContent = 'Imported ' + count + ' kit(s)';
-                            fetchTests();
-                        });
-                    }
-                });
-            } catch (err) {
-                var overlay = document.createElement('div');
-                overlay.className = 'modal-overlay';
-                overlay.innerHTML = '<div class="modal"><div class="modal-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div><div class="modal-title">Import failed</div><div class="modal-text">' + err.message + '</div><div class="modal-actions"><button class="modal-btn modal-cancel">OK</button></div></div>';
-                document.body.appendChild(overlay);
-                overlay.querySelector('.modal-cancel').addEventListener('click', function() { overlay.remove(); });
-            }
-        };
-        reader.readAsText(file);
-        e.target.value = '';
-    });
-
-    document.getElementById('githubBtn').addEventListener('click', function() {
-        chrome.tabs.create({ url: 'https://github.com/strike978/matchfetch_ext' });
-    });
-
-    document.getElementById('discordBtn').addEventListener('click', function() {
-        chrome.tabs.create({ url: 'https://discord.com/invite/f5BtHTM2zZ' });
-    });
-
-    document.getElementById('supportBtn').addEventListener('click', function() {
-        chrome.tabs.create({ url: 'https://ko-fi.com/matchfetch' });
-    });
-})();
+  m.mount(document.getElementById('results'), App)
+})()

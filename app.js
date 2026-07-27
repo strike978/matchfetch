@@ -502,6 +502,8 @@
     return { filtered: filtered, start: start, end: Math.min(start + s.pageSize, filtered.length), totalPages: totalPages }
   }
 
+  var _cachedRegionOpts = null
+
   function buildRegionOptions() {
     var opts = [{ value: '', label: 'All' }]
     if (!s.sessionMatches) return opts
@@ -530,7 +532,18 @@
     return opts
   }
 
-  function getJourneyOptions() {
+  function getRegionOptions() {
+    if (!_cachedRegionOpts) _cachedRegionOpts = buildRegionOptions()
+    return _cachedRegionOpts
+  }
+
+  function refreshRegionOptions() {
+    _cachedRegionOpts = buildRegionOptions()
+  }
+
+  var _cachedJourneyOpts = null
+
+  function buildJourneyOptions() {
     var opts = [{ value: '', label: 'All' }]
     if (!s.sessionMatches) return opts
     var known = {}
@@ -544,7 +557,21 @@
         }
       }
     }
+    if (opts.length > 1) {
+      var all = opts.shift()
+      opts.sort(function (a, b) { return a.label.localeCompare(b.label) })
+      opts.unshift(all)
+    }
     return opts
+  }
+
+  function getJourneyOptions() {
+    if (!_cachedJourneyOpts) _cachedJourneyOpts = buildJourneyOptions()
+    return _cachedJourneyOpts
+  }
+
+  function refreshJourneyOptions() {
+    _cachedJourneyOpts = buildJourneyOptions()
   }
 
   function readFilters() {
@@ -771,7 +798,7 @@
           m('.filter-row', [
             m('span.filter-group', [
               'Journey ',
-              m('select#filterJourney.filter-select', { value: s.filters.journey, onchange: function (e) { s.filters.journey = e.target.value; applyFilterChange(); m.redraw() } }, [
+              m('select#filterJourney.filter-select', { value: s.filters.journey, onfocus: function () { refreshJourneyOptions(); m.redraw() }, onchange: function (e) { s.filters.journey = e.target.value; applyFilterChange(); m.redraw() } }, [
                 getJourneyOptions().map(function (o) { return m('option', { value: o.value }, o.label) })
               ]),
               m('label.filter-check', [
@@ -811,12 +838,13 @@
 
   function renderRegionFilterRows() {
     var filters = s.filters.regions && s.filters.regions.length ? s.filters.regions : [{ region: '', pctMin: null, pctMax: null }]
-    var opts = buildRegionOptions()
+    var opts = getRegionOptions()
     return filters.map(function (f, idx) {
       return m('span.region-row', { key: idx, 'data-idx': idx }, [
         m('select.region-select', {
           'data-idx': idx,
           value: f.region,
+          onfocus: function () { refreshRegionOptions(); m.redraw() },
           onchange: function (e) {
             s.filters.regions[idx] = s.filters.regions[idx] || { region: '', pctMin: null, pctMax: null }
             s.filters.regions[idx].region = e.target.value

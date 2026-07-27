@@ -9,7 +9,7 @@
     batchEthnicityData: {},
     batchCommunitiesData: {},
     sessionMatches: null,
-    filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, regions: [] },
+    filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, regions: [{ region: '', pctMin: null, pctMax: null }] },
     currentPage: 1,
     pageSize: 20,
     hideNames: false,
@@ -449,11 +449,12 @@
       }
       if (!found) return false
     }
-    if (f.regions && f.regions.length) {
+    var activeRegions = s._activeRegionFilters
+    if (activeRegions && activeRegions.length) {
       var sm = s.sessionMatches && s.sessionMatches[m.sampleId]
       var regs = sm && sm.regions
-      for (var fi = 0; fi < f.regions.length; fi++) {
-        var rf = f.regions[fi]
+      for (var fi = 0; fi < activeRegions.length; fi++) {
+        var rf = activeRegions[fi]
         if (!rf.region) continue
         var ok = false
         if (rf.region.indexOf('__macro__') === 0) {
@@ -584,14 +585,14 @@
     f.journey = journeyEl ? journeyEl.value : ''
     f.journeyOnly = document.getElementById('filterJourneyOnly') ? document.getElementById('filterJourneyOnly').checked : false
     var rows = document.querySelectorAll('#regionFilters .region-row')
-    f.regions = []
+    s._activeRegionFilters = []
     for (var ri = 0; ri < rows.length; ri++) {
       var rowSel = rows[ri].querySelector('.region-select')
       var pctMin = rows[ri].querySelector('.region-pct-min')
       var pctMax = rows[ri].querySelector('.region-pct-max')
       var region = rowSel ? rowSel.value : ''
       if (!region) continue
-      f.regions.push({ region: region, pctMin: parseFloat(pctMin.value) || null, pctMax: parseFloat(pctMax.value) || null })
+      s._activeRegionFilters.push({ region: region, pctMin: parseFloat(pctMin.value) || null, pctMax: parseFloat(pctMax.value) || null })
     }
   }
 
@@ -714,7 +715,7 @@
                     s.fetchStateBadge = ''
                     s.showFetchOptions = true
                     s.currentPage = 1
-                    setState({ matchListData: null, sessionMatches: null, profileData: {}, batchEthnicityData: {}, batchCommunitiesData: {}, filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, regions: [] }, fetchStateBadge: '', showFetchOptions: true, fetchComplete: false, buttonLabel: null, currentPage: 1, statusMsg: '' })
+                    setState({ matchListData: null, sessionMatches: null, profileData: {}, batchEthnicityData: {}, batchCommunitiesData: {}, filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, regions: [{ region: '', pctMin: null, pctMax: null }] }, fetchStateBadge: '', showFetchOptions: true, fetchComplete: false, buttonLabel: null, currentPage: 1, statusMsg: '' })
                     document.getElementById('filterJourney').innerHTML = '<option value="">All</option>'
                   })
                 }
@@ -820,13 +821,9 @@
             ]),
             m('span#filterReset.filter-clear', {
               onclick: function () {
-                document.getElementById('filterName').value = ''
-                document.getElementById('filterCmMin').value = ''
-                document.getElementById('filterCmMax').value = ''
-                document.getElementById('filterJourney').value = ''
-                document.getElementById('filterJourneyOnly').checked = false
-                s.filters.regions = []
+                s.filters = { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, regions: [{ region: '', pctMin: null, pctMax: null }] }
                 s.currentPage = 1
+                _cachedJourneyOpts = null
                 m.redraw()
               }
             }, 'Clear filters')
@@ -857,6 +854,7 @@
           type: 'number', placeholder: 'Min',
           value: f.pctMin || '',
           oninput: function (e) {
+            s.filters.regions[idx] = s.filters.regions[idx] || { region: '', pctMin: null, pctMax: null }
             s.filters.regions[idx].pctMin = parseFloat(e.target.value) || null
             applyFilterChange()
             m.redraw()
@@ -867,6 +865,7 @@
           type: 'number', placeholder: 'Max',
           value: f.pctMax || '',
           oninput: function (e) {
+            s.filters.regions[idx] = s.filters.regions[idx] || { region: '', pctMin: null, pctMax: null }
             s.filters.regions[idx].pctMax = parseFloat(e.target.value) || null
             applyFilterChange()
             m.redraw()
@@ -967,7 +966,7 @@
     s.fetchStateBadge = ''
     s.statusMsg = ''
     s.currentPage = 1
-    s.filters = { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, regions: [] }
+    s.filters = { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, regions: [{ region: '', pctMin: null, pctMax: null }] }
     s.buttonLabel = null
     s.fetchComplete = false
     m.redraw()

@@ -635,9 +635,6 @@
         reader.readAsText(file)
         e.target.value = ''
       })
-      document.getElementById('githubBtn').addEventListener('click', function () { chrome.tabs.create({ url: 'https://github.com/strike978/matchfetch_ext' }) })
-      document.getElementById('discordBtn').addEventListener('click', function () { chrome.tabs.create({ url: 'https://discord.com/invite/f5BtHTM2zZ' }) })
-      document.getElementById('supportBtn').addEventListener('click', function () { chrome.tabs.create({ url: 'https://ko-fi.com/matchfetch' }) })
       document.getElementById('hideNamesToggle').addEventListener('change', function () {
         setState({ hideNames: this.checked })
         m.redraw()

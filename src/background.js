@@ -19,10 +19,8 @@ function getTab(cb) {
         })
         return
     }
-    chrome.tabs.query({}, function(tabs) {
-        for (var i = 0; i < tabs.length; i++) {
-            if (tabs[i].url && tabs[i].url.indexOf('ancestry.com') > -1) { _fetchTabId = tabs[i].id; getTab(cb); return }
-        }
+    chrome.tabs.query({ url: '*://*.ancestry.com/*' }, function(tabs) {
+        if (tabs && tabs.length) { _fetchTabId = tabs[0].id; getTab(cb); return }
         chrome.tabs.create({ url: 'https://www.ancestry.com/dna/matches/list', active: false }, function(t) {
             _fetchTabId = t.id
             waitForTab(t.id, cb)

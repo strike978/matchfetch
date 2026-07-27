@@ -143,19 +143,12 @@
       setState({ fetchStateBadge: '\u21bb ' + label })
     }
 
-    function anyMissingName(nodes) {
-      for (var i = 0; i < nodes.length; i++) { if (!nodes[i].displayName) return true; if (nodes[i].communities && anyMissingName(nodes[i].communities)) return true }
-      return false
-    }
-
     function findIncompleteSampleIds() {
       var result = []
       for (var i = 0; i < allMatches.length; i++) {
         var sid = allMatches[i].sampleId
         if (!sid) continue
-        if (!s.batchEthnicityData[sid] || !s.batchCommunitiesData[sid]) { result.push(sid); continue }
-        var branches = s.batchCommunitiesData[sid].branches
-        if (branches && anyMissingName(branches)) result.push(sid)
+        if (!s.batchEthnicityData[sid] || !s.batchCommunitiesData[sid]) result.push(sid)
       }
       return result
     }

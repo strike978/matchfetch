@@ -55,7 +55,7 @@
   function chunkArray(arr, size) { var c = []; for (var i = 0; i < arr.length; i += size) c.push(arr.slice(i, i + size)); return c }
 
   function loadRegionMap() {
-    return fetch(chrome.runtime.getURL('ancestry_region_names.json')).then(function (r) { return r.json() }).then(function (data) {
+    return fetch(chrome.runtime.getURL('data/ancestry_region_names.json')).then(function (r) { return r.json() }).then(function (data) {
       var m = {};
       for (var i = 0; i < data.items.length; i++) m[data.items[i].region] = data.items[i].name
       setState({ regionMap: m })
@@ -63,7 +63,7 @@
   }
 
   function loadJourneyNameMap() {
-    return fetch(chrome.runtime.getURL('ancestry_journey_names.json')).then(function (r) { return r.json() }).then(function (data) {
+    return fetch(chrome.runtime.getURL('data/ancestry_journey_names.json')).then(function (r) { return r.json() }).then(function (data) {
       var m = {};
       for (var id in data) {
         m[id] = data[id].name

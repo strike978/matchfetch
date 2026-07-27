@@ -20,7 +20,7 @@
     }
   },
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "src/background.js"
   },
   "permissions": ["scripting", "unlimitedStorage", "notifications"],
   "host_permissions": [

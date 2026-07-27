@@ -34,19 +34,19 @@
   }
 
   function loadRegionCoords() {
-    fetch(chrome.runtime.getURL('region_coordinates.json')).then(function (r) { return r.json() }).then(function (d) {
+    fetch(chrome.runtime.getURL('data/region_coordinates.json')).then(function (r) { return r.json() }).then(function (d) {
       setState({ regionCoords: d })
     }, function () { })
   }
 
   function loadJourneyCoords() {
-    fetch(chrome.runtime.getURL('journey_coordinates.json')).then(function (r) { return r.json() }).then(function (d) {
+    fetch(chrome.runtime.getURL('data/journey_coordinates.json')).then(function (r) { return r.json() }).then(function (d) {
       setState({ journeyCoords: d })
     }, function () { })
   }
 
   function loadSubjourneyCoords() {
-    fetch(chrome.runtime.getURL('subjourney_coordinates.json')).then(function (r) { return r.json() }).then(function (d) {
+    fetch(chrome.runtime.getURL('data/subjourney_coordinates.json')).then(function (r) { return r.json() }).then(function (d) {
       setState({ subjourneyCoords: d })
     }, function () { })
   }

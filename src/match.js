@@ -327,7 +327,6 @@
     e.preventDefault()
     chrome.tabs.query({ url: chrome.runtime.getURL('src/app.html') }, function(t) {
       if (t && t.length) chrome.tabs.update(t[0].id, { active: true })
-      window.close()
     })
   })
 

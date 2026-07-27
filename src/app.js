@@ -23,6 +23,7 @@
     fetchStateBadge: '',
     showFetchOptions: true,
     fetchComplete: false,
+    sortBy: 'cm',
     buttonLabel: null,
     modal: null,
     cmRangeMin: '90',
@@ -489,20 +490,6 @@
     return true
   }
 
-  function getFilteredMatches() {
-    var list = s.matchListData && s.matchListData.matchList
-    if (!list) return []
-    return list.filter(matchesFilter)
-  }
-
-  function getPageMatches() {
-    var filtered = getFilteredMatches()
-    var totalPages = Math.max(1, Math.ceil(filtered.length / s.pageSize))
-    if (s.currentPage > totalPages) s.currentPage = totalPages
-    var start = (s.currentPage - 1) * s.pageSize
-    return { filtered: filtered, start: start, end: Math.min(start + s.pageSize, filtered.length), totalPages: totalPages }
-  }
-
   var _cachedRegionOpts = null
 
   function buildRegionOptions() {
@@ -887,21 +874,32 @@
     })
   }
 
+  function sortMatches(a, b) {
+    if (s.sortBy === 'cm') return (b.relationship && b.relationship.sharedCentimorgans || 0) - (a.relationship && a.relationship.sharedCentimorgans || 0)
+    return (b.createdDate || 0) - (a.createdDate || 0)
+  }
+
   var MatchList = {
     view: function () {
       var list = s.matchListData && s.matchListData.matchList
       if (!list) return m('#matchListResult')
       readFilters()
-      var pg = getPageMatches()
-      var filtered = pg.filtered
-      var start = pg.start
-      var end = pg.end
+      var sorted = list.slice().sort(sortMatches)
+      var filtered = sorted.filter(matchesFilter)
+      var start = (s.currentPage - 1) * s.pageSize
+      var end = Math.min(start + s.pageSize, filtered.length)
       var total = list.length
       var shown = filtered.length
       var page = filtered.slice(start, end)
-      var totalPages = pg.totalPages
+      var totalPages = Math.max(1, Math.ceil(filtered.length / s.pageSize))
+      if (s.currentPage > totalPages) s.currentPage = totalPages
       var cards = page.map(function (match) { return m(MatchCard, { match: match, guid: s.selectedGuid }) })
       return m('#matchListResult', [
+        m('.sort-bar', [
+          m('span.sort-label', 'Sort by:'),
+          m('button.sort-btn' + (s.sortBy === 'cm' ? '.active' : ''), { onclick: function () { setState({ sortBy: 'cm', currentPage: 1 }) } }, 'Relationship'),
+          m('button.sort-btn' + (s.sortBy === 'date' ? '.active' : ''), { onclick: function () { setState({ sortBy: 'date', currentPage: 1 }) } }, 'Date')
+        ]),
         shown < total ? m('.match-count', ['Showing ', m('strong', shown), ' of ', m('strong', total), ' matches']) : null,
         m('.cards', cards),
         totalPages > 1 ? m(Pagination, { currentPage: s.currentPage, totalPages: totalPages }) : null

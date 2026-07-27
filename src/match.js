@@ -19,6 +19,7 @@
     journeyNameData: null,
     expandedRegionKey: null,
     expandedJourneyKey: null,
+    modal: null,
   }
 
   function setState(o) { Object.assign(s, o); m.redraw() }
@@ -276,6 +277,23 @@
     }
   }
 
+  var Modal = {
+    view: function () {
+      if (!s.modal) return null
+      return m('.modal-overlay', { onclick: function (e) { if (e.target === e.currentTarget) { s.modal = null; m.redraw() } } }, [
+        m('.modal', [
+          s.modal.icon ? m('.modal-icon', m.trust(s.modal.icon)) : null,
+          s.modal.title ? m('.modal-title', s.modal.title) : null,
+          s.modal.text ? m('.modal-text', s.modal.text) : null,
+          m('.modal-actions', [
+            s.modal.cancelText ? m('button.modal-btn.modal-cancel', { onclick: function () { s.modal = null; m.redraw() } }, s.modal.cancelText) : null,
+            s.modal.confirmText ? m('button.modal-btn.modal-confirm', { onclick: function () { var cb = s.modal.onConfirm; s.modal = null; m.redraw(); if (cb) cb() } }, s.modal.confirmText) : null,
+          ])
+        ])
+      ])
+    }
+  }
+
   var MatchDetail = {
     oninit: function () {
       DB.getMatchData(guid, sampleId).then(function (data) {
@@ -294,6 +312,7 @@
     view: function () {
       if (!s.matchData) return m('.spinner', [m('.spinner-ring'), m('div', 'Loading...')])
       return [
+        m(Modal),
         m(ProfileCard),
         m(Tabs),
         m('.tab-content#tab-regions', { style: { display: s.activeTab === 'regions' ? '' : 'none' } },
@@ -310,6 +329,33 @@
       if (t && t.length) chrome.tabs.update(t[0].id, { active: true })
       window.close()
     })
+  })
+
+  document.getElementById('importFileInput').addEventListener('change', function(e) {
+    var file = e.target.files[0]
+    if (!file || !file.name.endsWith('.json')) { e.target.value = ''; return }
+    var reader = new FileReader()
+    reader.onload = function(ev) {
+      try {
+        var data = JSON.parse(ev.target.result)
+        if (!Array.isArray(data)) throw new Error('Invalid format')
+        setState({ modal: { title: 'Import database?', text: 'This will overwrite your entire database with ' + data.length + ' kit(s) from this file. This cannot be undone.', confirmText: 'Import', cancelText: 'Cancel', onConfirm: function() { if (typeof DB !== 'undefined') DB.importDatabase(data).then(function() { m.redraw() }) } } })
+      } catch(err) { alert('Import failed: ' + err.message) }
+    }
+    reader.readAsText(file)
+  })
+
+  ;['hideNamesToggle','importBtn','exportBtn'].forEach(function(id) {
+    var el = document.getElementById(id)
+    if (!el) return
+    if (id === 'hideNamesToggle') {
+      el.checked = hideNames
+      el.addEventListener('change', function() { hideNames = this.checked; m.redraw() })
+    } else if (id === 'importBtn') {
+      el.addEventListener('click', function() { document.getElementById('importFileInput').click() })
+    } else if (id === 'exportBtn') {
+      el.addEventListener('click', function() { if (typeof DB !== 'undefined' && DB.exportDatabase) DB.exportDatabase() })
+    }
   })
 
   m.mount(document.getElementById('content'), MatchDetail)

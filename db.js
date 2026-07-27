@@ -1,138 +1,112 @@
 var DB = (function() {
-    var _db = null;
+    var db = new Dexie('MatchFetch');
+    db.version(1).stores({
+        Ancestry: 'guid',
+    });
 
-    function _open() {
-        return new Promise(function(resolve, reject) {
-            if (_db) return resolve(_db);
-            var req = indexedDB.open('MatchFetch', 1);
-            req.onupgradeneeded = function(e) {
-                var db = e.target.result;
-                if (!db.objectStoreNames.contains('Ancestry'))
-                    db.createObjectStore('Ancestry', { keyPath: 'guid' });
-            };
-            req.onsuccess = function(e) { _db = e.target.result; resolve(_db); };
-            req.onerror = function() { reject(req.error); };
-        });
+    function mergeMatchData(existing, matchList, profiles, ethnicity, communities) {
+        if (!existing) existing = { guid: '', matches: {} };
+        if (matchList) {
+            for (var mi = 0; mi < matchList.length; mi++) {
+                var m = matchList[mi];
+                if (!m || !m.sampleId) continue;
+                var r = m.relationship || {};
+                var existingMatch = existing.matches[m.sampleId] || {};
+                existing.matches[m.sampleId] = {
+                    relationship: { sharedCentimorgans: r.sharedCentimorgans || null, numSharedSegments: r.numSharedSegments || null, meiosis: r.meiosis || null },
+                    matchClusterCode: m.matchClusterCode || null,
+                    tags: m.tags ? Object.keys(m.tags).filter(function(k) { return m.tags[k]; }).map(function(k) { return m.tags[k]; }) : null,
+                    createdDate: m.createdDate || null,
+                    matchName: existingMatch.matchName || null,
+                    matchNameInitials: existingMatch.matchNameInitials || null,
+                    displayGender: existingMatch.displayGender || null,
+                    photoUrl: existingMatch.photoUrl || null,
+                    regions: existingMatch.regions || null,
+                    journeys: existingMatch.journeys || null
+                };
+            }
+        }
+        if (profiles) mergeProfiles(existing, profiles);
+        if (ethnicity) mergeEthnicity(existing, ethnicity);
+        if (communities) mergeCommunities(existing, communities);
+        return existing;
+    }
+
+    function mergeProfiles(existing, profiles) {
+        var keys = Object.keys(profiles);
+        for (var i = 0; i < keys.length; i++) {
+            var sid = keys[i];
+            var p = profiles[sid];
+            if (!p) continue;
+            var em = existing.matches[sid] || {};
+            em.matchName = p.matchName || null;
+            em.matchNameInitials = p.matchNameInitials || null;
+            em.displayGender = p.displayGender || null;
+            em.photoUrl = p.photoUrl || null;
+            existing.matches[sid] = em;
+        }
+    }
+
+    function mergeEthnicity(existing, ethnicity) {
+        var keys = Object.keys(ethnicity);
+        for (var i = 0; i < keys.length; i++) {
+            var sid = keys[i];
+            var eth = ethnicity[sid];
+            if (!eth) continue;
+            var em = existing.matches[sid] || {};
+            var regions = [];
+            if (eth.regions) {
+                for (var ri = 0; ri < eth.regions.length; ri++) {
+                    var r = eth.regions[ri];
+                    regions.push({ color: r.color, key: r.key, displayName: r.displayName || null, lowerConfidence: r.lowerConfidence, macroRegionKey: r.macroRegionKey, percentage: r.percentage, upperConfidence: r.upperConfidence });
+                }
+            }
+            em.regions = regions;
+            existing.matches[sid] = em;
+        }
+    }
+
+    function mergeCommunities(existing, communities) {
+        var keys = Object.keys(communities);
+        for (var i = 0; i < keys.length; i++) {
+            var sid = keys[i];
+            var com = communities[sid];
+            if (!com) continue;
+            var em = existing.matches[sid] || {};
+            var branches = [];
+            if (com.branches) {
+                for (var bi = 0; bi < com.branches.length; bi++) {
+                    var b = com.branches[bi];
+                    var comms = [];
+                    if (b.communities) {
+                        for (var cci = 0; cci < b.communities.length; cci++) {
+                            var co = b.communities[cci];
+                            comms.push({ id: co.id, displayName: co.displayName || null, connection: co.connection, connectionPercent: co.connectionPercent });
+                        }
+                    }
+                    branches.push({ id: b.id, displayName: b.displayName || null, connection: b.connection, connectionPercent: b.connectionPercent, communities: comms });
+                }
+            }
+            em.journeys = branches;
+            existing.matches[sid] = em;
+        }
     }
 
     return {
         saveSession: function(guid, matchList, profiles, ethnicity, communities) {
-            return _open().then(function(db) {
-                return new Promise(function(resolve, reject) {
-                    var tx = db.transaction('Ancestry', 'readwrite');
-                    tx.oncomplete = function() { resolve(); };
-                    tx.onerror = function() { reject(tx.error); };
-
-                    var getReq = tx.objectStore('Ancestry').get(guid);
-                    getReq.onsuccess = function() {
-                        var trimmed = getReq.result || { guid: guid, matches: {} };
-
-                        if (matchList) {
-                            for (var mi = 0; mi < matchList.length; mi++) {
-                                var m = matchList[mi];
-                                if (!m || !m.sampleId) continue;
-                                var r = m.relationship || {};
-                                var tagCodes = [];
-                                if (m.tags) {
-                                    var tagKeys = Object.keys(m.tags);
-                                    for (var ti = 0; ti < tagKeys.length; ti++) {
-                                        if (m.tags[tagKeys[ti]]) tagCodes.push(m.tags[tagKeys[ti]]);
-                                    }
-                                }
-                                var existing = trimmed.matches[m.sampleId] || {};
-                                trimmed.matches[m.sampleId] = {
-                                    relationship: { sharedCentimorgans: r.sharedCentimorgans || null, numSharedSegments: r.numSharedSegments || null, meiosis: r.meiosis || null },
-                                    matchClusterCode: m.matchClusterCode || null,
-                                    tags: tagCodes.length > 0 ? tagCodes : null,
-                                    createdDate: m.createdDate || null,
-                                    matchName: existing.matchName || null,
-                                    matchNameInitials: existing.matchNameInitials || null,
-                                    displayGender: existing.displayGender || null,
-                                    photoUrl: existing.photoUrl || null,
-                                    regions: existing.regions || null,
-                                    journeys: existing.journeys || null
-                                };
-                            }
-                        }
-
-                        if (profiles) {
-                            var pKeys = Object.keys(profiles);
-                            for (var pi = 0; pi < pKeys.length; pi++) {
-                                var sid = pKeys[pi];
-                                var p = profiles[sid];
-                                if (!p) continue;
-                                var existing = trimmed.matches[sid] || {};
-                                existing.matchName = p.matchName || null;
-                                existing.matchNameInitials = p.matchNameInitials || null;
-                                existing.displayGender = p.displayGender || null;
-                                existing.photoUrl = p.photoUrl || null;
-                                trimmed.matches[sid] = existing;
-                            }
-                        }
-
-                        if (ethnicity) {
-                            var eKeys = Object.keys(ethnicity);
-                            for (var ei = 0; ei < eKeys.length; ei++) {
-                                var sid = eKeys[ei];
-                                var eth = ethnicity[sid];
-                                if (!eth) continue;
-                                var existing = trimmed.matches[sid] || {};
-                                var regions = [];
-                                if (eth.regions) {
-                                    for (var ri = 0; ri < eth.regions.length; ri++) {
-                                        var r = eth.regions[ri];
-                                        regions.push({ color: r.color, key: r.key, displayName: r.displayName || null, lowerConfidence: r.lowerConfidence, macroRegionKey: r.macroRegionKey, percentage: r.percentage, upperConfidence: r.upperConfidence });
-                                    }
-                                }
-                                existing.regions = regions;
-                                trimmed.matches[sid] = existing;
-                            }
-                        }
-
-                        if (communities) {
-                            var cKeys = Object.keys(communities);
-                            for (var ci = 0; ci < cKeys.length; ci++) {
-                                var sid = cKeys[ci];
-                                var com = communities[sid];
-                                if (!com) continue;
-                                var existing = trimmed.matches[sid] || {};
-                                var branches = [];
-                                if (com.branches) {
-                                    for (var bi = 0; bi < com.branches.length; bi++) {
-                                        var b = com.branches[bi];
-                                        var comms = [];
-                                        if (b.communities) {
-                                            for (var cci = 0; cci < b.communities.length; cci++) {
-                                                var co = b.communities[cci];
-                                                comms.push({ id: co.id, displayName: co.displayName || null, connection: co.connection, connectionPercent: co.connectionPercent });
-                                            }
-                                        }
-                                        branches.push({ id: b.id, displayName: b.displayName || null, connection: b.connection, connectionPercent: b.connectionPercent, communities: comms });
-                                    }
-                                }
-                                existing.journeys = branches;
-                                trimmed.matches[sid] = existing;
-                            }
-                        }
-
-                        tx.objectStore('Ancestry').put(trimmed);
-                    };
-                });
+            return db.Ancestry.get(guid).then(function(existing) {
+                var data = mergeMatchData(existing || { guid: guid, matches: {} }, matchList, profiles, ethnicity, communities);
+                data.guid = guid;
+                return db.Ancestry.put(data);
             });
         },
 
         getSession: function(guid) {
-            return _open().then(function(db) {
-                return new Promise(function(resolve, reject) {
-                    var req = db.transaction('Ancestry', 'readonly').objectStore('Ancestry').get(guid);
-                    req.onsuccess = function() { resolve(req.result || null); };
-                    req.onerror = function() { reject(req.error); };
-                });
-            });
+            return db.Ancestry.get(guid).then(function(r) { return r || null; });
         },
 
         getMatchData: function(guid, sampleId) {
-            return this.getSession(guid).then(function(session) {
+            return db.Ancestry.get(guid).then(function(session) {
                 if (!session) return null;
                 var m = session.matches && session.matches[sampleId] || null;
                 if (!m) return null;
@@ -145,94 +119,50 @@ var DB = (function() {
             });
         },
 
-        exportDatabase: function() {
-            return _open().then(function(db) {
-                return new Promise(function(resolve, reject) {
-                    var req = db.transaction('Ancestry', 'readonly').objectStore('Ancestry').getAll();
-                    req.onsuccess = function() {
-                        var blob = new Blob([JSON.stringify(req.result, null, 2)], { type: 'application/json' });
-                        var url = URL.createObjectURL(blob);
-                        var a = document.createElement('a');
-                        a.href = url; a.download = 'matchfetch-export.json';
-                        document.body.appendChild(a); a.click();
-                        document.body.removeChild(a); URL.revokeObjectURL(url);
-                        resolve();
-                    };
-                    req.onerror = function() { reject(req.error); };
-                });
-            });
-        },
-
-        importDatabase: function(data) {
-            return _open().then(function(db) {
-                return new Promise(function(resolve, reject) {
-                    var tx = db.transaction('Ancestry', 'readwrite');
-                    tx.oncomplete = function() { resolve(data.length); };
-                    tx.onerror = function() { reject(tx.error); };
-                    var clearReq = tx.objectStore('Ancestry').clear();
-                    clearReq.onsuccess = function() {
-                        for (var i = 0; i < data.length; i++) {
-                            tx.objectStore('Ancestry').put(data[i]);
-                        }
-                    };
-                    clearReq.onerror = function() { reject(clearReq.error); };
-                });
-            });
-        },
-
-        deleteSession: function(guid) {
-            return _open().then(function(db) {
-                return new Promise(function(resolve, reject) {
-                    var tx = db.transaction('Ancestry', 'readwrite');
-                    tx.oncomplete = function() { resolve(); };
-                    tx.onerror = function() { reject(tx.error); };
-                    tx.objectStore('Ancestry').delete(guid);
-                });
-            });
-        },
-
         saveFetchState: function(guid, status, mode, params, nextPage) {
-            return _open().then(function(db) {
-                return new Promise(function(resolve, reject) {
-                    var tx = db.transaction('Ancestry', 'readwrite');
-                    tx.oncomplete = function() { resolve(); };
-                    tx.onerror = function() { reject(tx.error); };
-                    var getReq = tx.objectStore('Ancestry').get(guid);
-                    getReq.onsuccess = function() {
-                        var obj = getReq.result || { guid: guid, matches: {} };
-                        obj.fetchState = { status: status, mode: mode, params: params, nextPage: nextPage || null };
-                        tx.objectStore('Ancestry').put(obj);
-                    };
-                });
+            return db.Ancestry.get(guid).then(function(existing) {
+                var data = existing || { guid: guid, matches: {} };
+                data.guid = guid;
+                data.fetchState = { status: status, mode: mode, params: params, nextPage: nextPage || null };
+                return db.Ancestry.put(data);
             });
         },
 
         getFetchState: function(guid) {
-            return _open().then(function(db) {
-                return new Promise(function(resolve, reject) {
-                    var req = db.transaction('Ancestry', 'readonly').objectStore('Ancestry').get(guid);
-                    req.onsuccess = function() {
-                        var r = req.result;
-                        resolve(r && r.fetchState ? { status: r.fetchState.status, mode: r.fetchState.mode, params: r.fetchState.params, nextPage: r.fetchState.nextPage } : null);
-                    };
-                    req.onerror = function() { reject(req.error); };
-                });
+            return db.Ancestry.get(guid).then(function(r) {
+                if (!r || !r.fetchState) return null;
+                return { status: r.fetchState.status, mode: r.fetchState.mode, params: r.fetchState.params, nextPage: r.fetchState.nextPage };
             });
         },
 
+        deleteSession: function(guid) {
+            return db.Ancestry.delete(guid);
+        },
+
         deleteFetchState: function(guid) {
-            return _open().then(function(db) {
-                return new Promise(function(resolve, reject) {
-                    var tx = db.transaction('Ancestry', 'readwrite');
-                    tx.oncomplete = function() { resolve(); };
-                    tx.onerror = function() { reject(tx.error); };
-                    var getReq = tx.objectStore('Ancestry').get(guid);
-                    getReq.onsuccess = function() {
-                        var obj = getReq.result;
-                        if (obj) { delete obj.fetchState; tx.objectStore('Ancestry').put(obj); }
-                        else resolve();
-                    };
-                });
+            return db.Ancestry.get(guid).then(function(existing) {
+                if (!existing) return;
+                delete existing.fetchState;
+                return db.Ancestry.put(existing);
+            });
+        },
+
+        exportDatabase: function() {
+            return db.Ancestry.toArray().then(function(all) {
+                var blob = new Blob([JSON.stringify(all, null, 2)], { type: 'application/json' });
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url; a.download = 'matchfetch-export.json';
+                document.body.appendChild(a); a.click();
+                document.body.removeChild(a); URL.revokeObjectURL(url);
+            });
+        },
+
+        importDatabase: function(data) {
+            return db.Ancestry.clear().then(function() {
+                return db.Ancestry.bulkPut(data);
+            }).then(function() {
+                return data.length;
             });
         }
     };

@@ -14,6 +14,10 @@
     regionCoords: null,
     journeyCoords: null,
     subjourneyCoords: null,
+    regionNameData: null,
+    journeyNameData: null,
+    selectedRegionInfo: null,
+    selectedJourneyInfo: null,
   }
 
   function setState(o) { Object.assign(s, o); m.redraw() }
@@ -42,12 +46,27 @@
   function loadJourneyCoords() {
     fetch(chrome.runtime.getURL('data/journey_coordinates.json')).then(function (r) { return r.json() }).then(function (d) {
       setState({ journeyCoords: d })
+      if (s.activeTab === 'journeys') setTimeout(initJourneyMap, 100)
     }, function () { })
   }
 
   function loadSubjourneyCoords() {
     fetch(chrome.runtime.getURL('data/subjourney_coordinates.json')).then(function (r) { return r.json() }).then(function (d) {
       setState({ subjourneyCoords: d })
+    }, function () { })
+  }
+
+  function loadRegionNames() {
+    fetch(chrome.runtime.getURL('data/ancestry_region_names.json')).then(function (r) { return r.json() }).then(function (d) {
+      var m = {};
+      for (var i = 0; i < d.items.length; i++) m[d.items[i].region] = d.items[i];
+      setState({ regionNameData: m })
+    }, function () { })
+  }
+
+  function loadJourneyNames() {
+    fetch(chrome.runtime.getURL('data/ancestry_journey_names.json')).then(function (r) { return r.json() }).then(function (d) {
+      setState({ journeyNameData: d })
     }, function () { })
   }
 
@@ -67,6 +86,24 @@
     var popupHtml = '<div style="font-size:13px;font-weight:600;color:#e2e8f0">' + (rd.displayName || key) + '</div>'
     if (pct) popupHtml += '<div style="font-size:11px;color:#94a3b8;margin-top:2px">' + pct + (range ? ' (' + range + ')' : '') + '</div>'
     _regionLayers[key].bindPopup(popupHtml, { closeButton: true, offset: L.point(0, -4) }).openPopup()
+    var ni = rd._nameInfo
+    if (!ni && s.regionNameData) {
+      var raw = s.regionNameData[key]
+      if (raw) {
+        ni = {}
+        if (raw.primaryLocated) ni.primaryLocated = raw.primaryLocated
+        if (raw.alsoLocated) ni.alsoLocated = raw.alsoLocated
+        if (raw.overview) ni.overview = raw.overview.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+        rd._nameInfo = ni
+      }
+    }
+    var sinfo = { key: key, displayName: rd.displayName, percentage: rd.percentage, lowerConfidence: rd.lowerConfidence, upperConfidence: rd.upperConfidence }
+    if (ni) {
+      sinfo.primaryLocated = ni.primaryLocated
+      sinfo.alsoLocated = ni.alsoLocated
+      sinfo.overview = ni.overview
+    }
+    setState({ selectedRegionInfo: sinfo, selectedJourneyInfo: null })
   }
 
   function addRegionsToMap() {
@@ -91,6 +128,15 @@
       layer.bindTooltip(name, { sticky: true })
       layer.addTo(_regionMap)
       _regionLayers[key] = layer
+      var raw = s.regionNameData && s.regionNameData[key]
+      var ni = null
+      if (raw) {
+        ni = {}
+        if (raw.primaryLocated) ni.primaryLocated = raw.primaryLocated
+        if (raw.alsoLocated) ni.alsoLocated = raw.alsoLocated
+        if (raw.overview) ni.overview = raw.overview.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+      }
+      reg._nameInfo = ni
       _regionData[key] = reg
       layer.on('click', (function (k) { return function (e) { if (e && e.originalEvent) { e.originalEvent.preventDefault(); e.originalEvent.stopPropagation() } zoomToRegion(k); if (document.activeElement) document.activeElement.blur() } })(key))
       bounds.extend(layer.getBounds())
@@ -118,13 +164,11 @@
 
   var _journeyMap = null
   var _journeyLayers = {}
-  var _journeyData = {}
 
   function zoomToJourney(key) {
     if (!_journeyMap || !key) return
     for (var k in _journeyLayers) { if (_journeyLayers.hasOwnProperty(k)) _journeyMap.removeLayer(_journeyLayers[k]) }
     _journeyLayers = {}
-    _journeyData = {}
     if (!s.journeyCoords && !s.subjourneyCoords) return
     var entry = (s.journeyCoords || {})[key] || (s.subjourneyCoords || {})[key]
     if (!entry) return
@@ -147,7 +191,6 @@
       layer.bindTooltip(nodeData.displayName || key, { sticky: true })
       layer.addTo(_journeyMap)
       _journeyLayers[key] = layer
-      _journeyData[key] = nodeData
       layer.on('click', (function (k) { return function (e) { if (e && e.originalEvent) { e.originalEvent.preventDefault(); e.originalEvent.stopPropagation() } zoomToJourney(k); if (document.activeElement) document.activeElement.blur() } })(key))
       _journeyMap.fitBounds(layer.getBounds().pad(0.1))
       _journeyMap.getContainer().blur()
@@ -156,6 +199,17 @@
       var popupHtml = '<div style="font-size:13px;font-weight:600;color:#e2e8f0">' + (nodeData.displayName || key) + '</div>'
       if (pct || strength) popupHtml += '<div style="font-size:11px;color:#94a3b8;margin-top:2px">' + (strength ? titleize(strength) + ' ' : '') + pct + '</div>'
       layer.bindPopup(popupHtml, { closeButton: true, offset: L.point(0, -4) }).openPopup()
+      var ni = nodeData._nameInfo
+      if (!ni && s.journeyNameData) {
+        var raw = s.journeyNameData[key]
+        if (raw && raw.overview) {
+          ni = { overview: raw.overview.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'") }
+          nodeData._nameInfo = ni
+        }
+      }
+      var jinfo = { key: key, displayName: nodeData.displayName, connection: nodeData.connection, connectionPercent: nodeData.connectionPercent }
+      if (ni) { jinfo.overview = ni.overview }
+      setState({ selectedJourneyInfo: jinfo, selectedRegionInfo: null })
     } catch (e) { }
   }
 
@@ -163,16 +217,15 @@
     if (!_journeyMap || !s.matchData) return
     var com = s.matchData.communities
     if (!com || !com.branches) return
-    if (!s.journeyCoords || !s.subjourneyCoords) return
+    if (!s.journeyCoords) return
     _journeyLayers = {}
-    _journeyData = {}
     var bounds = L.latLngBounds()
     var count = 0
     for (var bi = 0; bi < com.branches.length; bi++) {
       var n = com.branches[bi]
       var key = n.id
       if (!key) continue
-      var entry = (s.journeyCoords || {})[key] || (s.subjourneyCoords || {})[key]
+      var entry = s.journeyCoords[key]
       if (!entry) continue
       var gj = entry.type ? entry : { type: 'MultiPolygon', coordinates: entry.coordinates }
       if (!gj.coordinates || !gj.coordinates.length) continue
@@ -181,7 +234,13 @@
       layer.bindTooltip(n.displayName || key, { sticky: true })
       layer.addTo(_journeyMap)
       _journeyLayers[key] = layer
-      _journeyData[key] = n
+      ;(function resolveJourneyNameInfo(node) {
+        var raw = s.journeyNameData && s.journeyNameData[node.id]
+        if (raw && raw.overview) {
+          node._nameInfo = { overview: raw.overview.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'") }
+        }
+        if (node.communities) { for (var ci = 0; ci < node.communities.length; ci++) resolveJourneyNameInfo(node.communities[ci]) }
+      })(n)
       layer.on('click', (function (k) { return function (e) { if (e && e.originalEvent) { e.originalEvent.preventDefault(); e.originalEvent.stopPropagation() } zoomToJourney(k); if (document.activeElement) document.activeElement.blur() } })(key))
       bounds.extend(layer.getBounds())
       count++
@@ -195,7 +254,7 @@
     if (!s.matchData) return
     var com = s.matchData.communities
     if (!com || !com.branches) return
-    if (!s.journeyCoords || !s.subjourneyCoords) return
+    if (!s.journeyCoords) return
     if (_journeyMap) return
     try {
       _journeyMap = L.map('journey-map', { zoomControl: true, attributionControl: false })
@@ -235,6 +294,14 @@
             return m('span.detail.ethnicity', {
               style: { borderLeft: '3px solid ' + reg.color, cursor: 'pointer' },
               'data-key': reg.key,
+              title: (function () {
+                var ni = s.regionNameData && s.regionNameData[reg.key]
+                if (!ni) return ''
+                var parts = []
+                if (ni.primaryLocated) parts.push('Primarily located in: ' + ni.primaryLocated)
+                if (ni.alsoLocated) parts.push('Also found in: ' + ni.alsoLocated)
+                return parts.join(' | ')
+              })(),
               onclick: function () { zoomToRegion(reg.key) }
             }, [
               m('span.detail-label', reg.displayName || reg.key || ''),
@@ -248,20 +315,47 @@
       })
       return m('.regions-map-row', [
         m('.card', groups),
-        m('.card.map-card', [m('#map', { style: { height: '420px', borderRadius: '10px', overflow: 'hidden' } })])
+        m('.card.map-card', [
+          s.selectedRegionInfo ? m('.detail-info', [
+            m('.detail-info-header', [
+              m('span.detail-info-name', s.selectedRegionInfo.displayName || s.selectedRegionInfo.key || ''),
+              m('span.detail-info-pct', s.selectedRegionInfo.percentage + '%' + (s.selectedRegionInfo.lowerConfidence != null ? ' (' + s.selectedRegionInfo.lowerConfidence + '\u2013' + s.selectedRegionInfo.upperConfidence + '%)' : ''))
+            ]),
+            s.selectedRegionInfo.primaryLocated ? m('.detail-info-row', [
+              m('span.detail-info-label', 'Primarily located in:'),
+              m('span.detail-info-value', s.selectedRegionInfo.primaryLocated)
+            ]) : null,
+            s.selectedRegionInfo.alsoLocated ? m('.detail-info-row', [
+              m('span.detail-info-label', 'Also found in:'),
+              m('span.detail-info-value', s.selectedRegionInfo.alsoLocated)
+            ]) : null,
+            s.selectedRegionInfo.overview ? m('.detail-info-overview', s.selectedRegionInfo.overview) : null
+          ]) : null,
+          m('#map', { style: { height: '420px', borderRadius: '10px', overflow: 'hidden' } })
+        ])
       ])
     }
   }
 
   var JourneysPanel = {
-    oncreate: function () { setTimeout(initJourneyMap, 50) },
-    onupdate: function () { if (!_journeyMap) setTimeout(initJourneyMap, 50) },
     view: function () {
       var com = s.matchData && s.matchData.communities
       if (!com || !com.branches || !com.branches.length) return null
       return m('.regions-map-row', [
         m('.card', [m('.journey-tree', renderJourneyTree(com.branches, 0))]),
-        m('.card.map-card', [m('#journey-map', { style: { height: '420px', borderRadius: '10px', overflow: 'hidden' } })])
+        m('.card.map-card', [
+          s.selectedJourneyInfo ? m('.detail-info', [
+            m('.detail-info-header', [
+              m('span.detail-info-name', s.selectedJourneyInfo.displayName || s.selectedJourneyInfo.key || ''),
+              s.selectedJourneyInfo.connection ? m('span.detail-info-strength.' + (s.selectedJourneyInfo.connection || '').toLowerCase(), [
+                titleize(s.selectedJourneyInfo.connection),
+                s.selectedJourneyInfo.connectionPercent != null ? ' ' + s.selectedJourneyInfo.connectionPercent + '%' : ''
+              ]) : null
+            ]),
+            s.selectedJourneyInfo.overview ? m('.detail-info-overview', s.selectedJourneyInfo.overview) : null
+          ]) : null,
+          m('#journey-map', { style: { height: '420px', borderRadius: '10px', overflow: 'hidden' } })
+        ])
       ])
     }
   }
@@ -335,7 +429,7 @@
           onclick: function () {
             setState({ activeTab: tab })
             if (tab === 'regions') { setTimeout(function () { if (_regionMap) _regionMap.invalidateSize(); else initRegionMap() }, 50) }
-            if (tab === 'journeys') { setTimeout(function () { if (_journeyMap) _journeyMap.invalidateSize(); else initJourneyMap() }, 50) }
+            if (tab === 'journeys') { setTimeout(function () { if (_journeyMap) _journeyMap.invalidateSize(); else if (s.journeyCoords) initJourneyMap() }, 100) }
           }
         }, tab === 'regions' ? 'Regions' : 'Journeys')
       }))
@@ -353,6 +447,8 @@
         loadRegionCoords()
         loadJourneyCoords()
         loadSubjourneyCoords()
+        loadRegionNames()
+        loadJourneyNames()
       })
     },
     view: function () {

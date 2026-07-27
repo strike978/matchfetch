@@ -2,6 +2,7 @@
   var params = new URLSearchParams(location.search)
   var guid = params.get('guid')
   var sampleId = params.get('sampleId')
+  var hideNames = params.get('hideNames') === '1'
 
   if (!guid || !sampleId) {
     document.getElementById('content').innerHTML = '<div class="error">Missing guid or sampleId</div>'
@@ -242,7 +243,7 @@
       var p = d.profile || {}
       var md = d.matchData || {}
       var rel = md.relationship || {}
-      document.title = p.matchName || 'Unknown'
+      document.title = hideNames ? (p.matchNameInitials || '??') : (p.matchName || 'Unknown')
       var gc = 'gender-n'
       if (p.displayGender === 'M') gc = 'gender-m'
       else if (p.displayGender === 'F') gc = 'gender-f'
@@ -254,7 +255,7 @@
       return m('.card.profile-card', [
         m('.match-name', [
           p.photoUrl ? m('a', { href: p.photoUrl, target: '_blank', title: 'Open photo' }, m('img.avatar', { src: p.photoUrl })) : m('.avatar.avatar-initials.' + gc, p.matchNameInitials || '?'),
-          m('span', p.matchName || 'Unknown'),
+          m('span', hideNames ? (p.matchNameInitials || '??') : (p.matchName || 'Unknown')),
           m('a.profile-link', { href: profileUrl, target: '_blank', title: 'Open on Ancestry' }, m.trust('<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>'))
         ]),
         relParts.length ? m('.card-details', { style: { marginTop: '12px' } }, [m('.rel-text', relParts)]) : null

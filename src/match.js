@@ -303,5 +303,13 @@
     }
   }
 
+  document.querySelector('.topbar-home').addEventListener('click', function(e) {
+    e.preventDefault()
+    chrome.tabs.query({ url: '*://*/src/app.html' }, function(t) {
+      if (t && t.length) chrome.tabs.update(t[0].id, { active: true })
+      window.close()
+    })
+  })
+
   m.mount(document.getElementById('content'), MatchDetail)
 })()

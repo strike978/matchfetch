@@ -15,6 +15,7 @@ body {
     display: flex; align-items: center; gap: 12px;
     padding: 16px 24px; background: #1a2332; border-bottom: 1px solid #253044;
 }
+.topbar-home { display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; }
 .topbar-icon { width: 28px; height: 28px; border-radius: 6px; overflow: hidden; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .topbar-title { font-size: 15px; font-weight: 600; color: #f1f5f9; }
 .topbar-sub { font-size: 11px; font-weight: 600; color: #94a3b8; margin-left: auto; background: #253044; padding: 3px 10px; border-radius: 8px; }
@@ -93,9 +94,10 @@ svg, svg * { outline: 0; }
 </head>
 <body>
 <div class="topbar">
-    <div class="topbar-icon"><img src="../icons/icon32.png" width="28" height="28" alt="M"></div>
-    <div class="topbar-title">MatchFetch</div>
-    
+    <a class="topbar-home" href="javascript:;">
+        <div class="topbar-icon"><img src="../icons/icon32.png" width="28" height="28" alt="M"></div>
+        <div class="topbar-title">MatchFetch</div>
+    </a>
 </div>
 <div class="main" id="content">
     <div class="spinner"><div class="spinner-ring"></div><div>Loading...</div></div>

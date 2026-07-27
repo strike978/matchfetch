@@ -10,7 +10,7 @@
         '.topbar-btn { background: none; border: 1px solid #253044; color: #94a3b8; cursor: pointer; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 8px; display: flex; align-items: center; gap: 4px; transition: background .2s, color .2s, border-color .2s; font-family: inherit; }',
         '.topbar-btn:hover { background: #253044; color: #f1f5f9; border-color: #475569; }',
         '.topbar-actions { margin-left: auto; display: flex; align-items: center; gap: 6px; }',
-        '.topbar-toggle { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: #64748b; cursor: pointer; user-select: none; }',
+        '.topbar-toggle { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: #94a3b8; cursor: pointer; user-select: none; font-family: inherit; }',
         '.topbar-toggle input { display: none; }',
         '.topbar-toggle .slider { width: 26px; height: 14px; background: #253044; border-radius: 7px; position: relative; transition: background .2s; }',
         '.topbar-toggle .slider::after { content: ""; position: absolute; top: 2px; left: 2px; width: 10px; height: 10px; background: #64748b; border-radius: 50%; transition: transform .2s, background .2s; }',

@@ -821,9 +821,15 @@
             ]),
             m('span#filterReset.filter-clear', {
               onclick: function () {
-                s.filters = { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, regions: [{ region: '', pctMin: null, pctMax: null }] }
-                s.currentPage = 1
+                document.getElementById('filterName').value = ''
+                document.getElementById('filterCmMin').value = ''
+                document.getElementById('filterCmMax').value = ''
+                document.getElementById('filterJourney').value = ''
+                document.getElementById('filterJourneyOnly').checked = false
                 _cachedJourneyOpts = null
+                readFilters()
+                s.filters.regions = [{ region: '', pctMin: null, pctMax: null }]
+                s.currentPage = 1
                 m.redraw()
               }
             }, 'Clear filters')

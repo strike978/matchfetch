@@ -12,7 +12,6 @@
     filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, regions: [] },
     currentPage: 1,
     pageSize: 20,
-    debugEnabled: false,
     hideNames: false,
     showFilterBody: false,
     fetchMsg: '',
@@ -125,8 +124,6 @@
     s.batchEthnicityData = {}
     s.batchCommunitiesData = {}
     s.sessionMatches = null
-    var dl = document.getElementById('debugLog')
-    if (dl) dl.textContent = ''
     var allMatches = []
     var desiredCount = mode === 'cmRange' ? Infinity : (params.desiredCount || 100)
     var currentPage = 1
@@ -424,14 +421,7 @@
   }
 
   function debugLog(msg) {
-    if (!s.debugEnabled) return
-    var el = document.getElementById('debugLog')
-    if (!el) return
-    el.style.display = 'block'
-    var t = new Date()
-    var ts = t.getHours().toString().padStart(2, '0') + ':' + t.getMinutes().toString().padStart(2, '0') + ':' + t.getSeconds().toString().padStart(2, '0')
-    el.textContent += '[' + ts + '] ' + msg + '\n'
-    el.scrollTop = el.scrollHeight
+    console.log('[MatchFetch] ' + msg)
   }
 
   function matchesFilter(m) {
@@ -620,11 +610,6 @@
       document.getElementById('githubBtn').addEventListener('click', function () { chrome.tabs.create({ url: 'https://github.com/strike978/matchfetch_ext' }) })
       document.getElementById('discordBtn').addEventListener('click', function () { chrome.tabs.create({ url: 'https://discord.com/invite/f5BtHTM2zZ' }) })
       document.getElementById('supportBtn').addEventListener('click', function () { chrome.tabs.create({ url: 'https://ko-fi.com/matchfetch' }) })
-      document.getElementById('debugToggle').addEventListener('change', function () {
-        setState({ debugEnabled: this.checked })
-        var dl = document.getElementById('debugLog')
-        if (dl) dl.style.display = this.checked ? 'block' : 'none'
-      })
       document.getElementById('hideNamesToggle').addEventListener('change', function () {
         setState({ hideNames: this.checked })
         m.redraw()
@@ -753,8 +738,7 @@
             m('#fetchBarFill', { style: { height: '100%', width: s.fetchProgress + '%', borderRadius: '4px', transition: 'width .3s, background .3s' } })
           ])
         ]) : null,
-        s.statusMsg ? m('.status-msg', s.statusMsg) : null,
-        m('pre#debugLog', { style: { display: s.debugEnabled ? 'block' : 'none' } })
+        s.statusMsg ? m('.status-msg', s.statusMsg) : null
       ]
     }
   }

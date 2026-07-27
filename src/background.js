@@ -84,5 +84,8 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 })
 
 chrome.action.onClicked.addListener(function() {
-    chrome.tabs.create({ url: 'src/app.html', pinned: true })
+    chrome.tabs.query({ url: chrome.runtime.getURL('src/app.html') }, function(t) {
+        if (t && t.length) chrome.tabs.update(t[0].id, { active: true })
+        else chrome.tabs.create({ url: 'src/app.html', pinned: true })
+    })
 });

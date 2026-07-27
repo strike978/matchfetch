@@ -22,7 +22,7 @@
   "background": {
     "service_worker": "src/background.js"
   },
-  "permissions": ["scripting", "unlimitedStorage", "notifications"],
+  "permissions": ["scripting", "unlimitedStorage", "notifications", "tabs"],
   "host_permissions": [
     "https://www.ancestry.com/*",
     "https://*.basemaps.cartocdn.com/*"

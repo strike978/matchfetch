@@ -32,6 +32,6 @@ Fetch, browse, and explore your AncestryDNA match data.
 
 ---
 
-Created by Omar Nunez · Version 0.0.6
+Created by Omar Nunez · Version 0.0.7
 
 _23andMe support coming soon._

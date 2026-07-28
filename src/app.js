@@ -18,10 +18,10 @@
     fetchPct: '',
     fetchProgress: 0,
     isFetching: false,
-    mode: 'count',
+    mode: 'all',
     matchCount: null,
     fetchStateBadge: '',
-    showFetchOptions: true,
+    showFetchOptions: false,
     fetchComplete: false,
     sortBy: 'cm',
     buttonLabel: null,
@@ -126,10 +126,10 @@
     s.batchCommunitiesData = {}
     s.sessionMatches = null
     var allMatches = []
-    var desiredCount = mode === 'cmRange' ? Infinity : (params.desiredCount || 100)
+    var desiredCount = mode === 'cmRange' || mode === 'all' ? Infinity : (params.desiredCount || 100)
     var currentPage = 1
     var _progressDone = 0
-    var _progressTotal = mode === 'cmRange' ? 300 : desiredCount * 3
+    var _progressTotal = mode === 'cmRange' || mode === 'all' ? 300 : desiredCount * 3
 
     function setBadgeFetching() { try { chrome.action.setBadgeText({ text: '\u21bb' }); chrome.action.setBadgeBackgroundColor({ color: '#3b82f6' }) } catch (e) { } }
 
@@ -137,7 +137,7 @@
 
     function saveState() {
       DB.saveFetchState(guid, 0, mode, params, currentPage)
-      var label = mode === 'cmRange' ? allMatches.length + ' [' + params.range + ' cM] page ' + (currentPage - 1) : allMatches.length + '/' + desiredCount + ' page ' + (currentPage - 1)
+      var label = mode === 'cmRange' ? allMatches.length + ' [' + params.range + ' cM] page ' + (currentPage - 1) : mode === 'all' ? allMatches.length + ' all page ' + (currentPage - 1) : allMatches.length + '/' + desiredCount + ' page ' + (currentPage - 1)
       setState({ fetchStateBadge: '\u21bb ' + label })
     }
 
@@ -173,7 +173,7 @@
             currentPage = fs.nextPage || 1
             mode = fs.mode || mode
             params = fs.params || params
-            desiredCount = mode === 'cmRange' ? Infinity : (params.desiredCount || 100)
+            desiredCount = mode === 'cmRange' || mode === 'all' ? Infinity : (params.desiredCount || 100)
             setState({ matchListData: s.matchListData, profileData: s.profileData, batchEthnicityData: s.batchEthnicityData, batchCommunitiesData: s.batchCommunitiesData, sessionMatches: s.sessionMatches })
           }
         })
@@ -181,7 +181,7 @@
     })
 
     function fetchPage() {
-      var msg = mode === 'cmRange' ? 'Fetching match list for range ' + params.range + ' cM... (' + allMatches.length + ' matches)' : 'Fetching match list... (' + allMatches.length + '/' + desiredCount + ')'
+      var msg = mode === 'cmRange' ? 'Fetching match list for range ' + params.range + ' cM... (' + allMatches.length + ' matches)' : mode === 'all' ? 'Fetching all matches... (' + allMatches.length + ' matches)' : 'Fetching match list... (' + allMatches.length + '/' + desiredCount + ')'
       setState({ fetchMsg: msg })
       var url = 'https://www.ancestry.com/discoveryui-matches/parents/list/api/matchList/' + guid + '?itemsPerPage=100&currentPage=' + currentPage
       if (mode === 'cmRange') url += '&sharedDna=' + params.range
@@ -193,7 +193,7 @@
           var newSids = []
           var sidIndex = {}
           for (var i = 0; i < allMatches.length; i++) sidIndex[allMatches[i].sampleId] = true
-          var limit = mode === 'cmRange' ? Infinity : desiredCount
+          var limit = mode === 'cmRange' || mode === 'all' ? Infinity : desiredCount
           for (var i = 0; i < matches.length && allMatches.length < limit; i++) {
             var sid = matches[i].sampleId
             if (!sid || sidIndex[sid]) continue
@@ -204,9 +204,9 @@
           if (allMatches.length > desiredCount) allMatches = allMatches.slice(0, desiredCount)
           s.matchListData = { matchList: allMatches }
           setState({ matchListData: s.matchListData })
-          if (mode !== 'cmRange') { _progressDone += newSids.length; setProgress(_progressDone, _progressTotal) }
+          if (mode === 'count') { _progressDone += newSids.length; setProgress(_progressDone, _progressTotal) }
           var hasMore
-          if (mode === 'cmRange') {
+          if (mode === 'cmRange' || mode === 'all') {
             if (data.isLastPage === true) hasMore = false
             else if (data.isLastPage === undefined) hasMore = matches.length >= 100
             else hasMore = matches.length > 0
@@ -231,7 +231,7 @@
     }
 
     function nextPage(hasMore) {
-      var remaining = mode === 'cmRange' ? 1 : (desiredCount - allMatches.length)
+      var remaining = mode === 'cmRange' || mode === 'all' ? 1 : (desiredCount - allMatches.length)
       debugLog('nextPage: hasMore=' + hasMore + (mode === 'cmRange' ? '' : ' remaining=' + remaining))
       if (remaining > 0 && hasMore) return delay(FETCH_DELAY).then(fetchPage)
     }
@@ -259,7 +259,7 @@
           }
         }
         setState({ batchEthnicityData: s.batchEthnicityData })
-        if (mode !== 'cmRange') { _progressDone += chunk.length; setProgress(_progressDone, _progressTotal) }
+        if (mode === 'count') { _progressDone += chunk.length; setProgress(_progressDone, _progressTotal) }
         return delay(FETCH_DELAY)
       }).then(function () {
         setState({ fetchMsg: 'Fetching journeys for matches ' + rangeStart + '-' + (rangeStart + chunk.length - 1) + ' of ' + total + '...' })
@@ -272,7 +272,7 @@
           if (branches) resolveJourneyNames(branches)
         }
         storeMatchData(guid, s.matchListData && s.matchListData.matchList)
-        if (mode !== 'cmRange') { _progressDone += chunk.length; setProgress(_progressDone, _progressTotal) }
+        if (mode === 'count') { _progressDone += chunk.length; setProgress(_progressDone, _progressTotal) }
         setState({ batchCommunitiesData: s.batchCommunitiesData })
       })
     }
@@ -302,7 +302,7 @@
       clearBadge()
       setState({ fetchMsg: '', fetchPct: '', isFetching: false, fetchComplete: true, buttonLabel: null })
       DB.saveFetchState(guid, 1, mode, params)
-      var label = mode === 'cmRange' ? '\u2713 ' + allMatches.length + ' [' + params.range + ' cM]' : '\u2713 ' + allMatches.length + '/' + (params.desiredCount || '?') + ' matches'
+      var label = mode === 'cmRange' ? '\u2713 ' + allMatches.length + ' [' + params.range + ' cM]' : mode === 'all' ? '\u2713 ' + allMatches.length + ' all matches' : '\u2713 ' + allMatches.length + '/' + (params.desiredCount || '?') + ' matches'
       setState({ fetchStateBadge: label })
       try {
         chrome.notifications.create({
@@ -316,7 +316,7 @@
     resumePromise.then(function () {
       setBadgeFetching()
       saveState()
-      if (mode !== 'cmRange') { _progressDone = allMatches.length; setProgress(_progressDone, _progressTotal) }
+      if (mode === 'count') { _progressDone = allMatches.length; setProgress(_progressDone, _progressTotal) }
       var incomplete = findIncompleteSampleIds()
       debugLog('resume: mode=' + mode + ' have=' + allMatches.length + (mode === 'cmRange' ? '' : ' target=' + desiredCount) + ' incomplete=' + incomplete.length)
       if (allMatches.length >= desiredCount) {
@@ -344,6 +344,8 @@
           setState({ mode: 'cmRange', cmRangeMin: '', cmRangeMax: '' })
           var parts = (fs.params && fs.params.range || '').split('-')
           if (parts.length === 2) setState({ cmRangeMin: parts[0], cmRangeMax: parts[1] })
+        } else if (fs.mode === 'all') {
+          setState({ mode: 'all' })
         } else {
           var count = fs.params && fs.params.desiredCount || 0
           if (count > 0) setState({ mode: 'count', desiredCount: String(count) })
@@ -359,7 +361,7 @@
           setState({ showFetchOptions: false, fetchComplete: true, fetchStateBadge: '\u2713 ' + c + ' matches' })
         })
       } else {
-        setState({ showFetchOptions: true, fetchComplete: false, buttonLabel: null, fetchStateBadge: '' })
+        setState({ showFetchOptions: false, fetchComplete: false, buttonLabel: null, fetchStateBadge: '' })
       }
     })
   }
@@ -697,9 +699,9 @@
                     s.batchCommunitiesData = {}
                     s.filters.regions = []
                     s.fetchStateBadge = ''
-                    s.showFetchOptions = true
+                    s.showFetchOptions = false
                     s.currentPage = 1
-                    setState({ matchListData: null, sessionMatches: null, profileData: {}, batchEthnicityData: {}, batchCommunitiesData: {}, filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, regions: [{ region: '', pctMin: null, pctMax: null }] }, fetchStateBadge: '', showFetchOptions: true, fetchComplete: false, buttonLabel: null, currentPage: 1, statusMsg: '' })
+                    setState({ matchListData: null, sessionMatches: null, profileData: {}, batchEthnicityData: {}, batchCommunitiesData: {}, filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, regions: [{ region: '', pctMin: null, pctMax: null }] }, fetchStateBadge: '', showFetchOptions: false, fetchComplete: false, buttonLabel: null, currentPage: 1, statusMsg: '' })
                     document.getElementById('filterJourney').innerHTML = '<option value="">All</option>'
                   })
                 }
@@ -709,8 +711,13 @@
           }, m.trust('<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>')) : null
         ]),
         m('#fetchGroup', s.selectedGuid && !s.isFetching && !s.fetchComplete ? [
+          !s.buttonLabel ? m('.fetch-toggle', {
+            onclick: function () { setState({ showFetchOptions: !s.showFetchOptions, mode: s.showFetchOptions ? 'all' : s.mode }) }
+          }, [
+            m('span.fetch-arrow', { style: { transform: s.showFetchOptions ? 'rotate(90deg)' : '' } }, '\u25B6'),
+            ' Fetch options'
+          ]) : null,
           s.showFetchOptions ? m('#fetchOptions', [
-            m('.label', { style: { marginTop: '16px' } }, 'Fetch Options'),
             m('.mode-toggle', [
               m('button.mode-btn', { class: s.mode === 'count' ? 'active' : '', 'data-mode': 'count', onclick: function () { setState({ mode: 'count' }) } }, 'Count'),
               m('button.mode-btn', { class: s.mode === 'cmRange' ? 'active' : '', 'data-mode': 'cmRange', onclick: function () { setState({ mode: 'cmRange' }) } }, 'cM Range'),
@@ -734,6 +741,8 @@
                 var min = s.cmRangeMin
                 var max = s.cmRangeMax
                 if (min && max) fetchMatchList(s.selectedGuid, 'cmRange', { range: min + '-' + max })
+              } else if (s.mode === 'all') {
+                fetchMatchList(s.selectedGuid, 'all', {})
               } else {
                 fetchMatchList(s.selectedGuid, 'count', { desiredCount: parseInt(s.desiredCount, 10) || 100 })
               }

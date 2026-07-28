@@ -118,6 +118,27 @@
 
   var FETCH_DELAY = 500
 
+  function storeMatchData(guid, matchList) {
+    if (!s.sessionMatches) s.sessionMatches = {}
+    if (matchList) {
+      for (var mi = 0; mi < matchList.length; mi++) {
+        var sid = matchList[mi].sampleId
+        if (!sid) continue
+        if (!s.sessionMatches[sid]) s.sessionMatches[sid] = {}
+        if (s.profileData && s.profileData[sid]) {
+          s.sessionMatches[sid].matchName = s.profileData[sid].matchName
+          s.sessionMatches[sid].matchNameInitials = s.profileData[sid].matchNameInitials
+          s.sessionMatches[sid].displayGender = s.profileData[sid].displayGender
+          s.sessionMatches[sid].photoUrl = s.profileData[sid].photoUrl
+        }
+        if (s.batchEthnicityData && s.batchEthnicityData[sid]) s.sessionMatches[sid].regions = s.batchEthnicityData[sid].regions
+        if (s.batchCommunitiesData && s.batchCommunitiesData[sid]) s.sessionMatches[sid].journeys = s.batchCommunitiesData[sid].branches
+      }
+    }
+    setState({ sessionMatches: s.sessionMatches })
+    if (typeof DB !== 'undefined') DB.saveSession(guid, matchList, s.profileData, s.batchEthnicityData, s.batchCommunitiesData)
+  }
+
   function fetchMatchList(guid, mode, params) {
     s.currentPage = 1
     s.matchListData = null
@@ -277,27 +298,6 @@
       })
     }
 
-  function storeMatchData(guid, matchList) {
-    if (!s.sessionMatches) s.sessionMatches = {}
-    if (matchList) {
-      for (var mi = 0; mi < matchList.length; mi++) {
-        var sid = matchList[mi].sampleId
-        if (!sid) continue
-        if (!s.sessionMatches[sid]) s.sessionMatches[sid] = {}
-        if (s.profileData && s.profileData[sid]) {
-          s.sessionMatches[sid].matchName = s.profileData[sid].matchName
-          s.sessionMatches[sid].matchNameInitials = s.profileData[sid].matchNameInitials
-          s.sessionMatches[sid].displayGender = s.profileData[sid].displayGender
-          s.sessionMatches[sid].photoUrl = s.profileData[sid].photoUrl
-        }
-        if (s.batchEthnicityData && s.batchEthnicityData[sid]) s.sessionMatches[sid].regions = s.batchEthnicityData[sid].regions
-        if (s.batchCommunitiesData && s.batchCommunitiesData[sid]) s.sessionMatches[sid].journeys = s.batchCommunitiesData[sid].branches
-      }
-    }
-    setState({ sessionMatches: s.sessionMatches })
-    if (typeof DB !== 'undefined') DB.saveSession(guid, matchList, s.profileData, s.batchEthnicityData, s.batchCommunitiesData)
-  }
-
     function finishFetch() {
       clearBadge()
       setState({ fetchMsg: '', fetchPct: '', isFetching: false, fetchComplete: true, buttonLabel: null })
@@ -334,6 +334,85 @@
       return chain.then(function () { return fetchPage() }).then(finishFetch).catch(function (err) {
         clearBadge(); setState({ isFetching: false, fetchMsg: '' }); restoreFetchUI(guid)
       })
+    })
+  }
+
+  function checkForNewMatches(guid) {
+    var allNewSids = []
+    var currentPage = 1
+    var stop = false
+    var existingSids = {}
+    if (s.sessionMatches) {
+      var keys = Object.keys(s.sessionMatches)
+      for (var i = 0; i < keys.length; i++) existingSids[keys[i]] = true
+    }
+
+    function fetchCheckPage() {
+      if (stop) return
+      setState({ fetchMsg: 'Checking for new matches... (page ' + currentPage + ')' })
+      var url = 'https://www.ancestry.com/discoveryui-matches/parents/list/api/matchList/' + guid + '?itemsPerPage=100&currentPage=' + currentPage + '&sort=DATE'
+      return apiFetch(url, { credentials: 'include', mode: 'cors', headers: { 'Accept': 'application/json' } }).then(function (data) {
+        var matches = data.matchList
+        if (!Array.isArray(matches)) { stop = true; return }
+        var pageNewSids = []
+        for (var i = 0; i < matches.length; i++) {
+          var sid = matches[i].sampleId
+          if (sid && !existingSids[sid]) {
+            pageNewSids.push(sid)
+            allNewSids.push(sid)
+            if (!s.matchListData) s.matchListData = { matchList: [] }
+            s.matchListData.matchList.push(matches[i])
+          }
+        }
+        setState({ matchListData: s.matchListData })
+        if (pageNewSids.length === 0) { stop = true; return }
+        return fetchProfileData(guid, pageNewSids).then(function () {
+          storeMatchData(guid, s.matchListData && s.matchListData.matchList)
+          var chunks = chunkArray(pageNewSids, 24)
+          var chain = Promise.resolve()
+          for (var ci = 0; ci < chunks.length; ci++) {
+            chain = chain.then((function (chunk, idx) {
+              return function () {
+                setState({ fetchMsg: 'Fetching regions for new matches ' + (idx * 24 + 1) + '-' + (idx * 24 + chunk.length) + ' of ' + allNewSids.length + '...' })
+                return fetchBatchEthnicity(guid, chunk).then(function (ethData) {
+                  for (var k in ethData) s.batchEthnicityData[k] = ethData[k]
+                  if (s.regionMap) {
+                    for (var k in ethData) {
+                      var regions = ethData[k] && ethData[k].regions
+                      if (!regions) continue
+                      for (var ri = 0; ri < regions.length; ri++) regions[ri].displayName = s.regionMap[regions[ri].key] || regions[ri].key
+                    }
+                  }
+                  setState({ batchEthnicityData: s.batchEthnicityData })
+                  return delay(FETCH_DELAY)
+                }).then(function () {
+                  setState({ fetchMsg: 'Fetching journeys for new matches ' + (idx * 24 + 1) + '-' + (idx * 24 + chunk.length) + ' of ' + allNewSids.length + '...' })
+                  return fetchBatchCommunities(guid, chunk)
+                }).then(function (comData) {
+                  for (var k in comData) s.batchCommunitiesData[k] = comData[k]
+                  var sKeys = Object.keys(s.batchCommunitiesData)
+                  for (var si = 0; si < sKeys.length; si++) {
+                    var branches = s.batchCommunitiesData[sKeys[si]] && s.batchCommunitiesData[sKeys[si]].branches
+                    if (branches) resolveJourneyNames(branches)
+                  }
+                  storeMatchData(guid, s.matchListData && s.matchListData.matchList)
+                  setState({ batchCommunitiesData: s.batchCommunitiesData })
+                })
+              }
+            })(chunks[ci], ci))
+          }
+          return chain
+        })
+      }).then(function () {
+        if (!stop) { currentPage++; return delay(FETCH_DELAY).then(fetchCheckPage) }
+      })
+    }
+
+    setState({ fetchMsg: 'Checking for new matches...', isFetching: true })
+    fetchCheckPage().then(function () {
+      setState({ isFetching: false, fetchMsg: '', statusMsg: allNewSids.length > 0 ? 'Added ' + allNewSids.length + ' new match(es)' : 'No new matches found' })
+    }).catch(function (err) {
+      setState({ isFetching: false, fetchMsg: '', statusMsg: 'Error: ' + friendlyError(err.message) })
     })
   }
 
@@ -759,6 +838,9 @@
             m('#fetchBarFill', { style: { height: '100%', width: s.fetchProgress + '%', borderRadius: '4px', transition: 'width .3s, background .3s' } })
           ])
         ]) : null,
+        s.fetchComplete && s.mode === 'all' && s.selectedGuid && !s.isFetching ? m('button.btn.check-new-btn', {
+          onclick: function () { checkForNewMatches(s.selectedGuid) }
+        }, 'Check for new matches') : null,
         s.statusMsg ? m('.status-msg', s.statusMsg) : null
       ]
     }

@@ -162,16 +162,6 @@
       setState({ fetchStateBadge: '\u21bb ' + label })
     }
 
-    function findIncompleteSampleIds() {
-      var result = []
-      for (var i = 0; i < allMatches.length; i++) {
-        var sid = allMatches[i].sampleId
-        if (!sid) continue
-        if (!s.batchEthnicityData[sid] || !s.batchCommunitiesData[sid]) result.push(sid)
-      }
-      return result
-    }
-
     var resumePromise = DB.getFetchState(guid).then(function (fs) {
       if (fs && fs.status === 0) {
         return DB.getSession(guid).then(function (session) {
@@ -236,16 +226,31 @@
           }
           debugLog('  got ' + newSids.length + ' new, total=' + allMatches.length + ' next=' + (currentPage + 1) + ' hasMore=' + hasMore + ' isLastPage=' + data.isLastPage)
           if (newSids.length === 0) {
+            var missingPageSids = []
+            for (var mi = 0; mi < matches.length; mi++) {
+              var sid = matches[mi].sampleId
+              if (sid && (!s.batchEthnicityData[sid] || !s.batchCommunitiesData[sid])) missingPageSids.push(sid)
+            }
+            if (missingPageSids.length > 0) {
+              return fetchProfileData(guid, missingPageSids).then(function () {
+                storeMatchData(guid, s.matchListData && s.matchListData.matchList)
+                return processPageChunks(guid, missingPageSids)
+              }).then(function () {
+                currentPage++
+                saveState()
+                return nextPage(hasMore)
+              })
+            }
             currentPage++
             saveState()
-            return nextPage(false)
+            return nextPage(hasMore)
           }
           return fetchProfileData(guid, newSids).then(function () {
             storeMatchData(guid, allMatches)
-            currentPage++
-            saveState()
             return processPageChunks(guid, newSids)
           }).then(function () {
+            currentPage++
+            saveState()
             return nextPage(hasMore)
           })
         })
@@ -311,6 +316,16 @@
           message: mode === 'cmRange' ? 'Finished fetching ' + allMatches.length + ' matches in range ' + params.range + ' cM' : 'Finished fetching ' + allMatches.length + ' matches'
         })
       } catch (e) { console.log('Notification error:', e) }
+    }
+
+    function findIncompleteSampleIds() {
+      var result = []
+      for (var i = 0; i < allMatches.length; i++) {
+        var sid = allMatches[i].sampleId
+        if (!sid) continue
+        if (!s.batchEthnicityData[sid] || !s.batchCommunitiesData[sid]) result.push(sid)
+      }
+      return result
     }
 
     resumePromise.then(function () {

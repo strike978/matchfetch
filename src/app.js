@@ -435,6 +435,7 @@
           setState({ fetchStateBadge: '\u21bb ' + c + ' fetched (page ' + (fs.nextPage || 1) + ')' })
         })
       } else if (fs && fs.status === 1) {
+        setState({ mode: fs.mode || 'all' })
         DB.getSession(guid).then(function (session) {
           var c = session && session.matches ? Object.keys(session.matches).length : 0
           setState({ showFetchOptions: false, fetchComplete: true, fetchStateBadge: '\u2713 ' + c + ' matches' })
@@ -838,9 +839,9 @@
             m('#fetchBarFill', { style: { height: '100%', width: s.fetchProgress + '%', borderRadius: '4px', transition: 'width .3s, background .3s' } })
           ])
         ]) : null,
-        s.fetchComplete && s.mode === 'all' && s.selectedGuid && !s.isFetching ? m('button.btn.check-new-btn', {
+        s.fetchComplete && s.mode === 'all' && s.selectedGuid && !s.isFetching ? m('button.btn.fetch-list-btn', {
           onclick: function () { checkForNewMatches(s.selectedGuid) }
-        }, 'Check for new matches') : null,
+        }, [m.trust('<span>&#x21BB;</span>'), ' Check for new matches']) : null,
         s.statusMsg ? m('.status-msg', s.statusMsg) : null
       ]
     }

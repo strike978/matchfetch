@@ -10,6 +10,7 @@ Fetch, browse, and explore your AncestryDNA match data.
 - **Match Detail** — Click any match to see their ethnicity breakdown grouped by macro region with confidence ranges, plus a hierarchical ancestral journey tree. Both tabs include interactive Leaflet maps.
 - **Multiple Kits** — Switch between DNA kits, each stored separately in IndexedDB.
 - **Fetch Options** — By default fetches all matches. Click **Fetch options** to limit by count (first N matches) or cM range (all matches within a centimorgan window). Resume interrupted fetches.
+- **Check for New Matches** — After all matches have been fetched, click **Check for new matches** to find and fetch any new matches since the last fetch.
 - **Persistent Storage** — All match data, profiles, ethnicity estimates, and journeys are saved locally in IndexedDB via Dexie.js. No re-fetching needed after the initial load.
 - **Import / Export** — Download all data as JSON or restore from a backup.
 - **Privacy** — Toggle to hide names on cards.
@@ -28,11 +29,12 @@ Fetch, browse, and explore your AncestryDNA match data.
 2. Select a kit from the dropdown
 3. Click **Fetch** to get all matches, or expand **Fetch options** to choose **Count** (enter number of matches) or **cM Range** (enter min/max cM)
 4. Cards appear progressively as data is fetched. Use **Filtering options** to narrow by name, cM range, ancestral journeys, or ethnicity regions with percentage ranges
-5. Click any card to open the detail page with ethnicity breakdowns, journey trees, and interactive maps
-6. Use **Export** to download all data as JSON, **Import** to restore a previous backup
+5. Click any card to open the detail page
+6. After fetching, use **Check for new matches** to pick up any new matches
+7. Use **Export** to download all data as JSON, **Import** to restore a previous backup
 
 ---
 
-Created by Omar Nunez · Version 0.1.2
+Created by Omar Nunez · Version 0.2.0
 
 _23andMe support coming soon._

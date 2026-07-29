@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "MatchFetch",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Fetch and explore your AncestryDNA match data. 23andMe support coming soon.",
   "author": "Omar Nunez",
   "icons": {

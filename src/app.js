@@ -35,6 +35,9 @@
 
   function setState(o) { Object.assign(s, o); m.redraw() }
 
+  var _filterCache = { key: '', sorted: [], filtered: [] }
+  var _dataVersion = 0
+
   function friendlyError(msg) {
     if (/Status 30[137]/.test(msg)) return 'Make sure you are logged into Ancestry.com, then try again.'
     if (/Status 40[13]/.test(msg)) return 'Access denied. Make sure you are logged into Ancestry.com.'
@@ -135,6 +138,7 @@
         if (s.batchCommunitiesData && s.batchCommunitiesData[sid]) s.sessionMatches[sid].journeys = s.batchCommunitiesData[sid].branches
       }
     }
+    _dataVersion++
     setState({ sessionMatches: s.sessionMatches })
     if (typeof DB !== 'undefined') DB.saveSession(guid, matchList, s.profileData, s.batchEthnicityData, s.batchCommunitiesData)
   }
@@ -292,9 +296,8 @@
         return fetchBatchCommunities(guid, chunk)
       }).then(function (comData) {
         for (var k in comData) s.batchCommunitiesData[k] = comData[k]
-        var sKeys = Object.keys(s.batchCommunitiesData)
-        for (var si = 0; si < sKeys.length; si++) {
-          var branches = s.batchCommunitiesData[sKeys[si]] && s.batchCommunitiesData[sKeys[si]].branches
+        for (var ci = 0; ci < chunk.length; ci++) {
+          var branches = s.batchCommunitiesData[chunk[ci]] && s.batchCommunitiesData[chunk[ci]].branches
           if (branches) resolveJourneyNames(branches)
         }
         storeMatchData(guid, s.matchListData && s.matchListData.matchList)
@@ -405,9 +408,8 @@
                   return fetchBatchCommunities(guid, chunk)
                 }).then(function (comData) {
                   for (var k in comData) s.batchCommunitiesData[k] = comData[k]
-                  var sKeys = Object.keys(s.batchCommunitiesData)
-                  for (var si = 0; si < sKeys.length; si++) {
-                    var branches = s.batchCommunitiesData[sKeys[si]] && s.batchCommunitiesData[sKeys[si]].branches
+                  for (var ci = 0; ci < chunk.length; ci++) {
+                    var branches = s.batchCommunitiesData[chunk[ci]] && s.batchCommunitiesData[chunk[ci]].branches
                     if (branches) resolveJourneyNames(branches)
                   }
                   storeMatchData(guid, s.matchListData && s.matchListData.matchList)
@@ -986,13 +988,26 @@
     return (b.createdDate || 0) - (a.createdDate || 0)
   }
 
+  function computeFilterKey(list) {
+    readFilters()
+    var f = s.filters
+    var rk = ''
+    if (s._activeRegionFilters) for (var i = 0; i < s._activeRegionFilters.length; i++) rk += '|' + s._activeRegionFilters[i].region + '|' + (s._activeRegionFilters[i].pctMin||'') + '|' + (s._activeRegionFilters[i].pctMax||'')
+    return s.sortBy + '|' + (list ? list.length : 0) + '|' + (f.name||'') + '|' + (f.cmMin||'') + '|' + (f.cmMax||'') + '|' + (f.journey||'') + '|' + (f.journeyOnly?'1':'0') + rk + '|v' + _dataVersion
+  }
+
   var MatchList = {
     view: function () {
       var list = s.matchListData && s.matchListData.matchList
       if (!list) return m('#matchListResult')
-      readFilters()
-      var sorted = list.slice().sort(sortMatches)
-      var filtered = sorted.filter(matchesFilter)
+      var key = computeFilterKey(list)
+      if (key !== _filterCache.key || list !== _filterCache.list) {
+        _filterCache.key = key
+        _filterCache.list = list
+        _filterCache.sorted = list.slice().sort(sortMatches)
+        _filterCache.filtered = _filterCache.sorted.filter(matchesFilter)
+      }
+      var filtered = _filterCache.filtered
       var start = (s.currentPage - 1) * s.pageSize
       var end = Math.min(start + s.pageSize, filtered.length)
       var total = list.length

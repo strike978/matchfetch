@@ -28,7 +28,7 @@
 
     var bar = document.createElement('div')
     bar.className = 'topbar'
-    bar.innerHTML = '<a class="topbar-home" href="javascript:;"><div class="topbar-icon"><img src="../icons/logo.png" width="28" height="28" alt="M"></div>'
+    bar.innerHTML = '<a class="topbar-home" href="#"><div class="topbar-icon"><img src="../icons/logo.png" width="28" height="28" alt="M"></div>'
         + '<div class="topbar-title">MatchFetch</div></a>'
         + '<div class="service-toggle">'
         +   '<span class="service-opt active"><svg viewBox="0 0 250 190" width="14" height="14"><path d="M150.82 33.292c-17.654-19.168-35.307-16.14-38.334-15.637 1.513.504 3.027 33.796 21.69 51.45 12.61 11.6 38.335 7.565 38.335 7.565s-4.54-24.715-21.69-43.378m21.187 65.07c-5.55 0-28.248 2.018-43.38 20.68-15.637 19.673-15.133 35.31-18.664 38.84 3.027 1.01 34.805 4.035 48.424-16.645 13.114-19.17 13.62-39.85 13.62-42.876M33.797 84.74c3.53.506 15.637 16.143 37.327 18.16 23.707 2.524 31.777-9.582 32.283-9.582 0-1.514-19.168-22.194-40.353-22.194-14.63.503-29.257 13.617-29.257 13.617m86.254 10.594c-.504.504-20.175 26.734-66.582 19.672C16.142 108.954 2.523 88.272 0 87.768c3.027-4.036 31.275-26.734 64.06-26.23 32.284 1.01 55.99 19.168 55.99 19.168h20.68c-16.644-5.044-36.82-14.123-45.9-34.3-8.07-18.662-6.557-29.76-10.088-45.396 0 0 37.326-3.027 66.078 15.636 26.23 17.15 40.857 62.547 41.362 64.06h16.14L204.793 0l20.176.504c-3.53 21.186 1.01 172.51 0 172.51-2.017.503-19.168 1.51-20.68-2.524 0 0 4.035-74.148 4.54-75.662H193.19c0 1.01-1.513 42.875-33.29 65.07-31.78 22.194-77.68 15.636-77.68 15.636 5.55-8.575 0-17.654 16.14-42.37 18.664-28.247 43.38-38.336 42.877-38.336-1.513.506-20.68.506-21.186.506" fill="#9CBE30"/></svg> AncestryDNA</span>'
@@ -44,6 +44,8 @@
         + '<button class="topbar-btn" id="supportBtn" title="Support us on Ko-fi">Support Us <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="#ef4444" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></button>'
         + '</div>'
     document.body.insertBefore(bar, document.body.firstChild)
+
+    document.querySelector('.topbar-home').addEventListener('click', function(e) { e.preventDefault() })
 
     ;['discordBtn','supportBtn'].forEach(function(id) {
         var el = document.getElementById(id)

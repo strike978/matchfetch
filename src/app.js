@@ -127,11 +127,11 @@
 
   var FETCH_DELAY = 500
 
-  function storeMatchData(guid, matchList) {
+  function storeMatchData(guid, matchList, targetSids) {
     if (!s.sessionMatches) s.sessionMatches = {}
-    if (matchList) {
-      for (var mi = 0; mi < matchList.length; mi++) {
-        var sid = matchList[mi].sampleId
+    if (targetSids) {
+      for (var si = 0; si < targetSids.length; si++) {
+        var sid = targetSids[si]
         if (!sid) continue
         if (!s.sessionMatches[sid]) s.sessionMatches[sid] = {}
         if (s.profileData && s.profileData[sid]) {
@@ -143,10 +143,44 @@
         if (s.batchEthnicityData && s.batchEthnicityData[sid]) s.sessionMatches[sid].regions = s.batchEthnicityData[sid].regions
         if (s.batchCommunitiesData && s.batchCommunitiesData[sid]) s.sessionMatches[sid].journeys = s.batchCommunitiesData[sid].branches
       }
+      var filteredMatches = []
+      if (matchList) {
+        var sidIndex = {}
+        for (var si = 0; si < targetSids.length; si++) sidIndex[targetSids[si]] = true
+        for (var mi = 0; mi < matchList.length; mi++) {
+          if (sidIndex[matchList[mi].sampleId]) filteredMatches.push(matchList[mi])
+        }
+      }
+      var fp = {}, fe = {}, fc = {}
+      for (var si = 0; si < targetSids.length; si++) {
+        var sid = targetSids[si]
+        if (s.profileData && s.profileData[sid]) fp[sid] = s.profileData[sid]
+        if (s.batchEthnicityData && s.batchEthnicityData[sid]) fe[sid] = s.batchEthnicityData[sid]
+        if (s.batchCommunitiesData && s.batchCommunitiesData[sid]) fc[sid] = s.batchCommunitiesData[sid]
+      }
+      _dataVersion++
+      setState({ sessionMatches: s.sessionMatches })
+      if (typeof DB !== 'undefined') DB.saveSession(guid, filteredMatches, fp, fe, fc)
+    } else {
+      if (matchList) {
+        for (var mi = 0; mi < matchList.length; mi++) {
+          var sid = matchList[mi].sampleId
+          if (!sid) continue
+          if (!s.sessionMatches[sid]) s.sessionMatches[sid] = {}
+          if (s.profileData && s.profileData[sid]) {
+            s.sessionMatches[sid].matchName = s.profileData[sid].matchName
+            s.sessionMatches[sid].matchNameInitials = s.profileData[sid].matchNameInitials
+            s.sessionMatches[sid].displayGender = s.profileData[sid].displayGender
+            s.sessionMatches[sid].photoUrl = s.profileData[sid].photoUrl
+          }
+          if (s.batchEthnicityData && s.batchEthnicityData[sid]) s.sessionMatches[sid].regions = s.batchEthnicityData[sid].regions
+          if (s.batchCommunitiesData && s.batchCommunitiesData[sid]) s.sessionMatches[sid].journeys = s.batchCommunitiesData[sid].branches
+        }
+      }
+      _dataVersion++
+      setState({ sessionMatches: s.sessionMatches })
+      if (typeof DB !== 'undefined') DB.saveSession(guid, matchList, s.profileData, s.batchEthnicityData, s.batchCommunitiesData)
     }
-    _dataVersion++
-    setState({ sessionMatches: s.sessionMatches })
-    if (typeof DB !== 'undefined') DB.saveSession(guid, matchList, s.profileData, s.batchEthnicityData, s.batchCommunitiesData)
   }
 
   async function fetchMatchList(guid, mode, params) {
@@ -199,7 +233,7 @@
         var branches = s.batchCommunitiesData[chunk[ci]] && s.batchCommunitiesData[chunk[ci]].branches
         if (branches) resolveJourneyNames(branches)
       }
-      storeMatchData(guid, s.matchListData && s.matchListData.matchList)
+      storeMatchData(guid, s.matchListData && s.matchListData.matchList, chunk)
       if (mode === 'count') { _progressDone += chunk.length; setProgress(_progressDone, _progressTotal) }
       setState({ batchCommunitiesData: s.batchCommunitiesData })
     }
@@ -324,14 +358,14 @@
           }
           if (missingPageSids.length > 0) {
             await fetchProfileData(guid, missingPageSids)
-            storeMatchData(guid, s.matchListData && s.matchListData.matchList)
+            storeMatchData(guid, s.matchListData && s.matchListData.matchList, missingPageSids)
             await processPageChunks(guid, missingPageSids)
           }
           currentPage++
           saveState()
         } else {
           await fetchProfileData(guid, newSids)
-          storeMatchData(guid, allMatches)
+          storeMatchData(guid, allMatches, newSids)
           await processPageChunks(guid, newSids)
           currentPage++
           saveState()
@@ -381,7 +415,7 @@
         if (pageNewSids.length === 0) break
 
         await fetchProfileData(guid, pageNewSids)
-        storeMatchData(guid, s.matchListData && s.matchListData.matchList)
+        storeMatchData(guid, s.matchListData && s.matchListData.matchList, pageNewSids)
 
         var chunks = chunkArray(pageNewSids, 24)
         for (var ci = 0; ci < chunks.length; ci++) {
@@ -406,7 +440,7 @@
             var branches = s.batchCommunitiesData[chunk[cci]] && s.batchCommunitiesData[chunk[cci]].branches
             if (branches) resolveJourneyNames(branches)
           }
-          storeMatchData(guid, s.matchListData && s.matchListData.matchList)
+          storeMatchData(guid, s.matchListData && s.matchListData.matchList, chunk)
           setState({ batchCommunitiesData: s.batchCommunitiesData })
         }
 
@@ -656,7 +690,9 @@
       var pctMax = rows[ri].querySelector('.region-pct-max')
       var region = rowSel ? rowSel.value : ''
       if (!region) continue
-      s._activeRegionFilters.push({ region: region, pctMin: parseFloat(pctMin.value) || null, pctMax: parseFloat(pctMax.value) || null })
+      var pctMinV = parseFloat(pctMin.value)
+      var pctMaxV = parseFloat(pctMax.value)
+      s._activeRegionFilters.push({ region: region, pctMin: isNaN(pctMinV) ? null : pctMinV, pctMax: isNaN(pctMaxV) ? null : pctMaxV })
     }
   }
 
@@ -867,9 +903,9 @@
             m('label.filter-group', ['Name ',         m('input#filterName.filter-input', { type: 'text', placeholder: 'Filter by name', oninput: function () { applyFilterChange(); m.redraw() } })]),
             m('label.filter-group', [
               'cM ',
-              m('input#filterCmMin.filter-input.filter-cm', { type: 'number', placeholder: '6 min', min: 6, oninput: function () { applyFilterChange(); m.redraw() }, onblur: function () { var v = parseFloat(this.value); if (this.value && !isNaN(v)) { var clamped = Math.max(6, Math.min(3490, v)); this.value = clamped; applyFilterChange(); m.redraw() } } }),
+              m('input#filterCmMin.filter-input.filter-cm', { type: 'number', placeholder: 'min of 6', min: 6, oninput: function () { applyFilterChange(); m.redraw() }, onblur: function () { var v = parseFloat(this.value); if (this.value && !isNaN(v)) { var clamped = Math.max(6, Math.min(3490, v)); this.value = clamped; applyFilterChange(); m.redraw() } } }),
               m('span.filter-sep', '\u2013'),
-              m('input#filterCmMax.filter-input.filter-cm', { type: 'number', placeholder: '3490 max', max: 3490, oninput: function () { applyFilterChange(); m.redraw() }, onblur: function () { var v = parseFloat(this.value); if (this.value && !isNaN(v)) { var clamped = Math.max(6, Math.min(3490, v)); this.value = clamped; applyFilterChange(); m.redraw() } } })
+              m('input#filterCmMax.filter-input.filter-cm', { type: 'number', placeholder: 'max of 3490', max: 3490, oninput: function () { applyFilterChange(); m.redraw() }, onblur: function () { var v = parseFloat(this.value); if (this.value && !isNaN(v)) { var clamped = Math.max(6, Math.min(3490, v)); this.value = clamped; applyFilterChange(); m.redraw() } } })
             ])
           ]),
           m('.filter-row', [
@@ -933,24 +969,34 @@
         }, opts.map(function (o) { return m('option', { value: o.value }, o.label) })),
         m('span.filter-sep', { style: { margin: '0 2px' } }, '%'),
         m('input.region-pct-min.filter-input.filter-cm', {
-          type: 'number', placeholder: 'Min',
-          value: f.pctMin || '',
+          type: 'number', placeholder: '0', min: 0,
+          value: f.pctMin != null ? f.pctMin : '',
           oninput: function (e) {
             s.filters.regions[idx] = s.filters.regions[idx] || { region: '', pctMin: null, pctMax: null }
-            s.filters.regions[idx].pctMin = parseFloat(e.target.value) || null
+            var v = parseFloat(e.target.value)
+            s.filters.regions[idx].pctMin = isNaN(v) ? null : v
             applyFilterChange()
             m.redraw()
+          },
+          onblur: function () {
+            var v = parseFloat(this.value)
+            if (!isNaN(v)) { var clamped = Math.max(0, v); this.value = clamped; s.filters.regions[idx].pctMin = clamped; applyFilterChange(); m.redraw() }
           }
         }),
         m('span.filter-sep', '\u2013'),
         m('input.region-pct-max.filter-input.filter-cm', {
-          type: 'number', placeholder: 'Max',
-          value: f.pctMax || '',
+          type: 'number', placeholder: '100', max: 100,
+          value: f.pctMax != null ? f.pctMax : '',
           oninput: function (e) {
             s.filters.regions[idx] = s.filters.regions[idx] || { region: '', pctMin: null, pctMax: null }
-            s.filters.regions[idx].pctMax = parseFloat(e.target.value) || null
+            var v = parseFloat(e.target.value)
+            s.filters.regions[idx].pctMax = isNaN(v) ? null : v
             applyFilterChange()
             m.redraw()
+          },
+          onblur: function () {
+            var v = parseFloat(this.value)
+            if (!isNaN(v)) { var clamped = Math.min(100, Math.max(0, v)); this.value = clamped; s.filters.regions[idx].pctMax = clamped; applyFilterChange(); m.redraw() }
           }
         }),
         m('button.region-remove.topbar-btn', {

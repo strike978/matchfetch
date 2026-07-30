@@ -798,7 +798,7 @@
               m('button.mode-btn', { class: s.mode === 'cmRange' ? 'active' : '', 'data-mode': 'cmRange', onclick: function () { setState({ mode: 'cmRange' }) } }, 'cM Range'),
             ]),
             m('.fetch-row#countModeRow', { style: { display: s.mode === 'count' ? '' : 'none' } }, [
-              m('label.input-label', ['Matches ', m('input#matchCountInput.count-input', { type: 'number', value: s.desiredCount, min: '1', step: '1', oninput: function (e) { s.desiredCount = e.target.value } })])
+              m('label.input-label', ['Matches ', m('input#matchCountInput.count-input', { type: 'number', value: s.desiredCount, min: 1, step: '1', oninput: function (e) { s.desiredCount = e.target.value }, onblur: function (e) { var v = parseInt(e.target.value, 10); if (e.target.value && !isNaN(v)) { var max = s.matchCount && s.matchCount.count; var clamped = max ? Math.max(1, Math.min(max, v)) : Math.max(1, v); e.target.value = clamped; s.desiredCount = String(clamped) } } })])
             ]),
             m('.fetch-row#cmRangeModeRow', { style: { display: s.mode === 'cmRange' ? '' : 'none' } }, [
               m('label.input-label', ['Min ', m('input#cmRangeMin.count-input', { type: 'number', placeholder: '6', min: 6, value: s.cmRangeMin, oninput: function (e) { s.cmRangeMin = e.target.value }, onblur: function (e) { var v = parseFloat(e.target.value); if (e.target.value && !isNaN(v)) { var clamped = Math.max(6, Math.min(3490, v)); e.target.value = clamped; s.cmRangeMin = String(clamped) } } })]),
@@ -820,7 +820,11 @@
               } else if (s.mode === 'all') {
                 fetchMatchList(s.selectedGuid, 'all', {})
               } else {
-                fetchMatchList(s.selectedGuid, 'count', { desiredCount: parseInt(s.desiredCount, 10) || 100 })
+                var count = Math.max(1, parseInt(s.desiredCount, 10) || 1)
+                var maxCount = s.matchCount && s.matchCount.count
+                if (maxCount) count = Math.min(maxCount, count)
+                s.desiredCount = String(count)
+                fetchMatchList(s.selectedGuid, 'count', { desiredCount: count })
               }
             }
           }, s.isFetching ? [m('.spinner-ring', { style: { width: '16px', height: '16px', borderWidth: '2px' } }), ' Fetching...'] : [m.trust('<span>&#x25B6;</span>'), ' ' + (s.buttonLabel || 'Fetch')]),

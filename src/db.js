@@ -11,85 +11,79 @@ var DB = (function() {
                 var m = matchList[mi];
                 if (!m || !m.sampleId) continue;
                 var r = m.relationship || {};
-                var existingMatch = existing.matches[m.sampleId] || {};
+                var em = existing.matches[m.sampleId] || {};
                 existing.matches[m.sampleId] = {
                     relationship: { sharedCentimorgans: r.sharedCentimorgans || null, numSharedSegments: r.numSharedSegments || null, meiosis: r.meiosis || null },
                     matchClusterCode: m.matchClusterCode || null,
                     tags: m.tags ? Object.keys(m.tags).filter(function(k) { return m.tags[k]; }).map(function(k) { return m.tags[k]; }) : null,
                     createdDate: m.createdDate || null,
-                    matchName: existingMatch.matchName || null,
-                    matchNameInitials: existingMatch.matchNameInitials || null,
-                    displayGender: existingMatch.displayGender || null,
-                    photoUrl: existingMatch.photoUrl || null,
-                    regions: existingMatch.regions || null,
-                    journeys: existingMatch.journeys || null
+                    matchName: em.matchName || null,
+                    matchNameInitials: em.matchNameInitials || null,
+                    displayGender: em.displayGender || null,
+                    photoUrl: em.photoUrl || null,
+                    regions: em.regions || null,
+                    journeys: em.journeys || null
                 };
             }
         }
-        if (profiles) mergeProfiles(existing, profiles);
-        if (ethnicity) mergeEthnicity(existing, ethnicity);
-        if (communities) mergeCommunities(existing, communities);
-        return existing;
-    }
-
-    function mergeProfiles(existing, profiles) {
-        var keys = Object.keys(profiles);
-        for (var i = 0; i < keys.length; i++) {
-            var sid = keys[i];
-            var p = profiles[sid];
-            if (!p) continue;
-            var em = existing.matches[sid] || {};
-            em.matchName = p.matchName || null;
-            em.matchNameInitials = p.matchNameInitials || null;
-            em.displayGender = p.displayGender || null;
-            em.photoUrl = p.photoUrl || null;
-            existing.matches[sid] = em;
-        }
-    }
-
-    function mergeEthnicity(existing, ethnicity) {
-        var keys = Object.keys(ethnicity);
-        for (var i = 0; i < keys.length; i++) {
-            var sid = keys[i];
-            var eth = ethnicity[sid];
-            if (!eth) continue;
-            var em = existing.matches[sid] || {};
-            var regions = [];
-            if (eth.regions) {
-                for (var ri = 0; ri < eth.regions.length; ri++) {
-                    var r = eth.regions[ri];
-                    regions.push({ color: r.color, key: r.key, displayName: r.displayName || null, lowerConfidence: r.lowerConfidence, macroRegionKey: r.macroRegionKey, percentage: r.percentage, upperConfidence: r.upperConfidence });
-                }
+        if (profiles) {
+            var pKeys = Object.keys(profiles);
+            for (var pi = 0; pi < pKeys.length; pi++) {
+                var sid = pKeys[pi];
+                var p = profiles[sid];
+                if (!p) continue;
+                var em = existing.matches[sid] || {};
+                em.matchName = p.matchName || null;
+                em.matchNameInitials = p.matchNameInitials || null;
+                em.displayGender = p.displayGender || null;
+                em.photoUrl = p.photoUrl || null;
+                existing.matches[sid] = em;
             }
-            em.regions = regions;
-            existing.matches[sid] = em;
         }
-    }
-
-    function mergeCommunities(existing, communities) {
-        var keys = Object.keys(communities);
-        for (var i = 0; i < keys.length; i++) {
-            var sid = keys[i];
-            var com = communities[sid];
-            if (!com) continue;
-            var em = existing.matches[sid] || {};
-            var branches = [];
-            if (com.branches) {
-                for (var bi = 0; bi < com.branches.length; bi++) {
-                    var b = com.branches[bi];
-                    var comms = [];
-                    if (b.communities) {
-                        for (var cci = 0; cci < b.communities.length; cci++) {
-                            var co = b.communities[cci];
-                            comms.push({ id: co.id, displayName: co.displayName || null, connection: co.connection, connectionPercent: co.connectionPercent });
-                        }
+        if (ethnicity) {
+            var eKeys = Object.keys(ethnicity);
+            for (var ei = 0; ei < eKeys.length; ei++) {
+                var sid = eKeys[ei];
+                var eth = ethnicity[sid];
+                if (!eth) continue;
+                var em = existing.matches[sid] || {};
+                var regions = [];
+                if (eth.regions) {
+                    for (var ri = 0; ri < eth.regions.length; ri++) {
+                        var r = eth.regions[ri];
+                        regions.push({ color: r.color, key: r.key, displayName: r.displayName || null, lowerConfidence: r.lowerConfidence, macroRegionKey: r.macroRegionKey, percentage: r.percentage, upperConfidence: r.upperConfidence });
                     }
-                    branches.push({ id: b.id, displayName: b.displayName || null, connection: b.connection, connectionPercent: b.connectionPercent, communities: comms });
                 }
+                em.regions = regions;
+                existing.matches[sid] = em;
             }
-            em.journeys = branches;
-            existing.matches[sid] = em;
         }
+        if (communities) {
+            var cKeys = Object.keys(communities);
+            for (var ci = 0; ci < cKeys.length; ci++) {
+                var sid = cKeys[ci];
+                var com = communities[sid];
+                if (!com) continue;
+                var em = existing.matches[sid] || {};
+                var branches = [];
+                if (com.branches) {
+                    for (var bi = 0; bi < com.branches.length; bi++) {
+                        var b = com.branches[bi];
+                        var comms = [];
+                        if (b.communities) {
+                            for (var cci = 0; cci < b.communities.length; cci++) {
+                                var co = b.communities[cci];
+                                comms.push({ id: co.id, displayName: co.displayName || null, connection: co.connection, connectionPercent: co.connectionPercent });
+                            }
+                        }
+                        branches.push({ id: b.id, displayName: b.displayName || null, connection: b.connection, connectionPercent: b.connectionPercent, communities: comms });
+                    }
+                }
+                em.journeys = branches;
+                existing.matches[sid] = em;
+            }
+        }
+        return existing;
     }
 
     return {

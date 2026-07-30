@@ -58,24 +58,24 @@
 
   function chunkArray(arr, size) { var c = []; for (var i = 0; i < arr.length; i += size) c.push(arr.slice(i, i + size)); return c }
 
-  function loadRegionMap() {
-    return fetch(chrome.runtime.getURL('data/ancestry_region_names.json')).then(function (r) { return r.json() }).then(function (data) {
-      var m = {};
-      for (var i = 0; i < data.items.length; i++) m[data.items[i].region] = data.items[i].name
-      setState({ regionMap: m })
-    })
+  async function loadRegionMap() {
+    var r = await fetch(chrome.runtime.getURL('data/ancestry_region_names.json'))
+    var data = await r.json()
+    var m = {};
+    for (var i = 0; i < data.items.length; i++) m[data.items[i].region] = data.items[i].name
+    setState({ regionMap: m })
   }
 
-  function loadJourneyNameMap() {
-    return fetch(chrome.runtime.getURL('data/ancestry_journey_names.json')).then(function (r) { return r.json() }).then(function (data) {
-      var m = {};
-      for (var id in data) {
-        m[id] = data[id].name
-        var subs = data[id].subjourneys
-        if (subs) { for (var subId in subs) m[subId] = subs[subId] }
-      }
-      setState({ journeyNameMap: m })
-    })
+  async function loadJourneyNameMap() {
+    var r = await fetch(chrome.runtime.getURL('data/ancestry_journey_names.json'))
+    var data = await r.json()
+    var m = {};
+    for (var id in data) {
+      m[id] = data[id].name
+      var subs = data[id].subjourneys
+      if (subs) { for (var subId in subs) m[subId] = subs[subId] }
+    }
+    setState({ journeyNameMap: m })
   }
 
   function resolveJourneyNames(nodes) {
@@ -99,14 +99,17 @@
     })
   }
 
-  function fetchTests() {
+  async function fetchTests() {
     setState({ tests: [], testsLoading: true, statusMsg: '', matchCount: null, fetchStateBadge: '', fetchMsg: '', isFetching: false })
-    apiFetch('https://www.ancestry.com/dna/insights/api/dnaSubnav/tests', { credentials: 'include', mode: 'cors' })
-      .then(function (data) { setState({ tests: Array.isArray(data) ? data : [], testsLoading: false }) })
-      .catch(function (err) { setState({ statusMsg: friendlyError(err.message), testsLoading: false }) })
+    try {
+      var data = await apiFetch('https://www.ancestry.com/dna/insights/api/dnaSubnav/tests', { credentials: 'include', mode: 'cors' })
+      setState({ tests: Array.isArray(data) ? data : [], testsLoading: false })
+    } catch (err) {
+      setState({ statusMsg: friendlyError(err.message), testsLoading: false })
+    }
   }
 
-  function fetchMatchCount(guid) {
+  async function fetchMatchCount(guid) {
     var url = 'https://www.ancestry.com/discoveryui-matches/parents/list/api/matchCount/' + guid
     var opts = {
       method: 'POST', credentials: 'include', mode: 'cors',
@@ -114,9 +117,12 @@
       body: JSON.stringify({ lower: 0, upper: 10 })
     }
     setState({ matchCount: null, matchCountLoading: true })
-    apiFetch(url, opts)
-      .then(function (data) { setState({ matchCount: data, matchCountLoading: false }) })
-      .catch(function (err) { setState({ matchCount: { error: friendlyError(err.message) }, matchCountLoading: false }) })
+    try {
+      var data = await apiFetch(url, opts)
+      setState({ matchCount: data, matchCountLoading: false })
+    } catch (err) {
+      setState({ matchCount: { error: friendlyError(err.message) }, matchCountLoading: false })
+    }
   }
 
   var FETCH_DELAY = 500
@@ -143,7 +149,7 @@
     if (typeof DB !== 'undefined') DB.saveSession(guid, matchList, s.profileData, s.batchEthnicityData, s.batchCommunitiesData)
   }
 
-  function fetchMatchList(guid, mode, params) {
+  async function fetchMatchList(guid, mode, params) {
     s.currentPage = 1
     s.matchListData = null
     s.profileData = {}
@@ -157,7 +163,6 @@
     var _progressTotal = mode === 'cmRange' || mode === 'all' ? 300 : desiredCount * 3
 
     function setBadgeFetching() { try { chrome.action.setBadgeText({ text: '\u21bb' }); chrome.action.setBadgeBackgroundColor({ color: '#3b82f6' }) } catch (e) { } }
-
     function clearBadge() { try { chrome.action.setBadgeText({ text: '' }) } catch (e) { } }
 
     function saveState() {
@@ -166,144 +171,37 @@
       setState({ fetchStateBadge: '\u21bb ' + label })
     }
 
-    var resumePromise = DB.getFetchState(guid).then(function (fs) {
-      if (fs && fs.status === 0) {
-        return DB.getSession(guid).then(function (session) {
-          if (session && session.matches) {
-            var sm = session.matches
-            var sids = Object.keys(sm)
-            for (var i = 0; i < sids.length; i++) {
-              var m = sm[sids[i]]
-              allMatches.push({ sampleId: sids[i], relationship: m.relationship || {}, createdDate: m.createdDate || null })
-              s.profileData[sids[i]] = { matchName: m.matchName, matchNameInitials: m.matchNameInitials, displayGender: m.displayGender, photoUrl: m.photoUrl }
-              if (m.journeys && m.journeys.length) {
-                s.batchCommunitiesData[sids[i]] = { branches: m.journeys }
-                resolveJourneyNames(s.batchCommunitiesData[sids[i]].branches)
-                if (sm[sids[i]]) sm[sids[i]].journeys = s.batchCommunitiesData[sids[i]].branches
-              }
-              if (m.regions) s.batchEthnicityData[sids[i]] = { regions: m.regions }
-            }
-            s.matchListData = { matchList: allMatches }
-            s.sessionMatches = sm
-            currentPage = fs.nextPage || 1
-            mode = fs.mode || mode
-            params = fs.params || params
-            desiredCount = mode === 'cmRange' || mode === 'all' ? Infinity : (params.desiredCount || 100)
-            setState({ matchListData: s.matchListData, profileData: s.profileData, batchEthnicityData: s.batchEthnicityData, batchCommunitiesData: s.batchCommunitiesData, sessionMatches: s.sessionMatches })
-          }
-        })
-      }
-    })
-
-    function fetchPage() {
-      var msg = mode === 'cmRange' ? 'Fetching match list for range ' + params.range + ' cM... (' + allMatches.length + ' matches)' : mode === 'all' ? 'Fetching all matches... (' + allMatches.length + ' matches)' : 'Fetching match list... (' + allMatches.length + '/' + desiredCount + ')'
-      setState({ fetchMsg: msg })
-      var url = 'https://www.ancestry.com/discoveryui-matches/parents/list/api/matchList/' + guid + '?itemsPerPage=100&currentPage=' + currentPage
-      if (mode === 'cmRange') url += '&sharedDna=' + params.range
-      debugLog('page ' + currentPage + ' mode=' + mode + ' url=' + url)
-      return apiFetch(url, { credentials: 'include', mode: 'cors', headers: { 'Accept': 'application/json' } })
-        .then(function (data) {
-          var matches = data.matchList
-          if (!Array.isArray(matches)) return nextPage(false)
-          var newSids = []
-          var sidIndex = {}
-          for (var i = 0; i < allMatches.length; i++) sidIndex[allMatches[i].sampleId] = true
-          var limit = mode === 'cmRange' || mode === 'all' ? Infinity : desiredCount
-          for (var i = 0; i < matches.length && allMatches.length < limit; i++) {
-            var sid = matches[i].sampleId
-            if (!sid || sidIndex[sid]) continue
-            sidIndex[sid] = true
-            allMatches.push(matches[i])
-            newSids.push(sid)
-          }
-          if (allMatches.length > desiredCount) allMatches = allMatches.slice(0, desiredCount)
-          s.matchListData = { matchList: allMatches }
-          setState({ matchListData: s.matchListData })
-          if (mode === 'count') { _progressDone += newSids.length; setProgress(_progressDone, _progressTotal) }
-          var hasMore
-          if (mode === 'cmRange' || mode === 'all') {
-            if (data.isLastPage === true) hasMore = false
-            else if (data.isLastPage === undefined) hasMore = matches.length >= 100
-            else hasMore = matches.length > 0
-          } else {
-            hasMore = matches.length >= 100
-          }
-          debugLog('  got ' + newSids.length + ' new, total=' + allMatches.length + ' next=' + (currentPage + 1) + ' hasMore=' + hasMore + ' isLastPage=' + data.isLastPage)
-          if (newSids.length === 0) {
-            var missingPageSids = []
-            for (var mi = 0; mi < matches.length; mi++) {
-              var sid = matches[mi].sampleId
-              if (sid && (!s.batchEthnicityData[sid] || !s.batchCommunitiesData[sid])) missingPageSids.push(sid)
-            }
-            if (missingPageSids.length > 0) {
-              return fetchProfileData(guid, missingPageSids).then(function () {
-                storeMatchData(guid, s.matchListData && s.matchListData.matchList)
-                return processPageChunks(guid, missingPageSids)
-              }).then(function () {
-                currentPage++
-                saveState()
-                return nextPage(hasMore)
-              })
-            }
-            currentPage++
-            saveState()
-            return nextPage(hasMore)
-          }
-          return fetchProfileData(guid, newSids).then(function () {
-            storeMatchData(guid, allMatches)
-            return processPageChunks(guid, newSids)
-          }).then(function () {
-            currentPage++
-            saveState()
-            return nextPage(hasMore)
-          })
-        })
-    }
-
-    function nextPage(hasMore) {
-      var remaining = mode === 'cmRange' || mode === 'all' ? 1 : (desiredCount - allMatches.length)
-      debugLog('nextPage: hasMore=' + hasMore + (mode === 'cmRange' ? '' : ' remaining=' + remaining))
-      if (remaining > 0 && hasMore) return delay(FETCH_DELAY).then(fetchPage)
-    }
-
-    function processPageChunks(guid, pageSampleIds) {
+    async function processPageChunks(guid, pageSampleIds) {
       var chunks = chunkArray(pageSampleIds, 24)
-      var chain = Promise.resolve()
       for (var ci = 0; ci < chunks.length; ci++) {
-        chain = chain.then((function (chunk, idx) {
-          return function () { return processChunk24(guid, chunk, idx * 24 + 1, pageSampleIds.length) }
-        })(chunks[ci], ci))
+        await processChunk24(guid, chunks[ci], ci * 24 + 1, pageSampleIds.length)
       }
-      return chain
     }
 
-    function processChunk24(guid, chunk, rangeStart, total) {
+    async function processChunk24(guid, chunk, rangeStart, total) {
       setState({ fetchMsg: 'Fetching regions for matches ' + rangeStart + '-' + (rangeStart + chunk.length - 1) + ' of ' + total + '...' })
-      return fetchBatchEthnicity(guid, chunk).then(function (ethData) {
-        for (var k in ethData) s.batchEthnicityData[k] = ethData[k]
-        if (s.regionMap) {
-          for (var k in ethData) {
-            var regions = ethData[k] && ethData[k].regions
-            if (!regions) continue
-            for (var ri = 0; ri < regions.length; ri++) regions[ri].displayName = s.regionMap[regions[ri].key] || regions[ri].key
-          }
+      var ethData = await fetchBatchEthnicity(guid, chunk)
+      for (var k in ethData) s.batchEthnicityData[k] = ethData[k]
+      if (s.regionMap) {
+        for (var k in ethData) {
+          var regions = ethData[k] && ethData[k].regions
+          if (!regions) continue
+          for (var ri = 0; ri < regions.length; ri++) regions[ri].displayName = s.regionMap[regions[ri].key] || regions[ri].key
         }
-        setState({ batchEthnicityData: s.batchEthnicityData })
-        if (mode === 'count') { _progressDone += chunk.length; setProgress(_progressDone, _progressTotal) }
-        return delay(FETCH_DELAY)
-      }).then(function () {
-        setState({ fetchMsg: 'Fetching journeys for matches ' + rangeStart + '-' + (rangeStart + chunk.length - 1) + ' of ' + total + '...' })
-        return fetchBatchCommunities(guid, chunk)
-      }).then(function (comData) {
-        for (var k in comData) s.batchCommunitiesData[k] = comData[k]
-        for (var ci = 0; ci < chunk.length; ci++) {
-          var branches = s.batchCommunitiesData[chunk[ci]] && s.batchCommunitiesData[chunk[ci]].branches
-          if (branches) resolveJourneyNames(branches)
-        }
-        storeMatchData(guid, s.matchListData && s.matchListData.matchList)
-        if (mode === 'count') { _progressDone += chunk.length; setProgress(_progressDone, _progressTotal) }
-        setState({ batchCommunitiesData: s.batchCommunitiesData })
-      })
+      }
+      setState({ batchEthnicityData: s.batchEthnicityData })
+      if (mode === 'count') { _progressDone += chunk.length; setProgress(_progressDone, _progressTotal) }
+      await delay(FETCH_DELAY)
+      setState({ fetchMsg: 'Fetching journeys for matches ' + rangeStart + '-' + (rangeStart + chunk.length - 1) + ' of ' + total + '...' })
+      var comData = await fetchBatchCommunities(guid, chunk)
+      for (var k in comData) s.batchCommunitiesData[k] = comData[k]
+      for (var ci = 0; ci < chunk.length; ci++) {
+        var branches = s.batchCommunitiesData[chunk[ci]] && s.batchCommunitiesData[chunk[ci]].branches
+        if (branches) resolveJourneyNames(branches)
+      }
+      storeMatchData(guid, s.matchListData && s.matchListData.matchList)
+      if (mode === 'count') { _progressDone += chunk.length; setProgress(_progressDone, _progressTotal) }
+      setState({ batchCommunitiesData: s.batchCommunitiesData })
     }
 
     function finishFetch() {
@@ -331,47 +229,144 @@
       return result
     }
 
-    resumePromise.then(function () {
+    try {
+      var fs = await DB.getFetchState(guid)
+      if (fs && fs.status === 0) {
+        var session = await DB.getSession(guid)
+        if (session && session.matches) {
+          var sm = session.matches
+          var sids = Object.keys(sm)
+          for (var i = 0; i < sids.length; i++) {
+            var m = sm[sids[i]]
+            allMatches.push({ sampleId: sids[i], relationship: m.relationship || {}, createdDate: m.createdDate || null })
+            s.profileData[sids[i]] = { matchName: m.matchName, matchNameInitials: m.matchNameInitials, displayGender: m.displayGender, photoUrl: m.photoUrl }
+            if (m.journeys && m.journeys.length) {
+              s.batchCommunitiesData[sids[i]] = { branches: m.journeys }
+              resolveJourneyNames(s.batchCommunitiesData[sids[i]].branches)
+              if (sm[sids[i]]) sm[sids[i]].journeys = s.batchCommunitiesData[sids[i]].branches
+            }
+            if (m.regions) s.batchEthnicityData[sids[i]] = { regions: m.regions }
+          }
+          s.matchListData = { matchList: allMatches }
+          s.sessionMatches = sm
+          currentPage = fs.nextPage || 1
+          mode = fs.mode || mode
+          params = fs.params || params
+          desiredCount = mode === 'cmRange' || mode === 'all' ? Infinity : (params.desiredCount || 100)
+          setState({ matchListData: s.matchListData, profileData: s.profileData, batchEthnicityData: s.batchEthnicityData, batchCommunitiesData: s.batchCommunitiesData, sessionMatches: s.sessionMatches })
+        }
+      }
+
       setBadgeFetching()
       saveState()
       if (mode === 'count') { _progressDone = allMatches.length; setProgress(_progressDone, _progressTotal) }
       var incomplete = findIncompleteSampleIds()
       debugLog('resume: mode=' + mode + ' have=' + allMatches.length + (mode === 'cmRange' ? '' : ' target=' + desiredCount) + ' incomplete=' + incomplete.length)
+
       if (allMatches.length >= desiredCount) {
-        if (incomplete.length === 0) return finishFetch()
+        if (incomplete.length === 0) { finishFetch(); return }
         setState({ fetchMsg: 'Resuming: processing data for ' + incomplete.length + ' matches...' })
-        return processPageChunks(guid, incomplete).then(finishFetch).catch(function (err) {
-          clearBadge(); setState({ isFetching: false, fetchMsg: '' }); restoreFetchUI(guid)
-        })
+        await processPageChunks(guid, incomplete)
+        finishFetch()
+        return
       }
-      var chain = Promise.resolve()
+
       if (incomplete.length > 0) {
         setState({ fetchMsg: 'Resuming: processing ' + incomplete.length + ' existing matches first...' })
-        chain = processPageChunks(guid, incomplete)
+        await processPageChunks(guid, incomplete)
       }
-      return chain.then(function () { return fetchPage() }).then(finishFetch).catch(function (err) {
-        clearBadge(); setState({ isFetching: false, fetchMsg: '' }); restoreFetchUI(guid)
-      })
-    })
+
+      var hasMore = true
+      while (true) {
+        var remaining = mode === 'cmRange' || mode === 'all' ? 1 : (desiredCount - allMatches.length)
+        if (remaining <= 0 || !hasMore) break
+
+        var msg = mode === 'cmRange' ? 'Fetching match list for range ' + params.range + ' cM... (' + allMatches.length + ' matches)' : mode === 'all' ? 'Fetching all matches... (' + allMatches.length + ' matches)' : 'Fetching match list... (' + allMatches.length + '/' + desiredCount + ')'
+        setState({ fetchMsg: msg })
+        var url = 'https://www.ancestry.com/discoveryui-matches/parents/list/api/matchList/' + guid + '?itemsPerPage=100&currentPage=' + currentPage
+        if (mode === 'cmRange') url += '&sharedDna=' + params.range
+        debugLog('page ' + currentPage + ' mode=' + mode + ' url=' + url)
+
+        var data = await apiFetch(url, { credentials: 'include', mode: 'cors', headers: { 'Accept': 'application/json' } })
+        var matches = data.matchList
+        if (!Array.isArray(matches)) break
+
+        var newSids = []
+        var sidIndex = {}
+        for (var i = 0; i < allMatches.length; i++) sidIndex[allMatches[i].sampleId] = true
+        var limit = mode === 'cmRange' || mode === 'all' ? Infinity : desiredCount
+        for (var i = 0; i < matches.length && allMatches.length < limit; i++) {
+          var sid = matches[i].sampleId
+          if (!sid || sidIndex[sid]) continue
+          sidIndex[sid] = true
+          allMatches.push(matches[i])
+          newSids.push(sid)
+        }
+        if (allMatches.length > desiredCount) allMatches = allMatches.slice(0, desiredCount)
+        s.matchListData = { matchList: allMatches }
+        setState({ matchListData: s.matchListData })
+        if (mode === 'count') { _progressDone += newSids.length; setProgress(_progressDone, _progressTotal) }
+
+        if (mode === 'cmRange' || mode === 'all') {
+          if (data.isLastPage === true) hasMore = false
+          else if (data.isLastPage === undefined) hasMore = matches.length >= 100
+          else hasMore = matches.length > 0
+        } else {
+          hasMore = matches.length >= 100
+        }
+        debugLog('  got ' + newSids.length + ' new, total=' + allMatches.length + ' next=' + (currentPage + 1) + ' hasMore=' + hasMore + ' isLastPage=' + data.isLastPage)
+
+        if (newSids.length === 0) {
+          var missingPageSids = []
+          for (var mi = 0; mi < matches.length; mi++) {
+            var sid = matches[mi].sampleId
+            if (sid && (!s.batchEthnicityData[sid] || !s.batchCommunitiesData[sid])) missingPageSids.push(sid)
+          }
+          if (missingPageSids.length > 0) {
+            await fetchProfileData(guid, missingPageSids)
+            storeMatchData(guid, s.matchListData && s.matchListData.matchList)
+            await processPageChunks(guid, missingPageSids)
+          }
+          currentPage++
+          saveState()
+        } else {
+          await fetchProfileData(guid, newSids)
+          storeMatchData(guid, allMatches)
+          await processPageChunks(guid, newSids)
+          currentPage++
+          saveState()
+        }
+
+        await delay(FETCH_DELAY)
+      }
+
+      finishFetch()
+    } catch (err) {
+      clearBadge()
+      setState({ isFetching: false, fetchMsg: '' })
+      restoreFetchUI(guid)
+    }
   }
 
-  function checkForNewMatches(guid) {
+  async function checkForNewMatches(guid) {
     var allNewSids = []
     var currentPage = 1
-    var stop = false
     var existingSids = {}
     if (s.sessionMatches) {
       var keys = Object.keys(s.sessionMatches)
       for (var i = 0; i < keys.length; i++) existingSids[keys[i]] = true
     }
 
-    function fetchCheckPage() {
-      if (stop) return
-      setState({ fetchMsg: 'Checking for new matches... (page ' + currentPage + ')' })
-      var url = 'https://www.ancestry.com/discoveryui-matches/parents/list/api/matchList/' + guid + '?itemsPerPage=100&currentPage=' + currentPage + '&sort=DATE'
-      return apiFetch(url, { credentials: 'include', mode: 'cors', headers: { 'Accept': 'application/json' } }).then(function (data) {
+    try {
+      setState({ fetchMsg: 'Checking for new matches...', isFetching: true })
+
+      while (true) {
+        setState({ fetchMsg: 'Checking for new matches... (page ' + currentPage + ')' })
+        var url = 'https://www.ancestry.com/discoveryui-matches/parents/list/api/matchList/' + guid + '?itemsPerPage=100&currentPage=' + currentPage + '&sort=DATE'
+        var data = await apiFetch(url, { credentials: 'include', mode: 'cors', headers: { 'Accept': 'application/json' } })
         var matches = data.matchList
-        if (!Array.isArray(matches)) { stop = true; return }
+        if (!Array.isArray(matches)) break
+
         var pageNewSids = []
         for (var i = 0; i < matches.length; i++) {
           var sid = matches[i].sampleId
@@ -383,54 +378,46 @@
           }
         }
         setState({ matchListData: s.matchListData })
-        if (pageNewSids.length === 0) { stop = true; return }
-        return fetchProfileData(guid, pageNewSids).then(function () {
-          storeMatchData(guid, s.matchListData && s.matchListData.matchList)
-          var chunks = chunkArray(pageNewSids, 24)
-          var chain = Promise.resolve()
-          for (var ci = 0; ci < chunks.length; ci++) {
-            chain = chain.then((function (chunk, idx) {
-              return function () {
-                setState({ fetchMsg: 'Fetching regions for new matches ' + (idx * 24 + 1) + '-' + (idx * 24 + chunk.length) + ' of ' + allNewSids.length + '...' })
-                return fetchBatchEthnicity(guid, chunk).then(function (ethData) {
-                  for (var k in ethData) s.batchEthnicityData[k] = ethData[k]
-                  if (s.regionMap) {
-                    for (var k in ethData) {
-                      var regions = ethData[k] && ethData[k].regions
-                      if (!regions) continue
-                      for (var ri = 0; ri < regions.length; ri++) regions[ri].displayName = s.regionMap[regions[ri].key] || regions[ri].key
-                    }
-                  }
-                  setState({ batchEthnicityData: s.batchEthnicityData })
-                  return delay(FETCH_DELAY)
-                }).then(function () {
-                  setState({ fetchMsg: 'Fetching journeys for new matches ' + (idx * 24 + 1) + '-' + (idx * 24 + chunk.length) + ' of ' + allNewSids.length + '...' })
-                  return fetchBatchCommunities(guid, chunk)
-                }).then(function (comData) {
-                  for (var k in comData) s.batchCommunitiesData[k] = comData[k]
-                  for (var ci = 0; ci < chunk.length; ci++) {
-                    var branches = s.batchCommunitiesData[chunk[ci]] && s.batchCommunitiesData[chunk[ci]].branches
-                    if (branches) resolveJourneyNames(branches)
-                  }
-                  storeMatchData(guid, s.matchListData && s.matchListData.matchList)
-                  setState({ batchCommunitiesData: s.batchCommunitiesData })
-                })
-              }
-            })(chunks[ci], ci))
-          }
-          return chain
-        })
-      }).then(function () {
-        if (!stop) { currentPage++; return delay(FETCH_DELAY).then(fetchCheckPage) }
-      })
-    }
+        if (pageNewSids.length === 0) break
 
-    setState({ fetchMsg: 'Checking for new matches...', isFetching: true })
-    fetchCheckPage().then(function () {
+        await fetchProfileData(guid, pageNewSids)
+        storeMatchData(guid, s.matchListData && s.matchListData.matchList)
+
+        var chunks = chunkArray(pageNewSids, 24)
+        for (var ci = 0; ci < chunks.length; ci++) {
+          var chunk = chunks[ci]
+          setState({ fetchMsg: 'Fetching regions for new matches ' + (ci * 24 + 1) + '-' + (ci * 24 + chunk.length) + ' of ' + allNewSids.length + '...' })
+          var ethData = await fetchBatchEthnicity(guid, chunk)
+          for (var k in ethData) s.batchEthnicityData[k] = ethData[k]
+          if (s.regionMap) {
+            for (var k in ethData) {
+              var regions = ethData[k] && ethData[k].regions
+              if (!regions) continue
+              for (var ri = 0; ri < regions.length; ri++) regions[ri].displayName = s.regionMap[regions[ri].key] || regions[ri].key
+            }
+          }
+          setState({ batchEthnicityData: s.batchEthnicityData })
+          await delay(FETCH_DELAY)
+
+          setState({ fetchMsg: 'Fetching journeys for new matches ' + (ci * 24 + 1) + '-' + (ci * 24 + chunk.length) + ' of ' + allNewSids.length + '...' })
+          var comData = await fetchBatchCommunities(guid, chunk)
+          for (var k in comData) s.batchCommunitiesData[k] = comData[k]
+          for (var cci = 0; cci < chunk.length; cci++) {
+            var branches = s.batchCommunitiesData[chunk[cci]] && s.batchCommunitiesData[chunk[cci]].branches
+            if (branches) resolveJourneyNames(branches)
+          }
+          storeMatchData(guid, s.matchListData && s.matchListData.matchList)
+          setState({ batchCommunitiesData: s.batchCommunitiesData })
+        }
+
+        currentPage++
+        await delay(FETCH_DELAY)
+      }
+
       setState({ isFetching: false, fetchMsg: '', statusMsg: allNewSids.length > 0 ? 'Added ' + allNewSids.length + ' new match(es)' : 'No new matches found' })
-    }).catch(function (err) {
+    } catch (err) {
       setState({ isFetching: false, fetchMsg: '', statusMsg: 'Error: ' + friendlyError(err.message) })
-    })
+    }
   }
 
   function restoreFetchUI(guid) {
@@ -476,32 +463,21 @@
     if (pctEl) { pctEl.textContent = Math.round(pct) + '%'; pctEl.style.color = 'rgb(' + r + ',' + g + ',' + b + ')' }
   }
 
-  function fetchProfileData(guid, sampleIds) {
-    return new Promise(function (resolve, reject) {
-      var chunks = chunkArray(sampleIds, 100)
-      var allProfiles = {}
-      var idx = 0
-
-      function next() {
-        if (idx >= chunks.length) {
-          for (var k in allProfiles) s.profileData[k] = allProfiles[k]
-          setState({ profileData: s.profileData })
-          resolve()
-          return
-        }
-        setState({ fetchMsg: 'Fetching profile data... (' + (idx * 100 + 1) + '-' + Math.min((idx + 1) * 100, sampleIds.length) + ' of ' + sampleIds.length + ')' })
-        apiFetch('https://www.ancestry.com/discoveryui-matches/cluster/api/profileData/' + guid, {
-          method: 'POST', credentials: 'include', mode: 'cors',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify({ matchSampleIds: chunks[idx] })
-        }).then(function (profiles) {
-          for (var k in profiles) allProfiles[k] = profiles[k]
-          idx++
-          delay(FETCH_DELAY).then(next)
-        }).catch(reject)
-      }
-      next()
-    })
+  async function fetchProfileData(guid, sampleIds) {
+    var chunks = chunkArray(sampleIds, 100)
+    var allProfiles = {}
+    for (var idx = 0; idx < chunks.length; idx++) {
+      setState({ fetchMsg: 'Fetching profile data... (' + (idx * 100 + 1) + '-' + Math.min((idx + 1) * 100, sampleIds.length) + ' of ' + sampleIds.length + ')' })
+      var profiles = await apiFetch('https://www.ancestry.com/discoveryui-matches/cluster/api/profileData/' + guid, {
+        method: 'POST', credentials: 'include', mode: 'cors',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ matchSampleIds: chunks[idx] })
+      })
+      for (var k in profiles) allProfiles[k] = profiles[k]
+      await delay(FETCH_DELAY)
+    }
+    for (var k in allProfiles) s.profileData[k] = allProfiles[k]
+    setState({ profileData: s.profileData })
   }
 
   function fetchBatchEthnicity(guid, sampleIds) {
@@ -1079,7 +1055,7 @@
     return pills
   }
 
-  function onKitSelect(guid) {
+  async function onKitSelect(guid) {
     s.selectedGuid = guid
     s.matchListData = null
     s.sessionMatches = null
@@ -1095,37 +1071,36 @@
     m.redraw()
     if (guid) {
       fetchMatchCount(guid)
-      DB.getSession(guid).then(function (session) {
-        if (session && session.matches) {
-          s.sessionMatches = session.matches
-          var matchList = []
-          var sampleIds = Object.keys(session.matches)
+      var session = await DB.getSession(guid)
+      if (session && session.matches) {
+        s.sessionMatches = session.matches
+        var matchList = []
+        var sampleIds = Object.keys(session.matches)
+        for (var si = 0; si < sampleIds.length; si++) {
+          var m2 = session.matches[sampleIds[si]]
+          matchList.push({ sampleId: sampleIds[si], relationship: m2.relationship || {}, createdDate: m2.createdDate || null })
+        }
+        if (matchList.length > 0) {
+          s.matchListData = { matchList: matchList }
+          s.batchCommunitiesData = {}
+          s.batchEthnicityData = {}
+          s.profileData = {}
           for (var si = 0; si < sampleIds.length; si++) {
             var m2 = session.matches[sampleIds[si]]
-            matchList.push({ sampleId: sampleIds[si], relationship: m2.relationship || {}, createdDate: m2.createdDate || null })
-          }
-          if (matchList.length > 0) {
-            s.matchListData = { matchList: matchList }
-            s.batchCommunitiesData = {}
-            s.batchEthnicityData = {}
-            s.profileData = {}
-            for (var si = 0; si < sampleIds.length; si++) {
-              var m2 = session.matches[sampleIds[si]]
-              if (m2.journeys && m2.journeys.length > 0) {
-                s.batchCommunitiesData[sampleIds[si]] = { branches: m2.journeys }
-                resolveJourneyNames(s.batchCommunitiesData[sampleIds[si]].branches)
-                if (s.sessionMatches && s.sessionMatches[sampleIds[si]]) s.sessionMatches[sampleIds[si]].journeys = s.batchCommunitiesData[sampleIds[si]].branches
-              }
-              if (m2.regions && m2.regions.length > 0) s.batchEthnicityData[sampleIds[si]] = { regions: m2.regions }
+            if (m2.journeys && m2.journeys.length > 0) {
+              s.batchCommunitiesData[sampleIds[si]] = { branches: m2.journeys }
+              resolveJourneyNames(s.batchCommunitiesData[sampleIds[si]].branches)
+              if (s.sessionMatches && s.sessionMatches[sampleIds[si]]) s.sessionMatches[sampleIds[si]].journeys = s.batchCommunitiesData[sampleIds[si]].branches
             }
-            for (var si = 0; si < sampleIds.length; si++) {
-              var m2 = session.matches[sampleIds[si]]
-              s.profileData[sampleIds[si]] = { matchName: m2.matchName, matchNameInitials: m2.matchNameInitials, displayGender: m2.displayGender, photoUrl: m2.photoUrl }
-            }
-            setState({ sessionMatches: s.sessionMatches, matchListData: s.matchListData, batchCommunitiesData: s.batchCommunitiesData, batchEthnicityData: s.batchEthnicityData, profileData: s.profileData })
+            if (m2.regions && m2.regions.length > 0) s.batchEthnicityData[sampleIds[si]] = { regions: m2.regions }
           }
+          for (var si = 0; si < sampleIds.length; si++) {
+            var m2 = session.matches[sampleIds[si]]
+            s.profileData[sampleIds[si]] = { matchName: m2.matchName, matchNameInitials: m2.matchNameInitials, displayGender: m2.displayGender, photoUrl: m2.photoUrl }
+          }
+          setState({ sessionMatches: s.sessionMatches, matchListData: s.matchListData, batchCommunitiesData: s.batchCommunitiesData, batchEthnicityData: s.batchEthnicityData, profileData: s.profileData })
         }
-      })
+      }
       restoreFetchUI(guid)
     }
   }

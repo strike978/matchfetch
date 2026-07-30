@@ -806,7 +806,7 @@
             ]),
           ]) : null,
           m('button.btn.fetch-list-btn#fetchListBtn', {
-            disabled: s.isFetching,
+            disabled: s.isFetching || (s.mode === 'count' && !s.desiredCount) || (s.mode === 'cmRange' && (!s.cmRangeMin || !s.cmRangeMax)),
             onclick: function () {
               if (s.isFetching) return
               s.isFetching = true

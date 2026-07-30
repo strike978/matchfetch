@@ -26,8 +26,8 @@
     sortBy: 'cm',
     buttonLabel: null,
     modal: null,
-    cmRangeMin: '90',
-    cmRangeMax: '400',
+    cmRangeMin: '',
+    cmRangeMax: '',
     desiredCount: '100',
     statusMsg: '',
     testsLoading: true,
@@ -642,7 +642,9 @@
     var f = s.filters
     f.name = el ? el.value : ''
     f.cmMin = parseFloat(document.getElementById('filterCmMin') ? document.getElementById('filterCmMin').value : '') || null
+    if (f.cmMin != null) f.cmMin = Math.max(6, f.cmMin)
     f.cmMax = parseFloat(document.getElementById('filterCmMax') ? document.getElementById('filterCmMax').value : '') || null
+    if (f.cmMax != null) f.cmMax = Math.min(3490, f.cmMax)
     var journeyEl = document.getElementById('filterJourney')
     f.journey = journeyEl ? journeyEl.value : ''
     f.journeyOnly = document.getElementById('filterJourneyOnly') ? document.getElementById('filterJourneyOnly').checked : false
@@ -799,8 +801,8 @@
               m('label.input-label', ['Matches ', m('input#matchCountInput.count-input', { type: 'number', value: s.desiredCount, min: '1', step: '1', oninput: function (e) { s.desiredCount = e.target.value } })])
             ]),
             m('.fetch-row#cmRangeModeRow', { style: { display: s.mode === 'cmRange' ? '' : 'none' } }, [
-              m('label.input-label', ['Min ', m('input#cmRangeMin.count-input', { type: 'number', value: s.cmRangeMin, min: '0', oninput: function (e) { s.cmRangeMin = e.target.value } })]),
-              m('label.input-label', ['Max ', m('input#cmRangeMax.count-input', { type: 'number', value: s.cmRangeMax, min: '0', oninput: function (e) { s.cmRangeMax = e.target.value } })]),
+              m('label.input-label', ['Min ', m('input#cmRangeMin.count-input', { type: 'number', placeholder: '6', min: 6, value: s.cmRangeMin, oninput: function (e) { s.cmRangeMin = e.target.value }, onblur: function (e) { var v = parseFloat(e.target.value); if (e.target.value && !isNaN(v)) { var clamped = Math.max(6, Math.min(3490, v)); e.target.value = clamped; s.cmRangeMin = String(clamped) } } })]),
+              m('label.input-label', ['Max ', m('input#cmRangeMax.count-input', { type: 'number', placeholder: '3490', max: 3490, value: s.cmRangeMax, oninput: function (e) { s.cmRangeMax = e.target.value }, onblur: function (e) { var v = parseFloat(e.target.value); if (e.target.value && !isNaN(v)) { var clamped = Math.max(6, Math.min(3490, v)); e.target.value = clamped; s.cmRangeMax = String(clamped) } } })]),
             ]),
           ]) : null,
           m('button.btn.fetch-list-btn#fetchListBtn', {
@@ -811,9 +813,10 @@
               s.statusMsg = ''
               m.redraw()
               if (s.mode === 'cmRange') {
-                var min = s.cmRangeMin
-                var max = s.cmRangeMax
-                if (min && max) fetchMatchList(s.selectedGuid, 'cmRange', { range: min + '-' + max })
+                var min = Math.max(6, parseFloat(s.cmRangeMin) || 0)
+                var max = Math.min(3490, parseFloat(s.cmRangeMax) || 0)
+                if (min && max && min <= max) { s.cmRangeMin = String(min); s.cmRangeMax = String(max); fetchMatchList(s.selectedGuid, 'cmRange', { range: min + '-' + max }) }
+                else { s.isFetching = false; s.statusMsg = 'Enter Min (6\u20133490) and Max (\u2265Min)'; m.redraw() }
               } else if (s.mode === 'all') {
                 fetchMatchList(s.selectedGuid, 'all', {})
               } else {
@@ -860,9 +863,9 @@
             m('label.filter-group', ['Name ',         m('input#filterName.filter-input', { type: 'text', placeholder: 'Filter by name', oninput: function () { applyFilterChange(); m.redraw() } })]),
             m('label.filter-group', [
               'cM ',
-              m('input#filterCmMin.filter-input.filter-cm', { type: 'number', placeholder: 'Min', oninput: function () { applyFilterChange(); m.redraw() } }),
+              m('input#filterCmMin.filter-input.filter-cm', { type: 'number', placeholder: '6 min', min: 6, oninput: function () { applyFilterChange(); m.redraw() }, onblur: function () { var v = parseFloat(this.value); if (this.value && !isNaN(v)) { var clamped = Math.max(6, Math.min(3490, v)); this.value = clamped; applyFilterChange(); m.redraw() } } }),
               m('span.filter-sep', '\u2013'),
-              m('input#filterCmMax.filter-input.filter-cm', { type: 'number', placeholder: 'Max', oninput: function () { applyFilterChange(); m.redraw() } })
+              m('input#filterCmMax.filter-input.filter-cm', { type: 'number', placeholder: '3490 max', max: 3490, oninput: function () { applyFilterChange(); m.redraw() }, onblur: function () { var v = parseFloat(this.value); if (this.value && !isNaN(v)) { var clamped = Math.max(6, Math.min(3490, v)); this.value = clamped; applyFilterChange(); m.redraw() } } })
             ])
           ]),
           m('.filter-row', [

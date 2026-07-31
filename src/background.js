@@ -82,8 +82,8 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 })
 
 chrome.action.onClicked.addListener(function() {
-    chrome.tabs.query({ url: chrome.runtime.getURL('src/app.html') }, function(t) {
+    chrome.tabs.query({ url: chrome.runtime.getURL('src/ancestry/app.html') }, function(t) {
         if (t && t.length) chrome.tabs.update(t[0].id, { active: true })
-        else chrome.tabs.create({ url: 'src/app.html', pinned: true })
+        else chrome.tabs.create({ url: 'src/ancestry/app.html', pinned: true })
     })
 });

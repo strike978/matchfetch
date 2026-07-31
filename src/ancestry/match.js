@@ -40,25 +40,25 @@
   }
 
   function loadRegionCoords() {
-    fetch(chrome.runtime.getURL('data/region_coordinates.json')).then(function (r) { return r.json() }).then(function (d) {
+    fetch(chrome.runtime.getURL('data/ancestry/region_coordinates.json')).then(function (r) { return r.json() }).then(function (d) {
       setState({ regionCoords: d })
     }, function () { })
   }
 
   function loadJourneyCoords() {
-    fetch(chrome.runtime.getURL('data/journey_coordinates.json')).then(function (r) { return r.json() }).then(function (d) {
+    fetch(chrome.runtime.getURL('data/ancestry/journey_coordinates.json')).then(function (r) { return r.json() }).then(function (d) {
       setState({ journeyCoords: d })
     }, function () { })
   }
 
   function loadSubjourneyCoords() {
-    fetch(chrome.runtime.getURL('data/subjourney_coordinates.json')).then(function (r) { return r.json() }).then(function (d) {
+    fetch(chrome.runtime.getURL('data/ancestry/subjourney_coordinates.json')).then(function (r) { return r.json() }).then(function (d) {
       setState({ subjourneyCoords: d })
     }, function () { })
   }
 
   function loadRegionNames() {
-    fetch(chrome.runtime.getURL('data/ancestry_region_names.json')).then(function (r) { return r.json() }).then(function (d) {
+    fetch(chrome.runtime.getURL('data/ancestry/ancestry_region_names.json')).then(function (r) { return r.json() }).then(function (d) {
       var m = {};
       for (var i = 0; i < d.items.length; i++) m[d.items[i].region] = d.items[i];
       setState({ regionNameData: m })
@@ -66,7 +66,7 @@
   }
 
   function loadJourneyNames() {
-    fetch(chrome.runtime.getURL('data/ancestry_journey_names.json')).then(function (r) { return r.json() }).then(function (d) {
+    fetch(chrome.runtime.getURL('data/ancestry/ancestry_journey_names.json')).then(function (r) { return r.json() }).then(function (d) {
       setState({ journeyNameData: d })
     }, function () { })
   }
@@ -325,7 +325,7 @@
 
   document.querySelector('.topbar-home').addEventListener('click', function(e) {
     e.preventDefault()
-    chrome.tabs.query({ url: chrome.runtime.getURL('src/app.html') }, function(t) {
+    chrome.tabs.query({ url: chrome.runtime.getURL('src/ancestry/app.html') }, function(t) {
       if (t && t.length) chrome.tabs.update(t[0].id, { active: true })
     })
   })

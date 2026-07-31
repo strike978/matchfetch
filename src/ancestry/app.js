@@ -59,7 +59,7 @@
   function chunkArray(arr, size) { var c = []; for (var i = 0; i < arr.length; i += size) c.push(arr.slice(i, i + size)); return c }
 
   async function loadRegionMap() {
-    var r = await fetch(chrome.runtime.getURL('data/ancestry_region_names.json'))
+    var r = await fetch(chrome.runtime.getURL('data/ancestry/ancestry_region_names.json'))
     var data = await r.json()
     var m = {};
     for (var i = 0; i < data.items.length; i++) m[data.items[i].region] = data.items[i].name
@@ -67,7 +67,7 @@
   }
 
   async function loadJourneyNameMap() {
-    var r = await fetch(chrome.runtime.getURL('data/ancestry_journey_names.json'))
+    var r = await fetch(chrome.runtime.getURL('data/ancestry/ancestry_journey_names.json'))
     var data = await r.json()
     var m = {};
     for (var id in data) {

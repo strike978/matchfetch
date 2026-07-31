@@ -24,6 +24,7 @@
   },
   "permissions": ["scripting", "unlimitedStorage", "notifications", "tabs"],
   "host_permissions": [
-    "https://www.ancestry.com/*"
+    "https://www.ancestry.com/*",
+    "https://*.23andme.com/*"
   ]
 }

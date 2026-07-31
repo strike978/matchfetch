@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Match Detail — 23andMe</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
+    background: #0f1724; color: #f1f5f9; min-height: 100vh;
+}
+.main { max-width: 960px; margin: 32px auto; padding: 0 32px; }
+.card { background: #1a2332; border-radius: 12px; padding: 20px; border: 1px solid #253044; margin-bottom: 16px; }
+.label { font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 10px; }
+.card-details { display: flex; flex-wrap: wrap; gap: 8px; }
+.detail { display: flex; align-items: center; gap: 6px; background: #0f1724; padding: 4px 10px; border-radius: 6px; }
+.detail-label { font-size: 10px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: .4px; }
+.detail-value { font-size: 13px; font-weight: 500; color: #e2e8f0; }
+.rel-text { font-size: 16px; font-weight: 500; color: #e2e8f0; padding: 6px 0; letter-spacing: .2px; }
+.rel-text .num { font-weight: 700; color: #60a5fa; font-variant-numeric: tabular-nums; }
+.profile-card { padding-bottom: 12px; }
+.profile-link { color: #f1f5f9; display: inline-flex; align-items: center; padding: 4px; border-radius: 6px; transition: color .2s, background .2s; }
+.profile-link:hover { color: #3b82f6; background: rgba(59,130,246,.1); }
+.match-name { font-size: 20px; font-weight: 700; color: #f1f5f9; display: flex; align-items: center; gap: 12px; }
+.avatar { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.avatar-initials { display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700; color: #fff; }
+.gender-m { background: #3b82f6; }
+.gender-f { background: #ec4899; }
+.gender-n { background: #64748b; }
+.section-title { font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .6px; padding: 12px 0 8px; }
+.spinner { display: flex; flex-direction: column; align-items: center; padding: 48px; color: #64748b; gap: 12px; }
+.spinner-ring { width: 24px; height: 24px; border: 3px solid #253044; border-top-color: #3b82f6; border-radius: 50%; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.error { padding: 14px; background: rgba(239,68,68,.1); color: #f87171; border-radius: 10px; font-size: 13px; border: 1px solid rgba(239,68,68,.2); }
+.empty { padding: 24px; text-align: center; color: #64748b; font-size: 14px; }
+.hg-card { display: flex; gap: 10px; flex-wrap: wrap; }
+.hg-box { flex: 1; min-width: 140px; background: #0f1724; border-radius: 8px; padding: 12px 14px; border-left: 3px solid #3b82f6; }
+.hg-box.mt { border-left-color: #ec4899; }
+.hg-label { font-size: 10px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: .4px; }
+.hg-value { font-size: 15px; font-weight: 700; color: #e2e8f0; margin-top: 4px; }
+.region-item { margin-bottom: 4px; }
+.region-header { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #1a2332; border-radius: 6px; cursor: pointer; transition: background .15s; border-left: 3px solid #3b82f6; }
+.region-header:hover { background: #1e293b; }
+.region-toggle { font-size: 10px; color: #94a3b8; flex-shrink: 0; width: 14px; text-align: center; }
+.region-name { font-size: 13px; font-weight: 600; color: #e2e8f0; }
+.region-pct { margin-left: auto; font-size: 13px; font-weight: 700; color: #f1f5f9; font-variant-numeric: tabular-nums; }
+.region-children { margin-top: 4px; }
+.gp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
+.gp-box { background: #0f1724; border-radius: 8px; padding: 12px 14px; }
+.gp-title { font-size: 10px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: .4px; }
+.gp-place { font-size: 13px; font-weight: 600; color: #e2e8f0; margin-top: 4px; line-height: 1.4; }
+.gp-place .muted { color: #64748b; font-weight: 400; }
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+.modal { background: #1a2332; border: 1px solid #253044; border-radius: 14px; padding: 28px 32px 24px; max-width: 380px; width: 90%; text-align: center; }
+.modal-title { font-size: 17px; font-weight: 700; color: #f1f5f9; margin-bottom: 8px; }
+.modal-text { font-size: 13px; color: #94a3b8; line-height: 1.5; margin-bottom: 24px; }
+.modal-actions { display: flex; gap: 10px; justify-content: center; }
+.modal-btn { padding: 10px 24px; border-radius: 10px; font-size: 14px; font-weight: 600; border: none; cursor: pointer; font-family: inherit; transition: background .2s; }
+.modal-cancel { background: #253044; color: #94a3b8; }
+.modal-cancel:hover { background: #2d3a4f; }
+.modal-confirm { background: #ef4444; color: #fff; }
+.modal-confirm:hover { background: #dc2626; }
+</style>
+</head>
+<body>
+<script src="../toolbar.js"></script>
+<input type="file" id="importFileInput" accept=".json" style="display:none">
+<div class="main" id="content">
+    <div class="spinner"><div class="spinner-ring"></div><div>Loading...</div></div>
+</div>
+<script src="../../lib/dexie.js"></script>
+<script src="../db.js"></script>
+<script src="../../lib/mithril.js"></script>
+<script src="match.js"></script>
+</body>
+</html>

@@ -1,6 +1,21 @@
-var _fetchTabId = null
+var _fetchTabs = {}
 var _queue = []
 var _busy = false
+
+var DOMAINS = {
+  'ancestry.com': {
+    tabUrl: '*://*.ancestry.com/*',
+    landing: 'https://www.ancestry.com/dna/matches/list'
+  },
+  '23andme.com': {
+    tabUrl: '*://you.23andme.com/*',
+    landing: 'https://you.23andme.com/'
+  }
+}
+
+function normalizeDomain(d) {
+  return String(d || '').indexOf('23andme') !== -1 ? '23andme.com' : 'ancestry.com'
+}
 
 function waitForTab(id, cb) {
     var h = function(tabId, info) {
@@ -10,19 +25,20 @@ function waitForTab(id, cb) {
     setTimeout(function() { chrome.tabs.onUpdated.removeListener(h); cb(id) }, 15000)
 }
 
-function getTab(cb) {
-    if (_fetchTabId) {
-        chrome.tabs.get(_fetchTabId, function(tab) {
-            if (chrome.runtime.lastError || !tab) { _fetchTabId = null; getTab(cb); return }
-            if (tab.status === 'complete') cb(_fetchTabId)
-            else waitForTab(_fetchTabId, cb)
+function getTab(domain, cb) {
+    if (_fetchTabs[domain]) {
+        chrome.tabs.get(_fetchTabs[domain], function(tab) {
+            if (chrome.runtime.lastError || !tab) { _fetchTabs[domain] = null; getTab(domain, cb); return }
+            if (tab.status === 'complete') cb(_fetchTabs[domain])
+            else waitForTab(_fetchTabs[domain], cb)
         })
         return
     }
-    chrome.tabs.query({ url: '*://*.ancestry.com/*' }, function(tabs) {
-        if (tabs && tabs.length) { _fetchTabId = tabs[0].id; getTab(cb); return }
-        chrome.tabs.create({ url: 'https://www.ancestry.com/dna/matches/list', active: false }, function(t) {
-            _fetchTabId = t.id
+    var cfg = DOMAINS[domain]
+    chrome.tabs.query({ url: cfg.tabUrl }, function(tabs) {
+        if (tabs && tabs.length) { _fetchTabs[domain] = tabs[0].id; getTab(domain, cb); return }
+        chrome.tabs.create({ url: cfg.landing, active: false }, function(t) {
+            _fetchTabs[domain] = t.id
             waitForTab(t.id, cb)
         })
     })
@@ -35,9 +51,12 @@ function doFetch(tabId, url, opts, sendResponse) {
             if (!o.headers) o.headers = {}
             var meta = document.querySelector('meta[name="csrf-token"]')
             if (meta) o.headers['x-csrf-token'] = meta.content
+            var csrf = (document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/) || [])[1]
+            if (csrf) o.headers['X-CSRFToken'] = csrf
             return fetch(u, o).then(function(r) {
                 return r.text().then(function(body) {
                     if (r.ok) {
+                        if (o.responseType === 'text') return { ok: true, data: body }
                         try { return { ok: true, data: JSON.parse(body) } }
                         catch(e) { return { ok: false, error: 'Bad JSON: ' + body.substring(0,200) } }
                     }
@@ -60,7 +79,7 @@ function doFetch(tabId, url, opts, sendResponse) {
 function processNext() {
     if (_queue.length === 0) { _busy = false; return }
     var item = _queue.shift()
-    getTab(function(tabId) {
+    getTab(item.domain, function(tabId) {
         doFetch(tabId, item.url, item.opts, function(resp) {
             item.sr(resp)
             processNext()
@@ -70,10 +89,12 @@ function processNext() {
 
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     if (request.action !== 'apiFetch') return
-    if (_busy) { _queue.push({ url: request.url, opts: request.options, sr: sendResponse }); return true }
+    var domain = normalizeDomain(request.domain || request.url)
+    var item = { url: request.url, opts: request.options, sr: sendResponse, domain: domain }
+    if (_busy) { _queue.push(item); return true }
     _busy = true
-    getTab(function(tabId) {
-        doFetch(tabId, request.url, request.options, function(resp) {
+    getTab(domain, function(tabId) {
+        doFetch(tabId, item.url, item.opts, function(resp) {
             sendResponse(resp)
             processNext()
         })

@@ -3,6 +3,14 @@ var DB = (function() {
     db.version(1).stores({
         Ancestry: 'guid',
     });
+    db.version(2).stores({
+        Ancestry: 'guid',
+        TwentyThreeAndMe: 'guid',
+    });
+
+    function table(provider) {
+        return provider === '23andme' ? db.TwentyThreeAndMe : db.Ancestry;
+    }
 
     function mergeMatchData(existing, matchList, profiles, ethnicity, communities) {
         if (!existing) existing = { guid: '', matches: {} };
@@ -87,43 +95,76 @@ var DB = (function() {
     }
 
     return {
-        saveSession: function(guid, matchList, profiles, ethnicity, communities) {
-            return db.transaction('rw', db.Ancestry, function() {
-                return db.Ancestry.get(guid).then(function(existing) {
+        saveSession: function(guid, matchList, profiles, ethnicity, communities, provider) {
+            var t = table(provider);
+            return db.transaction('rw', t, function() {
+                return t.get(guid).then(function(existing) {
                     var data = mergeMatchData(existing || { guid: guid, matches: {} }, matchList, profiles, ethnicity, communities);
                     data.guid = guid;
-                    return db.Ancestry.put(data);
+                    return t.put(data);
                 });
             });
         },
 
-        saveFetchState: function(guid, status, mode, params, nextPage) {
-            return db.transaction('rw', db.Ancestry, function() {
-                return db.Ancestry.get(guid).then(function(existing) {
+        saveMatches: function(guid, matches, provider) {
+            var t = table(provider);
+            return db.transaction('rw', t, function() {
+                return t.get(guid).then(function(existing) {
+                    var data = existing || { guid: guid, matches: {} };
+                    data.guid = guid;
+                    if (matches) {
+                        for (var mi = 0; mi < matches.length; mi++) {
+                            var m = matches[mi];
+                            if (!m || !m.relative_profile_id) continue;
+                            data.matches[m.relative_profile_id] = m;
+                        }
+                    }
+                    return t.put(data);
+                });
+            });
+        },
+
+        saveRelatives: function(guid, relatives, provider) {
+            var t = table(provider);
+            return db.transaction('rw', t, function() {
+                return t.get(guid).then(function(existing) {
+                    var data = existing || { guid: guid, matches: {} };
+                    data.guid = guid;
+                    data.relatives = relatives;
+                    return t.put(data);
+                });
+            });
+        },
+
+        saveFetchState: function(guid, status, mode, params, nextPage, provider) {
+            var t = table(provider);
+            return db.transaction('rw', t, function() {
+                return t.get(guid).then(function(existing) {
                     var data = existing || { guid: guid, matches: {} };
                     data.guid = guid;
                     data.fetchState = { status: status, mode: mode, params: params, nextPage: nextPage || null };
-                    return db.Ancestry.put(data);
+                    return t.put(data);
                 });
             });
         },
 
-        deleteFetchState: function(guid) {
-            return db.transaction('rw', db.Ancestry, function() {
-                return db.Ancestry.get(guid).then(function(existing) {
+        deleteFetchState: function(guid, provider) {
+            var t = table(provider);
+            return db.transaction('rw', t, function() {
+                return t.get(guid).then(function(existing) {
                     if (!existing) return;
                     delete existing.fetchState;
-                    return db.Ancestry.put(existing);
+                    return t.put(existing);
                 });
             });
         },
 
-        getSession: function(guid) {
-            return db.Ancestry.get(guid).then(function(r) { return r || null; });
+        getSession: function(guid, provider) {
+            return table(provider).get(guid).then(function(r) { return r || null; });
         },
 
-        getMatchData: function(guid, sampleId) {
-            return db.Ancestry.get(guid).then(function(session) {
+        getMatchData: function(guid, sampleId, provider) {
+            return table(provider).get(guid).then(function(session) {
                 if (!session) return null;
                 var m = session.matches && session.matches[sampleId] || null;
                 if (!m) return null;
@@ -136,19 +177,22 @@ var DB = (function() {
             });
         },
 
-        getFetchState: function(guid) {
-            return db.Ancestry.get(guid).then(function(r) {
+        getFetchState: function(guid, provider) {
+            return table(provider).get(guid).then(function(r) {
                 if (!r || !r.fetchState) return null;
                 return { status: r.fetchState.status, mode: r.fetchState.mode, params: r.fetchState.params, nextPage: r.fetchState.nextPage };
             });
         },
 
-        deleteSession: function(guid) {
-            return db.Ancestry.delete(guid);
+        deleteSession: function(guid, provider) {
+            return table(provider).delete(guid);
         },
 
         exportDatabase: function() {
-            return db.Ancestry.toArray().then(function(all) {
+            return Promise.all([db.Ancestry.toArray(), db.TwentyThreeAndMe.toArray()]).then(function(results) {
+                var ancestry = results[0].map(function(r) { r.provider = 'ancestry'; return r; });
+                var t23 = results[1].map(function(r) { r.provider = '23andme'; return r; });
+                var all = ancestry.concat(t23);
                 var blob = new Blob([JSON.stringify(all, null, 2)], { type: 'application/json' });
                 var url = URL.createObjectURL(blob);
                 var a = document.createElement('a');
@@ -159,9 +203,18 @@ var DB = (function() {
         },
 
         importDatabase: function(data) {
-            return db.Ancestry.clear().then(function() {
-                return db.Ancestry.bulkPut(data);
-            }).then(function() {
+            var ancestry = [];
+            var t23 = [];
+            for (var i = 0; i < data.length; i++) {
+                var rec = data[i];
+                if (!rec) continue;
+                if (rec.provider === '23andme') t23.push(rec);
+                else { rec.provider = 'ancestry'; ancestry.push(rec); }
+            }
+            return Promise.all([
+                db.Ancestry.clear().then(function() { return db.Ancestry.bulkPut(ancestry); }),
+                db.TwentyThreeAndMe.clear().then(function() { return db.TwentyThreeAndMe.bulkPut(t23); })
+            ]).then(function() {
                 return data.length;
             });
         }

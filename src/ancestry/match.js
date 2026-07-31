@@ -338,7 +338,7 @@
       try {
         var data = JSON.parse(ev.target.result)
         if (!Array.isArray(data)) throw new Error('Invalid format')
-        setState({ modal: { title: 'Import database?', text: 'This will overwrite your entire database with ' + data.length + ' kit(s) from this file. This cannot be undone.', confirmText: 'Import', cancelText: 'Cancel', onConfirm: function() { if (typeof DB !== 'undefined') DB.importDatabase(data).then(function() { m.redraw() }) } } })
+        setState({ modal: { title: 'Import database?', text: 'This will overwrite your entire database with ' + data.length + ' profile(s) from this file. This cannot be undone.', confirmText: 'Import', cancelText: 'Cancel', onConfirm: function() { if (typeof DB !== 'undefined') DB.importDatabase(data).then(function() { m.redraw() }) } } })
       } catch(err) { alert('Import failed: ' + err.message) }
     }
     reader.readAsText(file)

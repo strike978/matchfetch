@@ -715,13 +715,13 @@
             if (!Array.isArray(data)) throw new Error('Invalid format: expected an array')
             s.modal = {
               title: 'Import database?',
-              text: 'This will overwrite your entire database with ' + data.length + ' kit(s) from this file. This cannot be undone.',
+              text: 'This will overwrite your entire database with ' + data.length + ' profile(s) from this file. This cannot be undone.',
               confirmText: 'Import',
               cancelText: 'Cancel',
               onConfirm: function () {
                 setState({ statusMsg: 'Importing...' })
                 DB.importDatabase(data).then(function (count) {
-                  setState({ statusMsg: 'Imported ' + count + ' kit(s)' })
+                  setState({ statusMsg: 'Imported ' + count + ' profile(s)' })
                   fetchTests()
                 })
               }
@@ -770,7 +770,7 @@
       if (s.tests.length === 0) return m('.empty', 'No tests found')
       return [
         m('.label', [
-          'Select a kit',
+          'Select a profile',
           s.matchCount ? m('.badge', [
             m.trust('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28" width="16" height="16" fill="none"><circle cx="10" cy="9" r="3.5" stroke="#94a3b8" stroke-width="2"/><circle cx="18" cy="9" r="3.5" stroke="#94a3b8" stroke-width="2"/><path d="M4 23c0-4 2-6.5 6-6.5s6 2.5 6 6.5" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/><path d="M14 23c0-4 2-6.5 6-6.5s6 2.5 6 6.5" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/></svg>'),
             m('span.count', s.matchCount.count ? s.matchCount.count.toLocaleString() : '?'),
@@ -785,7 +785,7 @@
             value: s.selectedGuid,
             onchange: function (e) { onKitSelect(e.target.value) }
           }, [
-            m('option', { value: '' }, 'Choose a kit...'),
+            m('option', { value: '' }, 'Choose a profile...'),
             s.tests.map(function (t, i) {
               var name = t.subjectName || t.displayName || t.name || 'Kit ' + (i + 1)
               var guid = t.testGuid || t.testId || t.guid || t.id || ''
@@ -793,12 +793,12 @@
             })
           ]),
           s.selectedGuid ? m('button.clear-btn#clearKitBtn', {
-            title: 'Clear kit data',
+            title: 'Clear profile data',
             onclick: function () {
               s.modal = {
                 icon: '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
-                title: 'Clear kit data?',
-                text: 'This will remove all matches, regions, and journeys for this kit from local storage.',
+                title: 'Clear profile data?',
+                text: 'This will remove all matches, regions, and journeys for this profile from local storage.',
                 confirmText: 'Clear',
                 cancelText: 'Cancel',
                 onConfirm: function () {

@@ -2,6 +2,8 @@
   var s = {
     profiles: [],
     selectedProfileId: '',
+    matchCount: null,
+    matchCountLoading: false,
     loading: true,
     statusMsg: '',
     relatives: [],
@@ -91,17 +93,10 @@
       var html = await apiFetch('https://you.23andme.com/', {
         credentials: 'include', headers: { 'Accept': 'text/html' }, responseType: 'text'
       })
-      var m = String(html).match(/window\.TTAM\.currentProfileId\s*=\s*["']([a-f0-9]+)["']/)
-      var currentId = m && m[1] ? m[1] : ''
       var profiles = extractProfiles(String(html))
-      console.log('[MatchFetch 23] HTML length:', String(html).length, 'current:', currentId, 'profiles:', profiles ? profiles.length : null)
-      if (!Array.isArray(profiles) || profiles.length === 0) {
-        if (!currentId) throw new Error('Could not find profile. Make sure you are logged into 23andMe.')
-        profiles = [{ id: currentId, first_name: '', last_name: '', initials: '' }]
-      }
-      var selected = profiles.some(function (p) { return p.id === currentId }) ? currentId : (profiles[0].id || '')
-      setState({ profiles: profiles, selectedProfileId: selected, loading: false })
-      await loadSaved()
+      console.log('[MatchFetch 23] HTML length:', String(html).length, 'profiles:', profiles ? profiles.length : null)
+      if (!Array.isArray(profiles) || profiles.length === 0) throw new Error('Could not find profiles. Make sure you are logged into 23andMe.')
+      setState({ profiles: profiles, selectedProfileId: '', loading: false })
     } catch (err) {
       setState({ statusMsg: friendlyError(err.message), loading: false })
     }
@@ -109,16 +104,16 @@
 
   async function onProfileSelect(id) {
     if (!id) return
-    setState({ selectedProfileId: id, relatives: [], matches: {}, isFetching: false, fetchComplete: false, statusMsg: '', fetchMsg: '', fetchProgress: 0, fetchPct: '', currentPage: 1 })
+    setState({ selectedProfileId: id, relatives: [], matches: {}, matchCount: null, matchCountLoading: false, isFetching: false, fetchComplete: false, statusMsg: '', fetchMsg: '', fetchProgress: 0, fetchPct: '', currentPage: 1 })
     await loadSaved()
+    await fetchMatchCount()
   }
 
   async function loadSaved() {
     if (!s.selectedProfileId) return
     try {
       var session = await DB.getSession(s.selectedProfileId, '23andme')
-      var rel = (session && session.relatives) || []
-      setState({ matches: (session && session.matches) || {}, relatives: rel, fetchComplete: Array.isArray(rel) && rel.length > 0 })
+      setState({ matches: (session && session.matches) || {} })
     } catch (e) { console.log('loadSaved error:', e) }
   }
 
@@ -230,30 +225,38 @@
     if (pctEl) { pctEl.textContent = Math.round(pct) + '%'; pctEl.style.color = 'rgb(' + r + ',' + g + ',' + b + ')' }
   }
 
-  async function doFetch() {
-    if (!s.selectedProfileId || s.isFetching) return
-    setState({ isFetching: true, fetchComplete: false, statusMsg: '', fetchMsg: 'Fetching relatives...', fetchProgress: 0, fetchPct: '' })
+  async function fetchMatchCount() {
+    if (!s.selectedProfileId) return
+    setState({ matchCount: null, matchCountLoading: true })
     try {
       var data = await apiFetch('https://you.23andme.com/p/' + s.selectedProfileId + '/family/relatives/ajax/', {
         credentials: 'include',
         headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
       })
       console.log('[MatchFetch 23] relatives type:', Array.isArray(data) ? 'array(' + data.length + ')' : typeof data)
-      s.relatives = Array.isArray(data) ? data : []
-      setState({ relatives: s.relatives })
-      if (typeof DB !== 'undefined') DB.saveRelatives(s.selectedProfileId, s.relatives, '23andme')
+      var rel = Array.isArray(data) ? data : []
+      s.relatives = rel
+      setState({ relatives: rel, matchCount: { count: rel.length }, matchCountLoading: false })
+      if (typeof DB !== 'undefined') DB.saveRelatives(s.selectedProfileId, rel, '23andme')
     } catch (err) {
-      setState({ isFetching: false, statusMsg: friendlyError(err.message) })
-      return
+      setState({ matchCount: { error: friendlyError(err.message) }, matchCountLoading: false })
     }
+  }
+
+  async function doFetch() {
+    if (!s.selectedProfileId || s.isFetching) return
+    if (s.matchCountLoading) return
+    if (!Array.isArray(s.relatives)) await fetchMatchCount()
+    if (!Array.isArray(s.relatives)) return
     var targets = s.relatives.filter(function (r) {
       return r.is_open_sharing === true && !(s.matches[r.relative_profile_id] && s.matches[r.relative_profile_id].ancestry)
     })
     var total = targets.length
     if (total === 0) {
-      setState({ isFetching: false, fetchComplete: true, statusMsg: 'No new match details to fetch' })
+      setState({ isFetching: false, fetchComplete: true, statusMsg: 'No match details to fetch' })
       return
     }
+    setState({ isFetching: true, fetchComplete: false, statusMsg: '', fetchMsg: '', fetchProgress: 0, fetchPct: '' })
     for (var i = 0; i < total; i++) {
       var match = targets[i]
       setState({ fetchMsg: 'Fetching details ' + (i + 1) + ' of ' + total + (match.initials ? ' (' + match.initials + ')' : '') + '...' })
@@ -405,16 +408,23 @@
       if (s.profiles.length === 0) return m('.empty', 'No profiles found. Make sure you are logged into 23andMe.')
       var sel = null
       for (var pi = 0; pi < s.profiles.length; pi++) { if (s.profiles[pi].id === s.selectedProfileId) sel = s.profiles[pi] }
-      var total = Array.isArray(s.relatives) ? s.relatives.length : 0
       var sharing = Array.isArray(s.relatives) ? s.relatives.filter(function (r) { return r.is_open_sharing === true }).length : 0
       var enriched = Object.keys(s.matches).filter(function (id) { return s.matches[id] && s.matches[id].ancestry }).length
       return [
         m('.label', [
           'Select a profile',
-          m('.badge', [m('span.count', sel ? (sel.initials || '?') : '?'), ' PROFILE']),
-          m('.badge', [m('span.count', total), ' RELATIVES']),
-          m('.badge', [m('span.count', sharing), ' SHARING']),
-          m('.badge', [m('span.count', enriched), ' DETAILS'])
+          s.selectedProfileId ? [
+            m('.badge', [m('span.count', sel ? (sel.initials || '?') : '?'), ' PROFILE']),
+            s.matchCount ? m('.badge', [
+              m.trust('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28" width="16" height="16" fill="none"><circle cx="10" cy="9" r="3.5" stroke="#94a3b8" stroke-width="2"/><circle cx="18" cy="9" r="3.5" stroke="#94a3b8" stroke-width="2"/><path d="M4 23c0-4 2-6.5 6-6.5s6 2.5 6 6.5" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/><path d="M14 23c0-4 2-6.5 6-6.5s6 2.5 6 6.5" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/></svg>'),
+              m('span.count', s.matchCount.count ? s.matchCount.count.toLocaleString() : '?'),
+              ' MATCHES'
+            ]) : null,
+            s.matchCount && s.matchCount.error ? m('.badge', { style: { color: '#f87171' } }, s.matchCount.error) : null,
+            s.matchCountLoading ? m('.badge', m('.spinner-ring', { style: { width: '12px', height: '12px', borderWidth: '2px', display: 'inline-block', verticalAlign: 'middle' } })) : null,
+            m('.badge', [m('span.count', sharing), ' SHARING']),
+            m('.badge', [m('span.count', enriched), ' DETAILS'])
+          ] : null
         ]),
         m('.select-row', [
           m('select#testSelect', {
@@ -444,12 +454,12 @@
             }
           }, m.trust('<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>')) : null
         ]),
-        m('.fetch-row', [
+        s.selectedProfileId ? m('.fetch-row', [
           m('button.btn.fetch-list-btn', {
-            disabled: s.isFetching,
-            onclick: function () { if (!s.isFetching) doFetch() }
-          }, s.isFetching ? [m('.spinner-ring', { style: { width: '16px', height: '16px', borderWidth: '2px' } }), ' Fetching...'] : [m.trust('<span>&#x25B6;</span>'), ' ' + (s.fetchComplete ? 'Check for new matches' : 'Fetch')])
-        ]),
+            disabled: s.isFetching || s.matchCountLoading,
+            onclick: function () { if (s.isFetching || s.matchCountLoading) return; if (s.fetchComplete) { fetchMatchCount().then(doFetch) } else { doFetch() } }
+          }, s.isFetching ? [m('.spinner-ring', { style: { width: '16px', height: '16px', borderWidth: '2px' } }), ' Fetching...'] : [m.trust('<span>&#x25B6;</span>'), ' ' + (s.fetchComplete ? 'Check for new matches' : 'Fetch match details')])
+        ]) : null,
         s.fetchMsg ? m('#fetchStatus', { style: { textAlign: 'center', padding: '6px 0' } }, [
           m('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' } }, [
             m.trust('<svg class="helix-svg" viewBox="0 0 18 18" width="18" height="18"><g><animateTransform attributeName="transform" type="rotate" from="0 9 9" to="360 9 9" dur="2s" repeatCount="indefinite"/><path d="M2,4 C4,1 7,1 9,4 C11,7 14,7 16,4" stroke="#3b82f6" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M2,14 C4,17 7,17 9,14 C11,11 14,11 16,14" stroke="#60a5fa" stroke-width="1.5" fill="none" stroke-linecap="round" opacity=".6"/><line x1="2" y1="4" x2="2" y2="14" stroke="#60a5fa" stroke-width=".7" opacity=".35"/><line x1="5.5" y1="2.5" x2="5.5" y2="15.5" stroke="#60a5fa" stroke-width=".7" opacity=".35"/><line x1="9" y1="4" x2="9" y2="14" stroke="#60a5fa" stroke-width=".7" opacity=".35"/><line x1="12.5" y1="5.5" x2="12.5" y2="12.5" stroke="#60a5fa" stroke-width=".7" opacity=".35"/><line x1="16" y1="4" x2="16" y2="14" stroke="#60a5fa" stroke-width=".7" opacity=".35"/></g></svg>'),
@@ -519,7 +529,7 @@
   var MatchList = {
     view: function () {
       var list = buildMatchList()
-      if (list.length === 0) return m('.empty', s.isFetching ? 'Fetching...' : (s.fetchComplete ? 'No relatives found for this profile.' : 'Select a profile and click Fetch to get started.'))
+      if (list.length === 0) return m('.empty', !s.selectedProfileId ? 'Select a profile to begin.' : (s.isFetching ? 'Fetching...' : (s.fetchComplete ? 'No relatives found for this profile.' : 'Select a profile and click Fetch to get started.')))
       var key = computeFilterKey(list)
       if (key !== _filterCache.key || list !== _filterCache.list) {
         _filterCache.key = key

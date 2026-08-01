@@ -406,24 +406,17 @@
       if (s.loading) return m('.spinner', [m('.spinner-ring'), m('.spinner-text', 'Loading...')])
       if (s.profiles.length === 0 && s.statusMsg) return m('.error', s.statusMsg)
       if (s.profiles.length === 0) return m('.empty', 'No profiles found. Make sure you are logged into 23andMe.')
-      var sel = null
-      for (var pi = 0; pi < s.profiles.length; pi++) { if (s.profiles[pi].id === s.selectedProfileId) sel = s.profiles[pi] }
-      var sharing = Array.isArray(s.relatives) ? s.relatives.filter(function (r) { return r.is_open_sharing === true }).length : 0
-      var enriched = Object.keys(s.matches).filter(function (id) { return s.matches[id] && s.matches[id].ancestry }).length
       return [
         m('.label', [
           'Select a profile',
           s.selectedProfileId ? [
-            m('.badge', [m('span.count', sel ? (sel.initials || '?') : '?'), ' PROFILE']),
             s.matchCount ? m('.badge', [
               m.trust('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28" width="16" height="16" fill="none"><circle cx="10" cy="9" r="3.5" stroke="#94a3b8" stroke-width="2"/><circle cx="18" cy="9" r="3.5" stroke="#94a3b8" stroke-width="2"/><path d="M4 23c0-4 2-6.5 6-6.5s6 2.5 6 6.5" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/><path d="M14 23c0-4 2-6.5 6-6.5s6 2.5 6 6.5" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/></svg>'),
               m('span.count', s.matchCount.count ? s.matchCount.count.toLocaleString() : '?'),
               ' MATCHES'
             ]) : null,
             s.matchCount && s.matchCount.error ? m('.badge', { style: { color: '#f87171' } }, s.matchCount.error) : null,
-            s.matchCountLoading ? m('.badge', m('.spinner-ring', { style: { width: '12px', height: '12px', borderWidth: '2px', display: 'inline-block', verticalAlign: 'middle' } })) : null,
-            m('.badge', [m('span.count', sharing), ' SHARING']),
-            m('.badge', [m('span.count', enriched), ' DETAILS'])
+            s.matchCountLoading ? m('.badge', m('.spinner-ring', { style: { width: '12px', height: '12px', borderWidth: '2px', display: 'inline-block', verticalAlign: 'middle' } })) : null
           ] : null
         ]),
         m('.select-row', [
@@ -458,7 +451,7 @@
           m('button.btn.fetch-list-btn', {
             disabled: s.isFetching || s.matchCountLoading,
             onclick: function () { if (s.isFetching || s.matchCountLoading) return; if (s.fetchComplete) { fetchMatchCount().then(doFetch) } else { doFetch() } }
-          }, s.isFetching ? [m('.spinner-ring', { style: { width: '16px', height: '16px', borderWidth: '2px' } }), ' Fetching...'] : [m.trust('<span>&#x25B6;</span>'), ' ' + (s.fetchComplete ? 'Check for new matches' : 'Fetch match details')])
+          }, s.isFetching ? [m('.spinner-ring', { style: { width: '16px', height: '16px', borderWidth: '2px' } }), ' Fetching...'] : [m.trust('<span>&#x25B6;</span>'), ' ' + (s.fetchComplete ? 'Check for new matches' : 'Fetch')])
         ]) : null,
         s.fetchMsg ? m('#fetchStatus', { style: { textAlign: 'center', padding: '6px 0' } }, [
           m('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' } }, [

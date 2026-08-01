@@ -367,15 +367,29 @@
       .filter(function (m) { return m && m.ancestry })
   }
 
-  function collectSubRegionLabels(regions, set, depth) {
-    if (!regions) return
-    for (var key in regions) {
-      var arr = regions[key]
-      for (var i = 0; i < arr.length; i++) {
-        var node = arr[i]
-        if (node.label && !set[node.label]) set[node.label] = { depth: depth }
-        collectSubRegionLabels(node.regions, set, depth + 1)
+  function collectTree(nodes, parentLabel, g) {
+    if (!nodes) return
+    for (var i = 0; i < nodes.length; i++) {
+      var node = nodes[i]
+      if (!node.label) continue
+      if (node.label !== parentLabel) {
+        if (!g.childrenOf[parentLabel]) g.childrenOf[parentLabel] = []
+        if (g.childrenOf[parentLabel].indexOf(node.label) === -1) g.childrenOf[parentLabel].push(node.label)
       }
+      var childNodes = []
+      if (node.regions) {
+        for (var k in node.regions) childNodes = childNodes.concat(node.regions[k])
+      }
+      collectTree(childNodes, node.label, g)
+    }
+  }
+
+  function renderRegionTreeOptions(label, depth, g, opts) {
+    var children = g.childrenOf[label] || []
+    children.sort()
+    for (var i = 0; i < children.length; i++) {
+      opts.push({ value: children[i], label: Array(depth + 2).join('\u00A0\u00A0') + children[i] })
+      renderRegionTreeOptions(children[i], depth + 1, g, opts)
     }
   }
 
@@ -414,27 +428,16 @@
       if (!ancestry || ancestry.using_latest_compute !== true) continue
       var regions = ancestry.regions
       if (!regions) continue
-      for (var parent in regions) {
-        if (!groups[parent]) groups[parent] = {}
-        groups[parent][parent] = { depth: 0 }
-        var arr = regions[parent]
-        for (var j = 0; j < arr.length; j++) {
-          if (arr[j].label) groups[parent][arr[j].label] = { depth: 1 }
-          collectSubRegionLabels(arr[j].regions, groups[parent], 2)
-        }
+      for (var topParent in regions) {
+        if (!groups[topParent]) groups[topParent] = { childrenOf: {} }
+        collectTree(regions[topParent], topParent, groups[topParent])
       }
     }
-    var parents = Object.keys(groups).sort()
-    for (var p = 0; p < parents.length; p++) {
-      var parent = parents[p]
-      var items = groups[parent]
-      opts.push({ value: parent, label: parent })
-      var keys = Object.keys(items).sort()
-      for (var k = 0; k < keys.length; k++) {
-        if (keys[k] === parent) continue
-        var depth = items[keys[k]].depth
-        opts.push({ value: keys[k], label: Array(depth + 1).join('\u00A0\u00A0') + keys[k] })
-      }
+    var topParents = Object.keys(groups).sort()
+    for (var p = 0; p < topParents.length; p++) {
+      var tp = topParents[p]
+      opts.push({ value: tp, label: tp })
+      renderRegionTreeOptions(tp, 0, groups[tp], opts)
     }
     return opts
   }

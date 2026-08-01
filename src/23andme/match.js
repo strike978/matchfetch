@@ -11,6 +11,7 @@
 
   var s = {
     matchData: null,
+    activeTab: 'ancestry',
     expandedKey: null,
     expandedTrace: false,
     hideNames: hideNames,
@@ -63,21 +64,25 @@
   }
 
   function renderGrandparentBoxes(locations) {
-    if (!locations) return m('.empty', { style: { color: '#64748b', fontSize: '13px' } }, 'No grandparent birth location data')
+    if (!locations) return null
     var keys = [
       { k: 'maternal_gma', label: 'Maternal Grandmother' },
       { k: 'maternal_gpa', label: 'Maternal Grandfather' },
       { k: 'paternal_gma', label: 'Paternal Grandmother' },
       { k: 'paternal_gpa', label: 'Paternal Grandfather' }
     ]
-    return m('.gp-grid', keys.map(function (item) {
-      var gp = locations[item.k]
+    var boxes = []
+    for (var i = 0; i < keys.length; i++) {
+      var gp = locations[keys[i].k]
       var place = gp ? [gp.city, gp.state, gp.country].filter(function (x) { return x }).join(', ') : ''
-      return m('.gp-box', [
-        m('.gp-title', item.label),
-        m('.gp-place', place ? place : m('span.muted', 'Not provided'))
-      ])
-    }))
+      if (!place) continue
+      boxes.push(m('.gp-box', [
+        m('.gp-title', keys[i].label),
+        m('.gp-place', place)
+      ]))
+    }
+    if (boxes.length === 0) return null
+    return m('.gp-grid', boxes)
   }
 
   var ProfileCard = {
@@ -90,6 +95,7 @@
       if (cm) relParts.push(m('span', [m('span.num', cm), ' cM']))
       if (cm && m2.num_segments != null) relParts.push(' across ')
       if (m2.num_segments != null) relParts.push(m('span', [m('span.num', m2.num_segments), ' segments']))
+      var gpBoxes = renderGrandparentBoxes(m2.grandparent_birth_locations)
       return m('.card.profile-card', [
         m('.match-name', [
           m('.avatar.avatar-initials.' + sexClass(m2), m2.initials || '?'),
@@ -97,15 +103,13 @@
           m('a.profile-link', { href: profileUrl, target: '_blank', title: 'Open on 23andMe' }, m.trust('<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>'))
         ]),
         m('.card-details', { style: { marginTop: '12px' } }, [
-          m('span.detail', [m('span.detail-label', 'Rel'), m('span.detail-value', titleize(m2.predicted_relationship_id))]),
-          m('span.detail', [m('span.detail-label', 'Sex'), m('span.detail-value', titleize(m2.sex))]),
-          m2.is_maternal_side ? m('span.detail', [m('span.detail-label', 'Side'), m('span.detail-value', 'Maternal')]) : null,
-          m2.is_paternal_side ? m('span.detail', [m('span.detail-label', 'Side'), m('span.detail-value', 'Paternal')]) : null,
-          m2.max_segment_length ? m('span.detail', [m('span.detail-label', 'Max seg'), m('span.detail-value', m2.max_segment_length.toFixed(1) + ' cM')]) : null,
-          m2.date_opted_in ? m('span.detail', [m('span.detail-label', 'Opted in'), m('span.detail-value', m2.date_opted_in)]) : null,
+          relParts.length ? m('.rel-text', relParts) : null,
           m2.is_open_sharing === false ? m('span.detail', [m('span.detail-label', 'Sharing'), m('span.detail-value', 'Not sharing')]) : null
         ]),
-        relParts.length ? m('.rel-text', relParts) : null
+        gpBoxes ? [
+          m('.label', { style: { marginTop: '16px' } }, 'Grandparent Birth Locations'),
+          gpBoxes
+        ] : null
       ])
     }
   }
@@ -156,19 +160,8 @@
       var trace = ancestry.trace
       if ((!regions || Object.keys(regions).length === 0) && (!trace || trace.length === 0)) return null
       return m('.card', [
-        m('.label', 'Ancestry Composition'),
         regions && Object.keys(regions).length > 0 ? renderRegionTree(regions, 0) : null,
         trace && trace.length > 0 ? renderTraceSection(trace) : null
-      ])
-    }
-  }
-
-  var GrandparentsPanel = {
-    view: function () {
-      if (!s.matchData.grandparent_birth_locations) return null
-      return m('.card', [
-        m('.label', 'Grandparent Birth Locations'),
-        renderGrandparentBoxes(s.matchData.grandparent_birth_locations)
       ])
     }
   }
@@ -189,6 +182,20 @@
     }
   }
 
+  var Tabs = {
+    view: function () {
+      var hg = s.matchData.ancestry && s.matchData.ancestry.haplogroups
+      var hasHg = !!(hg && (hg.ydna || hg.mtdna))
+      var tabs = ['ancestry']
+      if (hasHg) tabs.push('haplogroups')
+      return m('.tabs', tabs.map(function (tab) {
+        return m('button.tab' + (s.activeTab === tab ? '.active' : ''), {
+          onclick: function () { setState({ activeTab: tab }) }
+        }, tab === 'ancestry' ? 'Regions' : 'Haplogroups')
+      }))
+    }
+  }
+
   var MatchDetail = {
     oninit: function () {
       DB.getSession(guid, '23andme').then(function (session) {
@@ -205,9 +212,9 @@
       return [
         m(Modal),
         m(ProfileCard),
-        m(HaplogroupsPanel),
-        m(RegionsPanel),
-        m(GrandparentsPanel)
+        m(Tabs),
+        m('.tab-content', { style: { display: s.activeTab === 'ancestry' ? '' : 'none' } }, m(RegionsPanel)),
+        m('.tab-content', { style: { display: s.activeTab === 'haplogroups' ? '' : 'none' } }, m(HaplogroupsPanel))
       ]
     }
   }

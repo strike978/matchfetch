@@ -29,6 +29,10 @@ body {
 .gender-f { background: #ec4899; }
 .gender-n { background: #64748b; }
 .section-title { font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .6px; padding: 12px 0 8px; }
+.tabs { display: flex; gap: 4px; margin-bottom: 16px; background: #1a2332; border-radius: 10px; padding: 4px; border: 1px solid #253044; }
+.tab { flex: 1; padding: 8px; border: none; background: transparent; color: #94a3b8; font-size: 13px; font-weight: 600; cursor: pointer; border-radius: 8px; transition: all .15s; font-family: inherit; }
+.tab:hover { color: #e2e8f0; background: rgba(255,255,255,.04); }
+.tab.active { background: #3b82f6; color: #fff; }
 .spinner { display: flex; flex-direction: column; align-items: center; padding: 48px; color: #64748b; gap: 12px; }
 .spinner-ring { width: 24px; height: 24px; border: 3px solid #253044; border-top-color: #3b82f6; border-radius: 50%; animation: spin .7s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }

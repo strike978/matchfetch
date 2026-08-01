@@ -283,7 +283,11 @@
       s.matches = matches
       refreshRegionGroups()
       refreshHaploOptions()
-      setState({ matches: matches, matchCount: { count: rel.length }, matchCountLoading: false })
+      var sharingCount = 0
+      for (var si = 0; si < rel.length; si++) {
+        if (rel[si].is_open_sharing === true) sharingCount++
+      }
+      setState({ matches: matches, matchCount: { count: sharingCount }, matchCountLoading: false })
       if (typeof DB !== 'undefined') DB.saveMatches(s.selectedProfileId, Object.keys(matches).map(function (id) { return matches[id] }), '23andme')
     } catch (err) {
       setState({ matchCount: { error: friendlyError(err.message) }, matchCountLoading: false })
@@ -653,6 +657,11 @@
       if (s.loading) return m('.spinner', [m('.spinner-ring'), m('.spinner-text', 'Loading...')])
       if (s.profiles.length === 0 && s.statusMsg) return m('.error', s.statusMsg)
       if (s.profiles.length === 0) return m('.empty', 'No profiles found. Make sure you are logged into 23andMe.')
+      var enriched = 0
+      var matchIds = Object.keys(s.matches)
+      for (var ei = 0; ei < matchIds.length; ei++) {
+        if (s.matches[matchIds[ei]] && s.matches[matchIds[ei]].ancestry) enriched++
+      }
       return [
         m('.label', [
           'Select a profile',
@@ -661,6 +670,11 @@
               m.trust('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28" width="16" height="16" fill="none"><circle cx="10" cy="9" r="3.5" stroke="#94a3b8" stroke-width="2"/><circle cx="18" cy="9" r="3.5" stroke="#94a3b8" stroke-width="2"/><path d="M4 23c0-4 2-6.5 6-6.5s6 2.5 6 6.5" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/><path d="M14 23c0-4 2-6.5 6-6.5s6 2.5 6 6.5" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/></svg>'),
               m('span.count', s.matchCount.count ? s.matchCount.count.toLocaleString() : '?'),
               ' MATCHES'
+            ]) : null,
+            s.matchCount ? m('.badge', [
+              m.trust('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'),
+              m('span.count', enriched.toLocaleString()),
+              ' matches'
             ]) : null,
             s.matchCount && s.matchCount.error ? m('.badge', { style: { color: '#f87171' } }, s.matchCount.error) : null,
             s.matchCountLoading ? m('.badge', m('.spinner-ring', { style: { width: '12px', height: '12px', borderWidth: '2px', display: 'inline-block', verticalAlign: 'middle' } })) : null

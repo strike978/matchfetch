@@ -13,7 +13,7 @@
     fetchProgress: 0,
     fetchComplete: false,
     showFilterBody: false,
-    filters: { name: '', pctMin: null, pctMax: null, segMin: null, side: '' },
+    filters: { name: '', cmMin: null, cmMax: null, side: '' },
     currentPage: 1,
     pageSize: 20,
     hideNames: false,
@@ -320,10 +320,9 @@
       var n = ((m.first_name || '') + ' ' + (m.last_name || '') + ' ' + (m.initials || '')).toLowerCase()
       if (n.indexOf(f.name.toLowerCase()) === -1) return false
     }
-    var pct = (m.ibd_proportion || 0) * 100
-    if (f.pctMin != null && pct < f.pctMin) return false
-    if (f.pctMax != null && pct > f.pctMax) return false
-    if (f.segMin != null && (m.num_segments || 0) < f.segMin) return false
+    var cm = m.ibd_proportion != null ? Math.round(m.ibd_proportion * 6800) : null
+    if (f.cmMin != null && (cm == null || cm < f.cmMin)) return false
+    if (f.cmMax != null && (cm == null || cm > f.cmMax)) return false
     if (f.side) {
       if (f.side === 'maternal' && m.is_maternal_side !== true) return false
       if (f.side === 'paternal' && m.is_paternal_side !== true) return false
@@ -342,15 +341,14 @@
 
   function computeFilterKey(list) {
     var f = s.filters
-    return s.sortBy + '|' + (list ? list.length : 0) + '|' + (f.name || '') + '|' + (f.pctMin || '') + '|' + (f.pctMax || '') + '|' + (f.segMin || '') + '|' + (f.side || '') + '|v' + _dataVersion
+    return s.sortBy + '|' + (list ? list.length : 0) + '|' + (f.name || '') + '|' + (f.cmMin || '') + '|' + (f.cmMax || '') + '|' + (f.side || '') + '|v' + _dataVersion
   }
 
   function readFilters() {
     var f = s.filters
     f.name = document.getElementById('filterName') ? document.getElementById('filterName').value : ''
-    f.pctMin = parseFloat(document.getElementById('filterPctMin') ? document.getElementById('filterPctMin').value : '') || null
-    f.pctMax = parseFloat(document.getElementById('filterPctMax') ? document.getElementById('filterPctMax').value : '') || null
-    f.segMin = parseFloat(document.getElementById('filterSegMin') ? document.getElementById('filterSegMin').value : '') || null
+    f.cmMin = parseFloat(document.getElementById('filterCmMin') ? document.getElementById('filterCmMin').value : '') || null
+    f.cmMax = parseFloat(document.getElementById('filterCmMax') ? document.getElementById('filterCmMax').value : '') || null
     f.side = document.getElementById('filterSide') ? document.getElementById('filterSide').value : ''
   }
 
@@ -520,12 +518,11 @@
           m('.filter-row', [
             m('label.filter-group', ['Name ', m('input#filterName.filter-input', { type: 'text', placeholder: 'Filter by name', oninput: function () { applyFilterChange(); m.redraw() } })]),
             m('label.filter-group', [
-              'Shared % ',
-              m('input#filterPctMin.filter-input.filter-cm', { type: 'number', placeholder: 'min', min: 0, oninput: function () { applyFilterChange(); m.redraw() } }),
+              'cM ',
+              m('input#filterCmMin.filter-input.filter-cm', { type: 'number', placeholder: 'min', min: 0, oninput: function () { applyFilterChange(); m.redraw() } }),
               m('span.filter-sep', '\u2013'),
-              m('input#filterPctMax.filter-input.filter-cm', { type: 'number', placeholder: 'max', max: 100, oninput: function () { applyFilterChange(); m.redraw() } })
+              m('input#filterCmMax.filter-input.filter-cm', { type: 'number', placeholder: 'max', min: 0, oninput: function () { applyFilterChange(); m.redraw() } })
             ]),
-            m('label.filter-group', ['Segments \u2265 ', m('input#filterSegMin.filter-input.filter-cm', { type: 'number', placeholder: '0', min: 0, oninput: function () { applyFilterChange(); m.redraw() } })]),
             m('span.filter-group', [
               'Side ',
               m('select#filterSide.filter-select', { style: { width: '120px' }, value: s.filters.side, onchange: function (e) { s.filters.side = e.target.value; applyFilterChange(); m.redraw() } }, [
@@ -537,11 +534,10 @@
             m('span#filterReset.filter-clear', {
               onclick: function () {
                 if (document.getElementById('filterName')) document.getElementById('filterName').value = ''
-                if (document.getElementById('filterPctMin')) document.getElementById('filterPctMin').value = ''
-                if (document.getElementById('filterPctMax')) document.getElementById('filterPctMax').value = ''
-                if (document.getElementById('filterSegMin')) document.getElementById('filterSegMin').value = ''
+                if (document.getElementById('filterCmMin')) document.getElementById('filterCmMin').value = ''
+                if (document.getElementById('filterCmMax')) document.getElementById('filterCmMax').value = ''
                 if (document.getElementById('filterSide')) document.getElementById('filterSide').value = ''
-                s.filters = { name: '', pctMin: null, pctMax: null, segMin: null, side: '' }
+                s.filters = { name: '', cmMin: null, cmMax: null, side: '' }
                 s.currentPage = 1
                 m.redraw()
               }

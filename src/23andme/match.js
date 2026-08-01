@@ -103,7 +103,7 @@
       var gpBoxes = renderGrandparentBoxes(m2.grandparent_birth_locations)
       return m('.card.profile-card', [
         m('.match-name', [
-          m('.avatar.avatar-initials.' + sexClass(m2), m2.initials || '?'),
+          m2.profile_image_url ? m('a', { href: m2.profile_image_url, target: '_blank', title: 'Open photo' }, m('img.avatar', { src: m2.profile_image_url })) : m('.avatar.avatar-initials.' + sexClass(m2), m2.initials || '?'),
           m('span', displayName(m2)),
           m('a.profile-link', { href: profileUrl, target: '_blank', title: 'Open on 23andMe' }, m.trust('<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>'))
         ]),
@@ -124,7 +124,6 @@
       var hg = s.matchData.ancestry && s.matchData.ancestry.haplogroups
       if (!hg || (!hg.ydna && !hg.mtdna)) return null
       return m('.card', [
-        m('.label', 'Haplogroups'),
         m('.hg-card', [
           hg.ydna ? m('.hg-box', [m('.hg-label', 'Y-DNA'), m('.hg-value', hg.ydna)]) : null,
           hg.mtdna ? m('.hg-box.mt', [m('.hg-label', 'mtDNA'), m('.hg-value', hg.mtdna)]) : null

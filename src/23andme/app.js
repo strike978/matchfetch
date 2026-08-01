@@ -839,7 +839,7 @@
         onclick: function () { if (s.selectedProfileId && m2.relative_profile_id) window.open('match.html?guid=' + s.selectedProfileId + '&sampleId=' + m2.relative_profile_id + (s.hideNames ? '&hideNames=1' : ''), '_blank') }
       }, [
         m('.card-top', [
-          m('.avatar.avatar-initials.' + sexClass(m2), m2.initials || '?'),
+          m2.profile_image_url ? m('img.avatar', { src: m2.profile_image_url }) : m('.avatar.avatar-initials.' + sexClass(m2), m2.initials || '?'),
           m('span.card-name', displayName(m2)),
           m2.is_open_sharing === false ? m('span.card-initials', 'Not sharing') : null
         ]),

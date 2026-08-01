@@ -125,12 +125,28 @@
 
   var RegionsPanel = {
     view: function () {
-      var regions = s.matchData.ancestry && s.matchData.ancestry.regions
-      if (!regions || Object.keys(regions).length === 0) return null
-      return m('.card', [
-        m('.label', 'Ancestry Composition'),
-        renderRegionTree(regions, 0)
-      ])
+      var ancestry = s.matchData.ancestry || {}
+      var regions = ancestry.regions
+      var trace = ancestry.trace
+      if ((!regions || Object.keys(regions).length === 0) && (!trace || trace.length === 0)) return null
+      return [
+        regions && Object.keys(regions).length > 0 ? m('.card', [
+          m('.label', 'Ancestry Composition'),
+          renderRegionTree(regions, 0)
+        ]) : null,
+        trace && trace.length > 0 ? m('.card', [
+          m('.label', 'Trace Ancestry'),
+          trace.map(function (t) {
+            return m('.region-item', { key: t.id }, [
+              m('.region-header', { style: { borderLeft: '3px solid ' + (t.color || '#3b82f6') } }, [
+                m('span.region-toggle', ''),
+                m('span.region-name', t.label),
+                m('span.region-pct', t.totalPercent + '%')
+              ])
+            ])
+          })
+        ]) : null
+      ]
     }
   }
 

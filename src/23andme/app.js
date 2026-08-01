@@ -119,7 +119,7 @@
 
   function extractNodes(node, allNodes) {
     if (node.totalPercent && parseFloat(node.totalPercent) > 0 && node.id !== 'root') {
-      allNodes.push({ id: node.id, label: node.label, totalPercent: node.totalPercent, color: node.color, parent_id: node.parent_id })
+      allNodes.push({ id: node.id, label: node.label, totalPercent: node.totalPercent, color: node.color, parent_id: node.parent_id, is_trace: node.is_trace === true })
     }
     if (node.children && Array.isArray(node.children)) {
       for (var i = 0; i < node.children.length; i++) extractNodes(node.children[i], allNodes)
@@ -148,6 +148,32 @@
       if (Object.keys(nodeMap[id].regions).length === 0) delete nodeMap[id].regions
     }
     return result
+  }
+
+  function buildRegions(nodes) {
+    var trace = []
+    var main = []
+    var parentOf = {}
+    for (var i = 0; i < nodes.length; i++) {
+      var n = nodes[i]
+      parentOf[n.id] = n.parent_id
+      if (n.is_trace) trace.push(n)
+      else main.push(n)
+    }
+    var traceSum = {}
+    for (var t = 0; t < trace.length; t++) {
+      var pid = trace[t].parent_id
+      while (pid) {
+        traceSum[pid] = (traceSum[pid] || 0) + parseFloat(trace[t].totalPercent)
+        pid = parentOf[pid]
+      }
+    }
+    trace.sort(function (a, b) { return parseFloat(b.totalPercent) - parseFloat(a.totalPercent) })
+    var kept = []
+    for (var m = 0; m < main.length; m++) {
+      if (parseFloat(main[m].totalPercent) - (traceSum[main[m].id] || 0) > 0.005) kept.push(main[m])
+    }
+    return { regions: buildHierarchy(kept), trace: trace }
   }
 
   function findPopulationTree(data, targetProfileId) {
@@ -200,9 +226,9 @@
       var tree = findPopulationTree(data, match.relative_profile_id)
       if (tree) {
         var nodes = extractNodes(tree.population_tree, [])
-        var regions = buildHierarchy(nodes)
+        var built = buildRegions(nodes)
         var haplogroups = await fetchHaplogroups(match.relative_profile_id)
-        enriched.ancestry = { using_latest_compute: tree.using_latest_compute, haplogroups: haplogroups, regions: regions }
+        enriched.ancestry = { using_latest_compute: tree.using_latest_compute, haplogroups: haplogroups, regions: built.regions, trace: built.trace }
       } else {
         enriched.ancestry_error = 'No ancestry composition data for this match'
       }

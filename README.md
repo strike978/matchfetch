@@ -22,7 +22,7 @@ Fetch and explore your DNA match data from **AncestryDNA** and **23andMe**.
 1. Download or clone this repo
 2. Open Chrome and go to `chrome://extensions`
 3. Enable **Developer mode** (toggle in the top right)
-4. Click **Load unpacked** and select the `matchfetch_ext` folder
+4. Click **Load unpacked** and select the `matchfetch-main` folder
 5. The MatchFetch icon will appear in your toolbar
 
 ## Usage

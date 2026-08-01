@@ -799,6 +799,9 @@
                 if (document.getElementById('filterMtdna')) document.getElementById('filterMtdna').value = ''
                 if (document.getElementById('filterSide')) document.getElementById('filterSide').value = ''
                 s.filters = { name: '', cmMin: null, cmMax: null, side: '', regions: [{ region: '', min: null, max: null }], ydna: '', mtdna: '' }
+                s._activeRegionFilters = []
+                _filterCache = { key: '', sorted: [], filtered: [] }
+                _dataVersion++
                 s.currentPage = 1
                 m.redraw()
               }

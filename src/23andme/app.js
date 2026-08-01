@@ -213,9 +213,19 @@
     }
   }
 
+  var RELATIVE_FIELDS = ['relative_profile_id', 'tree_node_id', 'date_opted_in', 'first_name', 'last_name', 'initials', 'profile_image_url', 'grandparent_birth_locations', 'ibd_proportion', 'max_segment_length', 'num_segments', 'is_maternal_side', 'is_paternal_side', 'is_open_sharing', 'predicted_relationship_id', 'sex', 'surnames']
+
+  function pickRelativeFields(match) {
+    var out = {}
+    for (var i = 0; i < RELATIVE_FIELDS.length; i++) {
+      var f = RELATIVE_FIELDS[i]
+      if (match[f] !== undefined) out[f] = match[f]
+    }
+    return out
+  }
+
   async function fetchMatchDetails(match) {
-    var enriched = {}
-    for (var k in match) enriched[k] = match[k]
+    var enriched = pickRelativeFields(match)
     try {
       await delay(FETCH_DELAY)
       var ancestryUrl = 'https://you.23andme.com/p/' + s.selectedProfileId + '/profile/' + match.relative_profile_id + '/ancestry_composition/?sort_by=remote&include_ibd_countries=false'
@@ -260,7 +270,7 @@
         headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
       })
       console.log('[MatchFetch 23] relatives type:', Array.isArray(data) ? 'array(' + data.length + ')' : typeof data)
-      var rel = Array.isArray(data) ? data : []
+      var rel = (Array.isArray(data) ? data : []).map(pickRelativeFields)
       s.relatives = rel
       setState({ relatives: rel, matchCount: { count: rel.length }, matchCountLoading: false })
       if (typeof DB !== 'undefined') DB.saveRelatives(s.selectedProfileId, rel, '23andme')

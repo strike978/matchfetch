@@ -13,7 +13,7 @@
     fetchProgress: 0,
     fetchComplete: false,
     showFilterBody: false,
-    filters: { name: '', cmMin: null, cmMax: null, side: '' },
+    filters: { name: '', cmMin: null, cmMax: null, side: '', regions: [{ region: '', min: null, max: null }], ydna: '', mtdna: '' },
     currentPage: 1,
     pageSize: 20,
     hideNames: false,
@@ -103,7 +103,10 @@
 
   async function onProfileSelect(id) {
     if (!id) return
-    setState({ selectedProfileId: id, matches: {}, matchCount: null, matchCountLoading: false, isFetching: false, fetchComplete: false, statusMsg: '', fetchMsg: '', fetchProgress: 0, fetchPct: '', currentPage: 1 })
+    _filterCache = { key: '', sorted: [], filtered: [] }
+    _regionGroupsCache = null
+    _haploOptionsCache = null
+    setState({ selectedProfileId: id, matches: {}, matchCount: null, matchCountLoading: false, isFetching: false, fetchComplete: false, statusMsg: '', fetchMsg: '', fetchProgress: 0, fetchPct: '', currentPage: 1, filters: { name: '', cmMin: null, cmMax: null, side: '', regions: [{ region: '', min: null, max: null }], ydna: '', mtdna: '' } })
     await loadSaved()
     await fetchMatchCount()
   }
@@ -275,9 +278,11 @@
         var m = rel[i]
         if (!m.relative_profile_id) continue
         var existing = s.matches[m.relative_profile_id]
-        matches[m.relative_profile_id] = existing ? Object.assign(m, existing) : m
+        matches[m.relative_profile_id] = existing ? Object.assign({}, existing, m) : m
       }
       s.matches = matches
+      refreshRegionGroups()
+      refreshHaploOptions()
       setState({ matches: matches, matchCount: { count: rel.length }, matchCountLoading: false })
       if (typeof DB !== 'undefined') DB.saveMatches(s.selectedProfileId, Object.keys(matches).map(function (id) { return matches[id] }), '23andme')
     } catch (err) {
@@ -311,6 +316,8 @@
       setProgress(i + 1, total)
       await delay(FETCH_DELAY)
     }
+    refreshRegionGroups()
+    refreshHaploOptions()
     setState({ isFetching: false, fetchMsg: '', fetchPct: '', fetchComplete: true, statusMsg: 'Fetched details for ' + total + ' match(es)' })
   }
 
@@ -327,6 +334,25 @@
       if (f.side === 'maternal' && m.is_maternal_side !== true) return false
       if (f.side === 'paternal' && m.is_paternal_side !== true) return false
     }
+    if (s._activeRegionFilters && s._activeRegionFilters.length) {
+      for (var fi = 0; fi < s._activeRegionFilters.length; fi++) {
+        var rf = s._activeRegionFilters[fi]
+        var a = m.ancestry
+        if (!a || a.using_latest_compute !== true) return false
+        var pct = regionPct(m, rf.region)
+        if (pct == null) return false
+        if (rf.min != null && pct < rf.min) return false
+        if (rf.max != null && pct > rf.max) return false
+      }
+    }
+    if (f.ydna) {
+      var yd = m.ancestry && m.ancestry.haplogroups && m.ancestry.haplogroups.ydna
+      if (!yd || yd !== f.ydna) return false
+    }
+    if (f.mtdna) {
+      var mt = m.ancestry && m.ancestry.haplogroups && m.ancestry.haplogroups.mtdna
+      if (!mt || mt !== f.mtdna) return false
+    }
     return true
   }
 
@@ -336,12 +362,125 @@
   }
 
   function buildMatchList() {
-    return Object.keys(s.matches).map(function (id) { return s.matches[id] })
+    return Object.keys(s.matches)
+      .map(function (id) { return s.matches[id] })
+      .filter(function (m) { return m && m.ancestry })
+  }
+
+  function collectSubRegionLabels(regions, set, depth) {
+    if (!regions) return
+    for (var key in regions) {
+      var arr = regions[key]
+      for (var i = 0; i < arr.length; i++) {
+        var node = arr[i]
+        if (node.label && !set[node.label]) set[node.label] = { depth: depth }
+        collectSubRegionLabels(node.regions, set, depth + 1)
+      }
+    }
+  }
+
+  var _regionGroupsCache = null
+
+  function regionPct(m, label) {
+    var a = m.ancestry
+    var total = 0
+    var found = false
+    function walk(regions) {
+      if (!regions) return
+      for (var key in regions) {
+        var arr = regions[key]
+        for (var i = 0; i < arr.length; i++) {
+          var node = arr[i]
+          if (node.label === label) { found = true; total += parseFloat(node.totalPercent) || 0 }
+          walk(node.regions)
+        }
+      }
+    }
+    walk(a && a.regions)
+    if (a && a.trace) {
+      for (var t = 0; t < a.trace.length; t++) {
+        if (a.trace[t].label === label) { found = true; total += parseFloat(a.trace[t].totalPercent) || 0 }
+      }
+    }
+    return found ? total : null
+  }
+
+  function buildRegionGroups() {
+    var opts = [{ value: '', label: 'All' }]
+    var groups = {}
+    var list = buildMatchList()
+    for (var i = 0; i < list.length; i++) {
+      var ancestry = list[i].ancestry
+      if (!ancestry || ancestry.using_latest_compute !== true) continue
+      var regions = ancestry.regions
+      if (!regions) continue
+      for (var parent in regions) {
+        if (!groups[parent]) groups[parent] = {}
+        groups[parent][parent] = { depth: 0 }
+        var arr = regions[parent]
+        for (var j = 0; j < arr.length; j++) {
+          if (arr[j].label) groups[parent][arr[j].label] = { depth: 1 }
+          collectSubRegionLabels(arr[j].regions, groups[parent], 2)
+        }
+      }
+    }
+    var parents = Object.keys(groups).sort()
+    for (var p = 0; p < parents.length; p++) {
+      var parent = parents[p]
+      var items = groups[parent]
+      opts.push({ value: parent, label: parent })
+      var keys = Object.keys(items).sort()
+      for (var k = 0; k < keys.length; k++) {
+        if (keys[k] === parent) continue
+        var depth = items[keys[k]].depth
+        opts.push({ value: keys[k], label: Array(depth + 1).join('\u00A0\u00A0') + keys[k] })
+      }
+    }
+    return opts
+  }
+
+  function getRegionGroups() {
+    if (!_regionGroupsCache) _regionGroupsCache = buildRegionGroups()
+    return _regionGroupsCache
+  }
+
+  function refreshRegionGroups() {
+    _regionGroupsCache = buildRegionGroups()
+  }
+
+  var _haploOptionsCache = null
+
+  function buildHaploOptions() {
+    var ydnaSet = {}
+    var mtdnaSet = {}
+    var list = buildMatchList()
+    for (var i = 0; i < list.length; i++) {
+      var hg = list[i].ancestry && list[i].ancestry.haplogroups
+      if (!hg) continue
+      if (hg.ydna) ydnaSet[hg.ydna] = true
+      if (hg.mtdna) mtdnaSet[hg.mtdna] = true
+    }
+    return { ydna: Object.keys(ydnaSet).sort(), mtdna: Object.keys(mtdnaSet).sort() }
+  }
+
+  function getHaploOptions() {
+    if (!_haploOptionsCache) _haploOptionsCache = buildHaploOptions()
+    return _haploOptionsCache
+  }
+
+  function refreshHaploOptions() {
+    _haploOptionsCache = buildHaploOptions()
   }
 
   function computeFilterKey(list) {
     var f = s.filters
-    return s.sortBy + '|' + (list ? list.length : 0) + '|' + (f.name || '') + '|' + (f.cmMin || '') + '|' + (f.cmMax || '') + '|' + (f.side || '') + '|v' + _dataVersion
+    var rk = ''
+    if (s._activeRegionFilters) {
+      for (var i = 0; i < s._activeRegionFilters.length; i++) {
+        rk += '|' + s._activeRegionFilters[i].region + '|' + (s._activeRegionFilters[i].min || '') + '|' + (s._activeRegionFilters[i].max || '')
+      }
+    }
+    return s.sortBy + '|' + (list ? list.length : 0) + '|' + (f.name || '') + '|' + (f.cmMin || '') + '|' + (f.cmMax || '') + '|' + (f.side || '') + rk + '|' + (f.ydna || '') + '|' + (f.mtdna || '') + '|v' + _dataVersion
   }
 
   function readFilters() {
@@ -350,11 +489,87 @@
     f.cmMin = parseFloat(document.getElementById('filterCmMin') ? document.getElementById('filterCmMin').value : '') || null
     f.cmMax = parseFloat(document.getElementById('filterCmMax') ? document.getElementById('filterCmMax').value : '') || null
     f.side = document.getElementById('filterSide') ? document.getElementById('filterSide').value : ''
+    f.ydna = document.getElementById('filterYdna') ? document.getElementById('filterYdna').value : ''
+    f.mtdna = document.getElementById('filterMtdna') ? document.getElementById('filterMtdna').value : ''
+    var rows = document.querySelectorAll('#regionFilters .region-row')
+    s._activeRegionFilters = []
+    for (var ri = 0; ri < rows.length; ri++) {
+      var rowSel = rows[ri].querySelector('.region-select')
+      var minEl = rows[ri].querySelector('.region-pct-min')
+      var maxEl = rows[ri].querySelector('.region-pct-max')
+      var region = rowSel ? rowSel.value : ''
+      if (!region) continue
+      var minV = parseFloat(minEl.value)
+      var maxV = parseFloat(maxEl.value)
+      s._activeRegionFilters.push({ region: region, min: isNaN(minV) ? null : minV, max: isNaN(maxV) ? null : maxV })
+    }
   }
 
   function applyFilterChange() {
     readFilters()
     s.currentPage = 1
+  }
+
+  function renderRegionFilterRows() {
+    var filters = s.filters.regions && s.filters.regions.length ? s.filters.regions : [{ region: '', min: null, max: null }]
+    var opts = getRegionGroups()
+    return filters.map(function (f, idx) {
+      return m('span.region-row', { key: idx, 'data-idx': idx }, [
+        m('select.region-select.filter-select', {
+          'data-idx': idx,
+          style: { width: '200px' },
+          value: f.region,
+          onfocus: function () { refreshRegionGroups(); m.redraw() },
+          onchange: function (e) {
+            s.filters.regions[idx] = s.filters.regions[idx] || { region: '', min: null, max: null }
+            s.filters.regions[idx].region = e.target.value
+            applyFilterChange()
+            m.redraw()
+          }
+        }, opts.map(function (o) { return m('option', { value: o.value }, o.label) })),
+        m('span.filter-sep', { style: { margin: '0 2px' } }, '%'),
+        m('input.region-pct-min.filter-input.filter-cm', {
+          type: 'number', placeholder: 'min', min: 0, 'data-idx': idx,
+          value: f.min != null ? f.min : '',
+          oninput: function (e) {
+            s.filters.regions[idx] = s.filters.regions[idx] || { region: '', min: null, max: null }
+            var v = parseFloat(e.target.value)
+            s.filters.regions[idx].min = isNaN(v) ? null : v
+            applyFilterChange()
+            m.redraw()
+          },
+          onblur: function () {
+            var v = parseFloat(this.value)
+            if (!isNaN(v)) { this.value = Math.max(0, v); s.filters.regions[idx].min = v; applyFilterChange(); m.redraw() }
+          }
+        }),
+        m('span.filter-sep', '\u2013'),
+        m('input.region-pct-max.filter-input.filter-cm', {
+          type: 'number', placeholder: 'max', min: 0, 'data-idx': idx,
+          value: f.max != null ? f.max : '',
+          oninput: function (e) {
+            s.filters.regions[idx] = s.filters.regions[idx] || { region: '', min: null, max: null }
+            var v = parseFloat(e.target.value)
+            s.filters.regions[idx].max = isNaN(v) ? null : v
+            applyFilterChange()
+            m.redraw()
+          },
+          onblur: function () {
+            var v = parseFloat(this.value)
+            if (!isNaN(v)) { this.value = Math.min(100, Math.max(0, v)); s.filters.regions[idx].max = v; applyFilterChange(); m.redraw() }
+          }
+        }),
+        m('button.region-remove.topbar-btn', {
+          'data-idx': idx,
+          style: { fontSize: '14px', padding: '2px 8px', display: filters.length === 1 ? 'none' : '' },
+          onclick: function () {
+            s.filters.regions.splice(idx, 1)
+            applyFilterChange()
+            m.redraw()
+          }
+        }, '\u2212')
+      ])
+    })
   }
 
   function displayName(m) {
@@ -469,6 +684,8 @@
                 onConfirm: function () {
                   DB.deleteSession(s.selectedProfileId, '23andme').then(function () {
                     _filterCache = { key: '', sorted: [], filtered: [] }
+                    _regionGroupsCache = null
+                    _haploOptionsCache = null
                     _dataVersion++
                     setState({ matches: {}, matchCount: null, matchCountLoading: false, fetchComplete: false, currentPage: 1, statusMsg: '', fetchMsg: '', fetchProgress: 0, fetchPct: '' })
                   })
@@ -519,9 +736,34 @@
             m('label.filter-group', ['Name ', m('input#filterName.filter-input', { type: 'text', placeholder: 'Filter by name', oninput: function () { applyFilterChange(); m.redraw() } })]),
             m('label.filter-group', [
               'cM ',
-              m('input#filterCmMin.filter-input.filter-cm', { type: 'number', placeholder: 'min', min: 0, oninput: function () { applyFilterChange(); m.redraw() } }),
+              m('input#filterCmMin.filter-input.filter-cm', { type: 'number', placeholder: 'min', min: 1, oninput: function () { applyFilterChange(); m.redraw() }, onblur: function () { var v = parseFloat(this.value); if (!isNaN(v)) { this.value = Math.max(1, v); applyFilterChange(); m.redraw() } } }),
               m('span.filter-sep', '\u2013'),
-              m('input#filterCmMax.filter-input.filter-cm', { type: 'number', placeholder: 'max', min: 0, oninput: function () { applyFilterChange(); m.redraw() } })
+              m('input#filterCmMax.filter-input.filter-cm', { type: 'number', placeholder: 'max', min: 1, oninput: function () { applyFilterChange(); m.redraw() }, onblur: function () { var v = parseFloat(this.value); if (!isNaN(v)) { this.value = Math.max(1, v); applyFilterChange(); m.redraw() } } })
+            ]),
+            m('span.filter-group', [
+              'Y-DNA ',
+              m('select#filterYdna.filter-select', { style: { width: '150px' }, value: s.filters.ydna, onfocus: function () { refreshHaploOptions(); m.redraw() }, onchange: function (e) { s.filters.ydna = e.target.value; applyFilterChange(); m.redraw() } }, [
+                m('option', { value: '' }, 'All'),
+                getHaploOptions().ydna.map(function (v) { return m('option', { value: v }, v) })
+              ])
+            ]),
+            m('span.filter-group', [
+              'mtDNA ',
+              m('select#filterMtdna.filter-select', { style: { width: '150px' }, value: s.filters.mtdna, onfocus: function () { refreshHaploOptions(); m.redraw() }, onchange: function (e) { s.filters.mtdna = e.target.value; applyFilterChange(); m.redraw() } }, [
+                m('option', { value: '' }, 'All'),
+                getHaploOptions().mtdna.map(function (v) { return m('option', { value: v }, v) })
+              ])
+            ]),
+            m('span.filter-group', [
+              'Region ',
+              m('span#regionFilters', renderRegionFilterRows()),
+              m('button#addRegionRow.topbar-btn', {
+                style: { fontSize: '14px', padding: '2px 10px' },
+                onclick: function () {
+                  s.filters.regions.push({ region: '', min: null, max: null })
+                  m.redraw()
+                }
+              }, '+')
             ]),
             m('span.filter-group', [
               'Side ',
@@ -536,8 +778,10 @@
                 if (document.getElementById('filterName')) document.getElementById('filterName').value = ''
                 if (document.getElementById('filterCmMin')) document.getElementById('filterCmMin').value = ''
                 if (document.getElementById('filterCmMax')) document.getElementById('filterCmMax').value = ''
+                if (document.getElementById('filterYdna')) document.getElementById('filterYdna').value = ''
+                if (document.getElementById('filterMtdna')) document.getElementById('filterMtdna').value = ''
                 if (document.getElementById('filterSide')) document.getElementById('filterSide').value = ''
-                s.filters = { name: '', cmMin: null, cmMax: null, side: '' }
+                s.filters = { name: '', cmMin: null, cmMax: null, side: '', regions: [{ region: '', min: null, max: null }], ydna: '', mtdna: '' }
                 s.currentPage = 1
                 m.redraw()
               }

@@ -124,18 +124,6 @@ var DB = (function() {
             });
         },
 
-        saveRelatives: function(guid, relatives, provider) {
-            var t = table(provider);
-            return db.transaction('rw', t, function() {
-                return t.get(guid).then(function(existing) {
-                    var data = existing || { guid: guid, matches: {} };
-                    data.guid = guid;
-                    data.relatives = relatives;
-                    return t.put(data);
-                });
-            });
-        },
-
         saveFetchState: function(guid, status, mode, params, nextPage, provider) {
             var t = table(provider);
             return db.transaction('rw', t, function() {

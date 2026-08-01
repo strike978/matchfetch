@@ -6,7 +6,6 @@
     matchCountLoading: false,
     loading: true,
     statusMsg: '',
-    relatives: [],
     matches: {},
     isFetching: false,
     fetchMsg: '',
@@ -104,7 +103,7 @@
 
   async function onProfileSelect(id) {
     if (!id) return
-    setState({ selectedProfileId: id, relatives: [], matches: {}, matchCount: null, matchCountLoading: false, isFetching: false, fetchComplete: false, statusMsg: '', fetchMsg: '', fetchProgress: 0, fetchPct: '', currentPage: 1 })
+    setState({ selectedProfileId: id, matches: {}, matchCount: null, matchCountLoading: false, isFetching: false, fetchComplete: false, statusMsg: '', fetchMsg: '', fetchProgress: 0, fetchPct: '', currentPage: 1 })
     await loadSaved()
     await fetchMatchCount()
   }
@@ -271,9 +270,16 @@
       })
       console.log('[MatchFetch 23] relatives type:', Array.isArray(data) ? 'array(' + data.length + ')' : typeof data)
       var rel = (Array.isArray(data) ? data : []).map(pickRelativeFields)
-      s.relatives = rel
-      setState({ relatives: rel, matchCount: { count: rel.length }, matchCountLoading: false })
-      if (typeof DB !== 'undefined') DB.saveRelatives(s.selectedProfileId, rel, '23andme')
+      var matches = {}
+      for (var i = 0; i < rel.length; i++) {
+        var m = rel[i]
+        if (!m.relative_profile_id) continue
+        var existing = s.matches[m.relative_profile_id]
+        matches[m.relative_profile_id] = existing ? Object.assign(m, existing) : m
+      }
+      s.matches = matches
+      setState({ matches: matches, matchCount: { count: rel.length }, matchCountLoading: false })
+      if (typeof DB !== 'undefined') DB.saveMatches(s.selectedProfileId, Object.keys(matches).map(function (id) { return matches[id] }), '23andme')
     } catch (err) {
       setState({ matchCount: { error: friendlyError(err.message) }, matchCountLoading: false })
     }
@@ -282,11 +288,13 @@
   async function doFetch() {
     if (!s.selectedProfileId || s.isFetching) return
     if (s.matchCountLoading) return
-    if (!Array.isArray(s.relatives)) await fetchMatchCount()
-    if (!Array.isArray(s.relatives)) return
-    var targets = s.relatives.filter(function (r) {
-      return r.is_open_sharing === true && !(s.matches[r.relative_profile_id] && s.matches[r.relative_profile_id].ancestry)
-    })
+    if (Object.keys(s.matches).length === 0) await fetchMatchCount()
+    if (Object.keys(s.matches).length === 0) return
+    var targets = []
+    for (var mi in s.matches) {
+      var m = s.matches[mi]
+      if (m.is_open_sharing === true && !m.ancestry) targets.push(m)
+    }
     var total = targets.length
     if (total === 0) {
       setState({ isFetching: false, fetchComplete: true, statusMsg: 'No match details to fetch' })
@@ -329,19 +337,7 @@
   }
 
   function buildMatchList() {
-    var list
-    if (Array.isArray(s.relatives) && s.relatives.length > 0) {
-      list = s.relatives
-    } else {
-      list = Object.keys(s.matches).map(function (id) { return s.matches[id] })
-    }
-    return list.map(function (r) {
-      var en = s.matches[r.relative_profile_id]
-      var merged = {}
-      for (var k in r) merged[k] = r[k]
-      if (en) for (var k2 in en) merged[k2] = en[k2]
-      return merged
-    })
+    return Object.keys(s.matches).map(function (id) { return s.matches[id] })
   }
 
   function computeFilterKey(list) {
@@ -474,7 +470,9 @@
                 cancelText: 'Cancel',
                 onConfirm: function () {
                   DB.deleteSession(s.selectedProfileId, '23andme').then(function () {
-                    setState({ matches: {}, fetchComplete: false, currentPage: 1, statusMsg: '' })
+                    _filterCache = { key: '', sorted: [], filtered: [] }
+                    _dataVersion++
+                    setState({ matches: {}, matchCount: null, matchCountLoading: false, fetchComplete: false, currentPage: 1, statusMsg: '', fetchMsg: '', fetchProgress: 0, fetchPct: '' })
                   })
                 }
               }

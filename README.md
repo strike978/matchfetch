@@ -1,17 +1,19 @@
 # MatchFetch
 
-Fetch, browse, and explore your AncestryDNA match data.
+Fetch and explore your DNA match data from **AncestryDNA** and **23andMe**.
 
 ![MatchFetch screenshot](screenshot.png)
 
 ## Features
 
-- **Match List** — View all matches in a card layout with photos, names, cM/segments, and journey pills. Filter by name, cM range, ancestral journeys, and ethnicity regions (with percentage ranges).
-- **Match Detail** — Click any match to see their ethnicity breakdown grouped by macro region with confidence ranges, plus a hierarchical ancestral journey tree. Both tabs include interactive Leaflet maps.
-- **Multiple Kits** — Switch between DNA kits, each stored separately in IndexedDB.
-- **Fetch Options** — By default fetches all matches. Click **Fetch options** to limit by count (first N matches) or cM range (all matches within a centimorgan window). Resume interrupted fetches.
-- **Check for New Matches** — After all matches have been fetched, click **Check for new matches** to find and fetch any new matches since the last fetch.
-- **Persistent Storage** — All match data, profiles, ethnicity estimates, and journeys are saved locally in IndexedDB via Dexie.js. No re-fetching needed after the initial load.
+- **Two providers** — Switch between AncestryDNA and 23andMe with the service toggle in the top bar. Each provider keeps its own profiles and match data, stored separately in IndexedDB.
+- **Match List** —
+  - **AncestryDNA** — view all matches in a card layout with photos, names, and cM/segments. Filter by name, cM range, ancestral journeys, and ethnicity regions (with percentage ranges).
+  - **23andMe** — view matches in a card layout with photos, names, shared cM/segments, and haplogroups. Filter by name, cM range, ancestry regions (with percentage ranges), Y-DNA/mtDNA, and side.
+- **Match Detail** — AncestryDNA: ethnicity breakdown grouped by macro region with confidence ranges, an ancestral journey tree, and interactive Leaflet maps. 23andMe: ancestry composition with a trace-ancestry section, Y-DNA and mtDNA haplogroups, and grandparent birth locations.
+- **Fetch Options** — AncestryDNA: fetch all matches, limit by count, or by cM range, with resume support. 23andMe: fetch matches and pull in ancestry composition and haplogroups for each sharing match.
+- **Check for New Matches** (AncestryDNA) — After fetching, pick up any new matches since the last fetch.
+- **Persistent Storage** — All match data is saved locally in IndexedDB via Dexie.js. No re-fetching needed after the initial load.
 - **Import / Export** — Download all data as JSON or restore from a backup.
 - **Privacy** — Toggle to hide names on cards.
 
@@ -26,15 +28,13 @@ Fetch, browse, and explore your AncestryDNA match data.
 ## Usage
 
 1. Click the MatchFetch icon in your browser toolbar
-2. Select a kit from the dropdown
-3. Click **Fetch** to get all matches, or expand **Fetch options** to choose **Count** (enter number of matches) or **cM Range** (enter min/max cM)
-4. Cards appear progressively as data is fetched. Use **Filtering options** to narrow by name, cM range, ancestral journeys, or ethnicity regions with percentage ranges
-5. Click any card to open the detail page
-6. After fetching, use **Check for new matches** to pick up any new matches
+2. Pick a provider (AncestryDNA or 23andMe) with the toggle in the top bar
+3. **AncestryDNA** — select a profile, then click **Fetch** (or expand **Fetch options** for Count / cM Range). After fetching, use **Check for new matches** to pick up any new matches.
+4. **23andMe** — select a profile, then click **Fetch** to fetch matches and pull in their ancestry and haplogroups
+5. Cards appear progressively as data is fetched. Use **Filtering options** to narrow the list
+6. Click any card to open the detail page
 7. Use **Export** to download all data as JSON, **Import** to restore a previous backup
 
 ---
 
-Created by Omar Nunez · Version 1.1.3
-
-_23andMe support coming soon._
+Created by Omar Nunez · Version 1.2.0

@@ -18,7 +18,7 @@
     currentPage: 1,
     pageSize: 20,
     hideNames: false,
-    sortBy: 'pct',
+    sortBy: 'relationship',
     modal: null,
   }
 
@@ -314,8 +314,7 @@
   }
 
   function sortMatches(a, b) {
-    if (s.sortBy === 'pct') return (b.ibd_proportion || 0) - (a.ibd_proportion || 0)
-    if (s.sortBy === 'segments') return (b.num_segments || 0) - (a.num_segments || 0)
+    if (s.sortBy === 'relationship') return (b.ibd_proportion || 0) - (a.ibd_proportion || 0)
     return String(b.date_opted_in || '').localeCompare(String(a.date_opted_in || ''))
   }
 
@@ -568,8 +567,7 @@
       return m('#matchListResult', [
         m('.sort-bar', [
           m('span.sort-label', 'Sort by:'),
-          m('button.sort-btn' + (s.sortBy === 'pct' ? '.active' : ''), { onclick: function () { setState({ sortBy: 'pct', currentPage: 1 }) } }, 'Shared %'),
-          m('button.sort-btn' + (s.sortBy === 'segments' ? '.active' : ''), { onclick: function () { setState({ sortBy: 'segments', currentPage: 1 }) } }, 'Segments'),
+          m('button.sort-btn' + (s.sortBy === 'relationship' ? '.active' : ''), { onclick: function () { setState({ sortBy: 'relationship', currentPage: 1 }) } }, 'Relationship'),
           m('button.sort-btn' + (s.sortBy === 'date' ? '.active' : ''), { onclick: function () { setState({ sortBy: 'date', currentPage: 1 }) } }, 'Date')
         ]),
         shown < total ? m('.match-count', ['Showing ', m('strong', shown), ' of ', m('strong', total), ' relatives']) : null,
@@ -584,7 +582,11 @@
       var m2 = vnode.attrs.match
       var a = m2.ancestry
       var hg = a && a.haplogroups
-      var pct = m2.ibd_proportion != null ? (m2.ibd_proportion * 100).toFixed(1) + '%' : null
+      var cm = m2.ibd_proportion != null ? Math.round(m2.ibd_proportion * 6800) : null
+      var relParts = []
+      if (cm) relParts.push(m('span', [m('span.num', cm), ' cM']))
+      if (cm && m2.num_segments != null) relParts.push(' across ')
+      if (m2.num_segments != null) relParts.push(m('span', [m('span.num', m2.num_segments), ' segments']))
       return m('.card.match-card', {
         onclick: function () { if (s.selectedProfileId && m2.relative_profile_id) window.open('match.html?guid=' + s.selectedProfileId + '&sampleId=' + m2.relative_profile_id + (s.hideNames ? '&hideNames=1' : ''), '_blank') }
       }, [
@@ -593,17 +595,10 @@
           m('span.card-name', displayName(m2)),
           m2.is_open_sharing === false ? m('span.card-initials', 'Not sharing') : null
         ]),
-        m('.card-details', [
-          m('span.detail', [m('span.detail-label', 'Rel'), m('span.detail-value', titleize(m2.predicted_relationship_id))]),
-          pct ? m('span.detail', [m('span.detail-label', 'Shared'), m('span.detail-value', pct)]) : null,
-          m2.num_segments != null ? m('span.detail', [m('span.detail-label', 'Segments'), m('span.detail-value', m2.num_segments)]) : null,
-          m2.max_segment_length ? m('span.detail', [m('span.detail-label', 'Max seg'), m('span.detail-value', m2.max_segment_length.toFixed(1))]) : null
-        ]),
+        m('.card-details', relParts.length ? m('.rel-text', relParts) : null),
         m('.journey-strip', [
-          m2.is_maternal_side ? m('span.journey-pill.side-m', 'Maternal') : null,
-          m2.is_paternal_side ? m('span.journey-pill.side-p', 'Paternal') : null,
-          hg && hg.ydna ? m('span.journey-pill', [m('span.jp-name', 'Y'), ' ', m('span.jp-pct', hg.ydna)]) : null,
-          hg && hg.mtdna ? m('span.journey-pill', [m('span.jp-name', 'mt'), ' ', m('span.jp-pct', hg.mtdna)]) : null
+          hg && hg.ydna ? m('span.journey-pill.ydna', [m('span.jp-name', 'Y-DNA'), ' ', m('span.jp-pct', hg.ydna)]) : null,
+          hg && hg.mtdna ? m('span.journey-pill.mtdna', [m('span.jp-name', 'mtDNA'), ' ', m('span.jp-pct', hg.mtdna)]) : null
         ])
       ])
     }

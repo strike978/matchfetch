@@ -12,6 +12,7 @@
   var s = {
     matchData: null,
     expandedKey: null,
+    expandedTrace: false,
     hideNames: hideNames,
     modal: null,
   }
@@ -82,12 +83,12 @@
   var ProfileCard = {
     view: function () {
       var m2 = s.matchData
-      var pct = m2.ibd_proportion != null ? (m2.ibd_proportion * 100).toFixed(1) + '%' : null
+      var cm = m2.ibd_proportion != null ? Math.round(m2.ibd_proportion * 6800) : null
       document.title = displayName(m2)
       var profileUrl = 'https://you.23andme.com/p/' + guid + '/profile/' + sampleId + '/'
       var relParts = []
-      if (pct) relParts.push(m('span', [m('span.num', pct), ' shared']))
-      if (pct && m2.num_segments != null) relParts.push(' across ')
+      if (cm) relParts.push(m('span', [m('span.num', cm), ' cM']))
+      if (cm && m2.num_segments != null) relParts.push(' across ')
       if (m2.num_segments != null) relParts.push(m('span', [m('span.num', m2.num_segments), ' segments']))
       return m('.card.profile-card', [
         m('.match-name', [
@@ -123,30 +124,42 @@
     }
   }
 
+  function renderTraceSection(trace) {
+    var isExpanded = s.expandedTrace
+    var total = 0
+    for (var i = 0; i < trace.length; i++) total += parseFloat(trace[i].totalPercent)
+    return m('.region-item.trace-group', [
+      m('.region-header', {
+        style: { borderLeft: '3px solid #475569' },
+        onclick: function () { setState({ expandedTrace: !isExpanded }) }
+      }, [
+        m('span.region-toggle', isExpanded ? '\u25BC' : '\u25B6'),
+        m('span.region-name', 'Trace Ancestry'),
+        m('span.region-pct', String(Math.round(total * 10) / 10) + '%')
+      ]),
+      isExpanded ? m('.region-children', trace.map(function (t) {
+        return m('.region-item', { key: t.id }, [
+          m('.region-header', { style: { paddingLeft: '32px', borderLeft: '3px solid ' + (t.color || '#3b82f6') } }, [
+            m('span.region-toggle', ''),
+            m('span.region-name', t.label),
+            m('span.region-pct', t.totalPercent + '%')
+          ])
+        ])
+      })) : null
+    ])
+  }
+
   var RegionsPanel = {
     view: function () {
       var ancestry = s.matchData.ancestry || {}
       var regions = ancestry.regions
       var trace = ancestry.trace
       if ((!regions || Object.keys(regions).length === 0) && (!trace || trace.length === 0)) return null
-      return [
-        regions && Object.keys(regions).length > 0 ? m('.card', [
-          m('.label', 'Ancestry Composition'),
-          renderRegionTree(regions, 0)
-        ]) : null,
-        trace && trace.length > 0 ? m('.card', [
-          m('.label', 'Trace Ancestry'),
-          trace.map(function (t) {
-            return m('.region-item', { key: t.id }, [
-              m('.region-header', { style: { borderLeft: '3px solid ' + (t.color || '#3b82f6') } }, [
-                m('span.region-toggle', ''),
-                m('span.region-name', t.label),
-                m('span.region-pct', t.totalPercent + '%')
-              ])
-            ])
-          })
-        ]) : null
-      ]
+      return m('.card', [
+        m('.label', 'Ancestry Composition'),
+        regions && Object.keys(regions).length > 0 ? renderRegionTree(regions, 0) : null,
+        trace && trace.length > 0 ? renderTraceSection(trace) : null
+      ])
     }
   }
 

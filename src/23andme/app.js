@@ -302,7 +302,7 @@
     var targets = []
     for (var mi in s.matches) {
       var m = s.matches[mi]
-      if (m.is_open_sharing === true && !m.ancestry) targets.push(m)
+      if (m.is_open_sharing === true && (!m.ancestry || !m.ancestry.haplogroups)) targets.push(m)
     }
     var total = targets.length
     if (total === 0) {
@@ -310,19 +310,32 @@
       return
     }
     setState({ isFetching: true, fetchComplete: false, statusMsg: '', fetchMsg: '', fetchProgress: 0, fetchPct: '' })
-    for (var i = 0; i < total; i++) {
-      var match = targets[i]
-      setState({ fetchMsg: 'Fetching ancestry and haplogroups ' + (i + 1) + ' of ' + total + (match.initials ? ' (' + match.initials + ')' : '') + '...' })
-      var enriched = await fetchMatchDetails(match)
-      s.matches[match.relative_profile_id] = enriched
-      if (typeof DB !== 'undefined') DB.saveMatches(s.selectedProfileId, [enriched], '23andme')
-      _dataVersion++
-      setProgress(i + 1, total)
-      await delay(FETCH_DELAY)
+    try {
+      for (var i = 0; i < total; i++) {
+        var match = targets[i]
+        setState({ fetchMsg: 'Fetching ancestry and haplogroups ' + (i + 1) + ' of ' + total + (match.initials ? ' (' + match.initials + ')' : '') + '...' })
+        var enriched = await fetchMatchDetails(match)
+        s.matches[match.relative_profile_id] = enriched
+        if (typeof DB !== 'undefined') DB.saveMatches(s.selectedProfileId, [enriched], '23andme')
+        _dataVersion++
+        setProgress(i + 1, total)
+        await delay(FETCH_DELAY)
+      }
+    } catch (err) {
+      setState({ isFetching: false, fetchMsg: '', fetchPct: '', statusMsg: 'Fetch error: ' + friendlyError(err.message) })
+      return
     }
     refreshRegionGroups()
     refreshHaploOptions()
-    setState({ isFetching: false, fetchMsg: '', fetchPct: '', fetchComplete: true, statusMsg: 'Fetched details for ' + total + ' match(es)' })
+    try {
+      chrome.notifications.create({
+        type: 'basic',
+        iconUrl: chrome.runtime.getURL('icons/icon48.png'),
+        title: 'MatchFetch',
+        message: 'Finished fetching ' + total + ' matches'
+      })
+    } catch (e) { }
+    setState({ isFetching: false, fetchMsg: '', fetchPct: '', fetchComplete: true, statusMsg: 'Fetched ancestry and haplogroups for ' + total + ' match(es)' })
   }
 
   function matchesFilter(m) {

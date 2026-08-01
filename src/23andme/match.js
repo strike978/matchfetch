@@ -12,7 +12,7 @@
   var s = {
     matchData: null,
     activeTab: 'ancestry',
-    expandedKey: null,
+    expandedKeys: {},
     expandedTrace: false,
     hideNames: hideNames,
     modal: null,
@@ -45,13 +45,18 @@
       for (var ai = 0; ai < arr.length; ai++) {
         (function (node) {
           var childLabels = node.regions ? Object.keys(node.regions) : []
-          var isExpanded = s.expandedKey === node.id
+          var isExpanded = !!s.expandedKeys[node.id]
           out.push(m('.region-item', { key: node.id }, [
             m('.region-header', {
               style: { paddingLeft: (depth * 20 + 12) + 'px', borderLeft: '3px solid ' + (node.color || '#3b82f6') },
-              onclick: function () { setState({ expandedKey: isExpanded ? null : node.id }) }
+              onclick: function () {
+                var keys = Object.assign({}, s.expandedKeys)
+                if (keys[node.id]) delete keys[node.id]
+                else keys[node.id] = true
+                setState({ expandedKeys: keys })
+              }
             }, [
-              m('span.region-toggle', childLabels.length ? '\u25BC' : ''),
+              m('span.region-toggle', childLabels.length ? (isExpanded ? '\u25BC' : '\u25B6') : ''),
               m('span.region-name', node.label),
               m('span.region-pct', node.totalPercent + '%')
             ]),

@@ -795,7 +795,10 @@
   var MatchList = {
     view: function () {
       var list = buildMatchList()
-      if (list.length === 0) return m('.empty', !s.selectedProfileId ? 'Select a profile to begin.' : (s.isFetching ? 'Fetching...' : (s.fetchComplete ? 'No relatives found for this profile.' : 'Select a profile and click Fetch to get started.')))
+      if (list.length === 0) {
+        if (!s.selectedProfileId || !s.fetchComplete) return null
+        return m('.empty', 'No relatives found for this profile.')
+      }
       var key = computeFilterKey(list)
       if (key !== _filterCache.key || list !== _filterCache.list) {
         _filterCache.key = key

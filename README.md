@@ -10,9 +10,9 @@ Fetch and explore your DNA match data from **AncestryDNA** and **23andMe**.
 - **Match List** —
   - **AncestryDNA** — view all matches in a card layout with photos, names, and cM/segments. Filter by name, cM range, ancestral journeys, and ethnicity regions (with percentage ranges).
   - **23andMe** — view matches in a card layout with photos, names, shared cM/segments, and haplogroups. Filter by name, cM range, ancestry regions (with percentage ranges), Y-DNA/mtDNA, side, and grandparent birth locations (by country with a minimum of 1–4 locations).
-- **Match Detail** — AncestryDNA: ethnicity breakdown grouped by macro region with confidence ranges, an ancestral journey tree, and interactive maps. 23andMe: ancestry composition with a trace-ancestry section, Y-DNA and mtDNA haplogroups, grandparent birth locations, and interactive region details with descriptions, reference ethnicities, and interactive maps.
+- **Match Detail** — AncestryDNA: ethnicity breakdown grouped by macro region with confidence ranges, an ancestral journey tree, and interactive maps. 23andMe: ancestry composition with a trace-ancestry section, Y-DNA and mtDNA haplogroups, grandparent birth locations, and interactive region maps with descriptions and reference ethnicities.
 - **Fetch Options** — AncestryDNA: fetch all matches, limit by count, or by cM range, with resume support. 23andMe: fetch matches and pull in ancestry composition and haplogroups for each sharing match.
-- **Check for New Matches** (AncestryDNA) — After fetching, pick up any new matches since the last fetch.
+- **Check for New Matches** — After fetching, pick up any new matches since the last fetch. Available for both AncestryDNA and 23andMe.
 - **Persistent Storage** — All match data is saved locally in IndexedDB via Dexie.js. No re-fetching needed after the initial load.
 - **Import / Export** — Download all data as JSON or restore from a backup.
 - **Privacy** — Toggle to hide names on cards.
@@ -30,11 +30,11 @@ Fetch and explore your DNA match data from **AncestryDNA** and **23andMe**.
 1. Click the MatchFetch icon in your browser toolbar
 2. Pick a provider (AncestryDNA or 23andMe) with the toggle in the top bar
 3. **AncestryDNA** — select a profile, then click **Fetch** (or expand **Fetch options** for Count / cM Range). After fetching, use **Check for new matches** to pick up any new matches.
-4. **23andMe** — select a profile, then click **Fetch** to fetch matches and pull in their ancestry and haplogroups
+4. **23andMe** — select a profile, then click **Fetch** to fetch matches and pull in their ancestry and haplogroups. After fetching, use **Check for new matches** to pick up any new matches.
 5. Cards appear progressively as data is fetched. Use **Filtering options** to narrow the list
 6. Click any card to open the detail page
 7. Use **Export** to download all data as JSON, **Import** to restore a previous backup
 
 ---
 
-Created by Omar Nunez · Version 1.2.0
+Created by Omar Nunez · Version 1.2.5

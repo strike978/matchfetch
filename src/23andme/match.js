@@ -20,6 +20,13 @@
     rootOf: null,
     popCoords: {},
     coordsLoading: {},
+    countryNames: null,
+  }
+
+  function loadCountries() {
+    fetch(chrome.runtime.getURL('data/23andme/countries.json')).then(function (r) { return r.json() }).then(function (d) {
+      setState({ countryNames: d || {} })
+    }, function () { })
   }
 
   function loadPopTree() {
@@ -165,7 +172,21 @@
     var boxes = []
     for (var i = 0; i < keys.length; i++) {
       var gp = locations[keys[i].k]
-      var place = gp ? [gp.city, gp.state, gp.country].filter(function (x) { return x }).join(', ') : ''
+      var parts = []
+      if (gp) {
+        if (gp.city) parts.push(gp.city)
+        if (gp.state) parts.push(gp.state)
+        if (gp.country) {
+          var code = String(gp.country).toUpperCase()
+          var name = s.countryNames && s.countryNames[code] ? s.countryNames[code] : gp.country
+          parts.push(name)
+        }
+      }
+      var deduped = []
+      for (var p = 0; p < parts.length; p++) {
+        if (deduped.length === 0 || deduped[deduped.length - 1] !== parts[p]) deduped.push(parts[p])
+      }
+      var place = deduped.join(', ')
       if (!place) continue
       boxes.push(m('.gp-box', [
         m('.gp-title', keys[i].label),
@@ -306,6 +327,7 @@
         }
         setState({ matchData: m2 })
         loadPopTree()
+        loadCountries()
       })
     },
     view: function () {

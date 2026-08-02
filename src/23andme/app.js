@@ -830,7 +830,7 @@
       var list = buildMatchList()
       if (list.length === 0) {
         if (!s.selectedProfileId || !s.fetchComplete) return null
-        return m('.empty', 'No relatives found for this profile.')
+        return m('.empty', 'No matches found for this profile.')
       }
       var key = computeFilterKey(list)
       if (key !== _filterCache.key || list !== _filterCache.list) {
@@ -854,7 +854,7 @@
           m('button.sort-btn' + (s.sortBy === 'relationship' ? '.active' : ''), { onclick: function () { setState({ sortBy: 'relationship', currentPage: 1 }) } }, 'Relationship'),
           m('button.sort-btn' + (s.sortBy === 'date' ? '.active' : ''), { onclick: function () { setState({ sortBy: 'date', currentPage: 1 }) } }, 'Date')
         ]),
-        shown < total ? m('.match-count', ['Showing ', m('strong', shown), ' of ', m('strong', total), ' relatives']) : null,
+        shown < total ? m('.match-count', ['Showing ', m('strong', shown), ' of ', m('strong', total), ' matches']) : null,
         m('.cards', cards),
         totalPages > 1 ? m(Pagination, { currentPage: s.currentPage, totalPages: totalPages }) : null
       ])

@@ -13,18 +13,20 @@
     fetchProgress: 0,
     fetchComplete: false,
     showFilterBody: false,
-    filters: { name: '', cmMin: null, cmMax: null, side: '', regions: [{ region: '', min: null, max: null }], ydna: '', mtdna: '' },
+    filters: { name: '', cmMin: null, cmMax: null, side: '', regions: [{ region: '', min: null, max: null }], ydna: '', mtdna: '', gpbLocations: [{ country: '', min: null }] },
     currentPage: 1,
     pageSize: 20,
     hideNames: false,
     sortBy: 'relationship',
     modal: null,
+    countryNames: null,
   }
 
   function setState(o) { Object.assign(s, o); m.redraw() }
 
   var _filterCache = { key: '', sorted: [], filtered: [] }
   var _dataVersion = 0
+  var _gpbOptionsCache = null
 
   function friendlyError(msg) {
     if (/Status 30[137]/.test(msg)) return 'Make sure you are logged into 23andMe, then try again.'
@@ -106,7 +108,8 @@
     _filterCache = { key: '', sorted: [], filtered: [] }
     _regionGroupsCache = null
     _haploOptionsCache = null
-    setState({ selectedProfileId: id, matches: {}, matchCount: null, matchCountLoading: false, isFetching: false, fetchComplete: false, statusMsg: '', fetchMsg: '', fetchProgress: 0, fetchPct: '', currentPage: 1, filters: { name: '', cmMin: null, cmMax: null, side: '', regions: [{ region: '', min: null, max: null }], ydna: '', mtdna: '' } })
+    _gpbOptionsCache = null
+    setState({ selectedProfileId: id, matches: {}, matchCount: null, matchCountLoading: false, isFetching: false, fetchComplete: false, statusMsg: '', fetchMsg: '', fetchProgress: 0, fetchPct: '', currentPage: 1, filters: { name: '', cmMin: null, cmMax: null, side: '', regions: [{ region: '', min: null, max: null }], ydna: '', mtdna: '', gpbLocations: [{ country: '', min: null }] } })
     await loadSaved()
     await fetchMatchCount()
   }
@@ -283,6 +286,7 @@
       s.matches = matches
       refreshRegionGroups()
       refreshHaploOptions()
+      refreshGpbOptions()
       var sharingCount = 0
       for (var si = 0; si < rel.length; si++) {
         if (rel[si].is_open_sharing === true) sharingCount++
@@ -327,6 +331,7 @@
     }
     refreshRegionGroups()
     refreshHaploOptions()
+    refreshGpbOptions()
     try {
       chrome.notifications.create({
         type: 'basic',
@@ -369,6 +374,20 @@
     if (f.mtdna) {
       var mt = m.ancestry && m.ancestry.haplogroups && m.ancestry.haplogroups.mtdna
       if (!mt || mt !== f.mtdna) return false
+    }
+    if (s._activeGpbFilters && s._activeGpbFilters.length) {
+      var locs = m.grandparent_birth_locations
+      for (var gi = 0; gi < s._activeGpbFilters.length; gi++) {
+        var gf = s._activeGpbFilters[gi]
+        var count = 0
+        if (locs) {
+          for (var lk in locs) {
+            var gp = locs[lk]
+            if (gp && gp.country && String(gp.country).toUpperCase() === gf.country) count++
+          }
+        }
+        if (gf.min != null && count < gf.min) return false
+      }
     }
     return true
   }
@@ -492,6 +511,40 @@
     _haploOptionsCache = buildHaploOptions()
   }
 
+  function loadCountries() {
+    fetch(chrome.runtime.getURL('data/23andme/countries.json')).then(function (r) { return r.json() }).then(function (d) {
+      setState({ countryNames: d || {} })
+    }, function () { })
+  }
+
+  function buildGpbOptions() {
+    var byCode = {}
+    var list = buildMatchList()
+    for (var i = 0; i < list.length; i++) {
+      var locs = list[i].grandparent_birth_locations
+      if (!locs) continue
+      for (var k in locs) {
+        var gp = locs[k]
+        if (!gp || !gp.country) continue
+        var code = String(gp.country).toUpperCase()
+        byCode[code] = (s.countryNames && s.countryNames[code]) || code
+      }
+    }
+    var names = Object.keys(byCode).sort(function (a, b) { return byCode[a].localeCompare(byCode[b]) })
+    var opts = [{ value: '', label: 'All' }]
+    for (var n = 0; n < names.length; n++) opts.push({ value: names[n], label: byCode[names[n]] })
+    return opts
+  }
+
+  function getGpbOptions() {
+    if (!_gpbOptionsCache) _gpbOptionsCache = buildGpbOptions()
+    return _gpbOptionsCache
+  }
+
+  function refreshGpbOptions() {
+    _gpbOptionsCache = buildGpbOptions()
+  }
+
   function computeFilterKey(list) {
     var f = s.filters
     var rk = ''
@@ -500,7 +553,13 @@
         rk += '|' + s._activeRegionFilters[i].region + '|' + (s._activeRegionFilters[i].min || '') + '|' + (s._activeRegionFilters[i].max || '')
       }
     }
-    return s.sortBy + '|' + (list ? list.length : 0) + '|' + (f.name || '') + '|' + (f.cmMin || '') + '|' + (f.cmMax || '') + '|' + (f.side || '') + rk + '|' + (f.ydna || '') + '|' + (f.mtdna || '') + '|v' + _dataVersion
+    var gk = ''
+    if (s._activeGpbFilters) {
+      for (var gi = 0; gi < s._activeGpbFilters.length; gi++) {
+        gk += '|' + s._activeGpbFilters[gi].country + '|' + (s._activeGpbFilters[gi].min || '')
+      }
+    }
+    return s.sortBy + '|' + (list ? list.length : 0) + '|' + (f.name || '') + '|' + (f.cmMin || '') + '|' + (f.cmMax || '') + '|' + (f.side || '') + rk + '|' + (f.ydna || '') + '|' + (f.mtdna || '') + gk + '|v' + _dataVersion
   }
 
   function readFilters() {
@@ -522,6 +581,16 @@
       var minV = parseFloat(minEl.value)
       var maxV = parseFloat(maxEl.value)
       s._activeRegionFilters.push({ region: region, min: isNaN(minV) ? null : minV, max: isNaN(maxV) ? null : maxV })
+    }
+    var gpbRows = document.querySelectorAll('#gpbFilters .region-row')
+    s._activeGpbFilters = []
+    for (var gi = 0; gi < gpbRows.length; gi++) {
+      var gpbSel = gpbRows[gi].querySelector('.gpb-country')
+      var gpbMin = gpbRows[gi].querySelector('.gpb-min')
+      var country = gpbSel ? gpbSel.value : ''
+      if (!country) continue
+      var minV2 = gpbMin ? parseInt(gpbMin.value, 10) : null
+      s._activeGpbFilters.push({ country: country, min: isNaN(minV2) ? null : minV2 })
     }
   }
 
@@ -592,6 +661,55 @@
     })
   }
 
+  function renderGpbFilterRows() {
+    var filters = s.filters.gpbLocations && s.filters.gpbLocations.length ? s.filters.gpbLocations : [{ country: '', min: null }]
+    var opts = getGpbOptions()
+    return filters.map(function (f, idx) {
+      return m('span.region-row', { key: idx, 'data-idx': idx }, [
+        m('select.gpb-country.filter-select', {
+          'data-idx': idx,
+          style: { width: '180px' },
+          value: f.country,
+          onfocus: function () { refreshGpbOptions(); m.redraw() },
+          onchange: function (e) {
+            s.filters.gpbLocations[idx] = s.filters.gpbLocations[idx] || { country: '', min: null }
+            s.filters.gpbLocations[idx].country = e.target.value
+            applyFilterChange()
+            m.redraw()
+          }
+        }, opts.map(function (o) { return m('option', { value: o.value }, o.label) })),
+        m('span.filter-sep', { style: { margin: '0 2px' } }, '\u2265'),
+        m('select.gpb-min.filter-select', {
+          'data-idx': idx,
+          style: { width: '64px' },
+          value: f.min != null ? f.min : '0',
+          onchange: function (e) {
+            s.filters.gpbLocations[idx] = s.filters.gpbLocations[idx] || { country: '', min: null }
+            var v = parseInt(e.target.value, 10)
+            s.filters.gpbLocations[idx].min = isNaN(v) ? null : v
+            applyFilterChange()
+            m.redraw()
+          }
+        }, [
+          m('option', { value: '0' }, '0'),
+          m('option', { value: '1' }, '1'),
+          m('option', { value: '2' }, '2'),
+          m('option', { value: '3' }, '3'),
+          m('option', { value: '4' }, '4')
+        ]),
+        m('button.gpb-remove.topbar-btn', {
+          'data-idx': idx,
+          style: { fontSize: '14px', padding: '2px 8px', display: filters.length === 1 ? 'none' : '' },
+          onclick: function () {
+            s.filters.gpbLocations.splice(idx, 1)
+            applyFilterChange()
+            m.redraw()
+          }
+        }, '\u2212')
+      ])
+    })
+  }
+
   function displayName(m) {
     if (s.hideNames) return m.initials || '??'
     var n = (m.first_name || '') + (m.last_name ? ' ' + m.last_name : '')
@@ -642,6 +760,7 @@
         setState({ hideNames: this.checked })
       })
       loadAccount()
+      loadCountries()
     },
     view: function () {
       return [m(KitSelector), m(FilterBar), m(MatchList), m(Modal)]
@@ -716,6 +835,7 @@
                     _filterCache = { key: '', sorted: [], filtered: [] }
                     _regionGroupsCache = null
                     _haploOptionsCache = null
+                    _gpbOptionsCache = null
                     _dataVersion++
                     setState({ matches: {}, matchCount: null, matchCountLoading: false, fetchComplete: false, currentPage: 1, statusMsg: '', fetchMsg: '', fetchProgress: 0, fetchPct: '' })
                   })
@@ -803,6 +923,17 @@
                 m('option', { value: 'paternal' }, 'Paternal')
               ])
             ]),
+            m('span.filter-group', [
+              'Birth Locations ',
+              m('span#gpbFilters', renderGpbFilterRows()),
+              m('button#addGpbRow.topbar-btn', {
+                style: { fontSize: '14px', padding: '2px 10px' },
+                onclick: function () {
+                  s.filters.gpbLocations.push({ country: '', min: null })
+                  m.redraw()
+                }
+              }, '+')
+            ]),
             m('span#filterReset.filter-clear', {
               onclick: function () {
                 if (document.getElementById('filterName')) document.getElementById('filterName').value = ''
@@ -811,8 +942,9 @@
                 if (document.getElementById('filterYdna')) document.getElementById('filterYdna').value = ''
                 if (document.getElementById('filterMtdna')) document.getElementById('filterMtdna').value = ''
                 if (document.getElementById('filterSide')) document.getElementById('filterSide').value = ''
-                s.filters = { name: '', cmMin: null, cmMax: null, side: '', regions: [{ region: '', min: null, max: null }], ydna: '', mtdna: '' }
+                s.filters = { name: '', cmMin: null, cmMax: null, side: '', regions: [{ region: '', min: null, max: null }], ydna: '', mtdna: '', gpbLocations: [{ country: '', min: null }] }
                 s._activeRegionFilters = []
+                s._activeGpbFilters = []
                 _filterCache = { key: '', sorted: [], filtered: [] }
                 _dataVersion++
                 s.currentPage = 1

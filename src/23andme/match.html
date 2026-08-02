@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Match Detail — 23andMe</title>
+<link rel="stylesheet" href="../../lib/leaflet.css">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -50,6 +51,21 @@ body {
 .region-name { font-size: 13px; font-weight: 600; color: #e2e8f0; }
 .region-pct { margin-left: auto; font-size: 13px; font-weight: 700; color: #f1f5f9; font-variant-numeric: tabular-nums; }
 .region-children { margin-top: 4px; }
+.region-item.expanded .region-header { border-bottom-left-radius: 0; border-bottom-right-radius: 0; border-bottom: 1px solid #253044; }
+.region-expanded { padding: 10px 14px 14px; background: #1a2332; border-bottom-left-radius: 6px; border-bottom-right-radius: 6px; }
+.region-exp-row { display: flex; gap: 6px; font-size: 12px; line-height: 1.5; margin-top: 5px; }
+.region-exp-row:first-child { margin-top: 0; }
+.region-exp-label { color: #94a3b8; white-space: nowrap; }
+.region-exp-value { color: #f1f5f9; font-weight: 600; }
+.region-exp-overview { font-size: 12px; color: #cbd5e1; line-height: 1.6; }
+.region-exp-overview.has-ref { margin-top: 8px; border-top: 1px solid #253044; padding-top: 8px; }
+.leaflet-container { background: #0f1724; outline: 0; }
+.leaflet-interactive, .leaflet-interactive:focus, .leaflet-interactive:focus-visible { outline: 0 !important; }
+svg, svg * { outline: 0; }
+.leaflet-popup-content-wrapper { background: #1a2332; color: #e2e8f0; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,.5); }
+.leaflet-popup-content { margin: 10px 14px; }
+.leaflet-popup-tip { background: #1a2332; }
+.leaflet-popup-close-button { color: #64748b !important; }
 .gp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
 .gp-box { background: #0f1724; border-radius: 8px; padding: 12px 14px; }
 .gp-title { font-size: 10px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: .4px; }
@@ -75,6 +91,7 @@ body {
 </div>
 <script src="../../lib/dexie.js"></script>
 <script src="../db.js"></script>
+<script src="../../lib/leaflet.js"></script>
 <script src="../../lib/mithril.js"></script>
 <script src="match.js"></script>
 </body>

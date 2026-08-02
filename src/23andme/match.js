@@ -16,6 +16,47 @@
     expandedTrace: false,
     hideNames: hideNames,
     modal: null,
+    popTree: null,
+    rootOf: null,
+    popCoords: {},
+    coordsLoading: {},
+  }
+
+  function loadPopTree() {
+    fetch(chrome.runtime.getURL('data/23andme/population_tree.json')).then(function (r) { return r.json() }).then(function (d) {
+      var m = {}
+      var rootOf = {}
+      ;(function walk(nodes, rootId) {
+        for (var i = 0; i < nodes.length; i++) {
+          var n = nodes[i]
+          var r = rootId || n.id
+          m[n.id] = n
+          rootOf[n.id] = r
+          if (n.children && n.children.length) walk(n.children, r)
+        }
+      })(d, null)
+      setState({ popTree: m, rootOf: rootOf })
+    }, function () { })
+  }
+
+  function ensureCoords(id) {
+    var rootId = s.rootOf && s.rootOf[id]
+    if (!rootId || s.coordsLoading[rootId] || s.popCoords[rootId]) return
+    s.coordsLoading[rootId] = true
+    fetch(chrome.runtime.getURL('data/23andme/population_tree_coordinates/' + rootId + '.json')).then(function (r) { return r.json() }).then(function (d) {
+      var out = Object.assign({}, s.popCoords)
+      if (d && d.features) {
+        for (var i = 0; i < d.features.length; i++) {
+          var feat = d.features[i]
+          if (feat && feat.properties && feat.properties.id) out[feat.properties.id] = feat
+        }
+      }
+      delete s.coordsLoading[rootId]
+      setState({ popCoords: out })
+    }, function () {
+      delete s.coordsLoading[rootId]
+      m.redraw()
+    })
   }
 
   function setState(o) { Object.assign(s, o); m.redraw() }
@@ -46,7 +87,7 @@
         (function (node) {
           var childLabels = node.regions ? Object.keys(node.regions) : []
           var isExpanded = !!s.expandedKeys[node.id]
-          out.push(m('.region-item', { key: node.id }, [
+          out.push(m('.region-item' + (isExpanded ? '.expanded' : ''), { key: node.id }, [
             m('.region-header', {
               style: { paddingLeft: (depth * 20 + 12) + 'px', borderLeft: '3px solid ' + (node.color || '#3b82f6') },
               onclick: function () {
@@ -56,16 +97,61 @@
                 setState({ expandedKeys: keys })
               }
             }, [
-              m('span.region-toggle', childLabels.length ? (isExpanded ? '\u25BC' : '\u25B6') : ''),
+              m('span.region-toggle', isExpanded ? '\u25BC' : '\u25B6'),
               m('span.region-name', node.label),
               m('span.region-pct', node.totalPercent + '%')
             ]),
-            isExpanded && childLabels.length ? m('.region-children', renderRegionTree(node.regions, depth + 1)) : null
+            isExpanded ? m('.region-expanded', childLabels.length ? m('.region-children', renderRegionTree(node.regions, depth + 1)) : renderRegionInfo(node, node.color)) : null
           ]))
         })(arr[ai])
       }
     }
     return out
+  }
+
+  var InlineMap = {
+    oncreate: function (vnode) {
+      var itemKey = vnode.attrs.itemKey
+      var tries = 0
+      ;(function init() {
+        var el = vnode.dom
+        if (!el) return
+        var entry = (s.popCoords || {})[itemKey]
+        if (!entry || !entry.geometry || !entry.geometry.coordinates) {
+          ensureCoords(itemKey)
+          if (tries++ < 60) setTimeout(init, 100)
+          return
+        }
+        try {
+          var map = L.map(el, { zoomControl: true, attributionControl: false })
+          L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map)
+          var color = vnode.attrs.color || '#3b82f6'
+          var layer = L.geoJSON(entry, { style: { color: color, weight: 1.5, fillColor: color, fillOpacity: 0.25 } })
+          layer.addTo(map)
+          map.fitBounds(layer.getBounds().pad(0.1))
+          vnode.state.map = map
+        } catch (e) { console.log('Inline map error:', e) }
+      })()
+    },
+    onremove: function (vnode) {
+      if (vnode.state.map) { try { vnode.state.map.remove() } catch (e) { } }
+    },
+    view: function () {
+      return m('div', { style: { height: '260px', borderRadius: '8px', overflow: 'hidden', marginTop: '8px' } })
+    }
+  }
+
+  function renderRegionInfo(node, color) {
+    var pop = s.popTree && s.popTree[node.id]
+    var hasRef = !!(pop && pop.reference_ethnicities)
+    return m('.region-expanded', [
+      hasRef ? m('.region-exp-row', [
+        m('span.region-exp-label', 'Reference ethnicities'),
+        m('span.region-exp-value', pop.reference_ethnicities)
+      ]) : null,
+      pop && pop.description ? m('.region-exp-overview' + (hasRef ? '.has-ref' : ''), pop.description) : null,
+      m(InlineMap, { itemKey: node.id, color: color || (pop && pop.color) || '#3b82f6' })
+    ])
   }
 
   function renderGrandparentBoxes(locations) {
@@ -136,7 +222,7 @@
     var isExpanded = s.expandedTrace
     var total = 0
     for (var i = 0; i < trace.length; i++) total += parseFloat(trace[i].totalPercent)
-    return m('.region-item.trace-group', [
+    return m('.region-item.trace-group' + (isExpanded ? '.expanded' : ''), [
       m('.region-header', {
         style: { borderLeft: '3px solid #475569' },
         onclick: function () { setState({ expandedTrace: !isExpanded }) }
@@ -145,13 +231,23 @@
         m('span.region-name', 'Trace Ancestry'),
         m('span.region-pct', String(Math.round(total * 10) / 10) + '%')
       ]),
-      isExpanded ? m('.region-children', trace.map(function (t) {
-        return m('.region-item', { key: t.id }, [
-          m('.region-header', { style: { paddingLeft: '32px', borderLeft: '3px solid ' + (t.color || '#3b82f6') } }, [
-            m('span.region-toggle', ''),
+      isExpanded ? m('.region-expanded', trace.map(function (t) {
+        var tExpanded = !!s.expandedKeys[t.id]
+        return m('.region-item' + (tExpanded ? '.expanded' : ''), { key: t.id }, [
+          m('.region-header', {
+            style: { paddingLeft: '32px', borderLeft: '3px solid ' + (t.color || '#3b82f6') },
+            onclick: function () {
+              var keys = Object.assign({}, s.expandedKeys)
+              if (keys[t.id]) delete keys[t.id]
+              else keys[t.id] = true
+              setState({ expandedKeys: keys })
+            }
+          }, [
+            m('span.region-toggle', tExpanded ? '\u25BC' : '\u25B6'),
             m('span.region-name', t.label),
             m('span.region-pct', t.totalPercent + '%')
-          ])
+          ]),
+          tExpanded ? renderRegionInfo(t, t.color) : null
         ])
       })) : null
     ])
@@ -209,6 +305,7 @@
           return
         }
         setState({ matchData: m2 })
+        loadPopTree()
       })
     },
     view: function () {

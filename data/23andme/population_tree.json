@@ -1,0 +1,2280 @@
+[
+  {
+    "id": "european",
+    "label": "European",
+    "parent_id": "root",
+    "color": "#80C3FF",
+    "description": "Much of Europe was buried under miles of ice ten thousand years ago. As the glaciers receded over millennia, Neolithic farmers from western Asia joined Paleolithic hunter-gatherers to settle Europe.",
+    "reference_ethnicities": null,
+    "highlight_countries": [
+      "ALB_NORTH",
+      "ALB_SOUTH",
+      "AND",
+      "AUT",
+      "AUT_WEST",
+      "BEL",
+      "BGR",
+      "BIH",
+      "BLR",
+      "CHE",
+      "CHE_WEST",
+      "CZE",
+      "DEU_BADEN",
+      "DEU_EAST",
+      "DEU_NORTH",
+      "DEU_WEST",
+      "DNK",
+      "ESP_CANARIES",
+      "ESP_CENTRAL",
+      "ESP_EAST",
+      "ESP_GALICIA",
+      "ESP_NORTH",
+      "EST",
+      "FIN",
+      "FRA",
+      "FRO",
+      "GBR_ENGLAND",
+      "GBR_NORTHERN_IRELAND",
+      "GBR_SCOTLAND",
+      "GBR_WALES",
+      "GGY",
+      "GRC",
+      "HRV",
+      "HUN",
+      "IMN",
+      "IRL",
+      "ISL",
+      "ITA_NORTH",
+      "ITA_SARDINIA",
+      "ITA_SOUTH",
+      "kosovo",
+      "LIE",
+      "LTU",
+      "LUX",
+      "LVA",
+      "MDA",
+      "MKD",
+      "MLT",
+      "MNE",
+      "NLD_NORTH",
+      "NLD_SOUTH",
+      "NOR",
+      "POL",
+      "POL_SOUTH",
+      "PRT",
+      "ROU",
+      "SJM",
+      "SMR",
+      "SRB",
+      "SVK",
+      "SVN",
+      "SWE",
+      "UKR",
+      "VAT",
+      "WEST_RUS"
+    ],
+    "children": [
+      {
+        "id": "iberian",
+        "label": "Spanish & Portuguese",
+        "parent_id": "european",
+        "color": "#4352AB",
+        "description": "“Spanish and Portuguese” ancestry was influenced by several Mediterranean civilizations. Today, this ancestry is common in people of Latin American descent.",
+        "reference_ethnicities": null,
+        "highlight_countries": [
+          "AND",
+          "ESP_CANARIES",
+          "ESP_CENTRAL",
+          "ESP_EAST",
+          "ESP_GALICIA",
+          "ESP_NORTH",
+          "PRT"
+        ],
+        "children": [
+          {
+            "id": "west_iberian",
+            "label": "Portuguese & Galician",
+            "parent_id": "iberian",
+            "color": "#5A6BC7",
+            "description": "These groups descend from a mix of pre-Roman Iberians, Celtic tribes, and Romanized populations, later influenced by Germanic and Moorish rule. Their shared western Iberian Romance language roots and cultural continuity reflect distinct evolutions from Latin-speaking communities both shaped by Atlantic trade and local kingdoms.",
+            "reference_ethnicities": "Galicia, Portugal",
+            "highlight_countries": [
+              "ESP_GALICIA",
+              "PRT"
+            ],
+            "children": []
+          },
+          {
+            "id": "central_iberian",
+            "label": "Andalusian, Asturian & Castilian",
+            "parent_id": "iberian",
+            "color": "#6F82E3",
+            "description": "Spanning much of the former territory of the Crown of Castile, the groups in this region arose from Iberian, Celtic, and Roman roots, further shaped by Visigothic rule and centuries of coexistence and conflict during Islamic governance and Christian reconquest. Traditions of these groups reflect a layered history of diverse influences, centralization, and cultural synthesis.",
+            "reference_ethnicities": "Andalusia, Asturias, Cantabria, Castile and Leon, Castile-La Mancha, Extremadura, Madrid, Murcia",
+            "highlight_countries": [
+              "ESP_CENTRAL"
+            ],
+            "children": []
+          },
+          {
+            "id": "canarian",
+            "label": "Canary Islander",
+            "parent_id": "iberian",
+            "color": "#394FC4",
+            "description": "Canary Islanders descend from a blend of Indigenous Guanche peoples—believed to be related to North African Berbers—and later Spanish and Portuguese settlers, today reflecting a fusion of native island traditions with Iberian and Atlantic influences.",
+            "reference_ethnicities": "Canary Islands",
+            "highlight_countries": [
+              "ESP_CANARIES"
+            ],
+            "children": []
+          },
+          {
+            "id": "east_iberian",
+            "label": "Aragonese & Catalan",
+            "parent_id": "iberian",
+            "color": "#223BE5",
+            "description": "These peoples emerged from early Romanized Iberians and Visigoths, later shaped by Frankish frontier territories and a strong tradition of local governance. Their languages evolved from Latin into distinct Romance varieties, but despite differences these groups share a history of medieval independence, urban centers, and maritime trade.",
+            "reference_ethnicities": "Aragon, Balearic Islands, Catalonia, Valencia",
+            "highlight_countries": [
+              "AND",
+              "ESP_EAST"
+            ],
+            "children": []
+          },
+          {
+            "id": "north_iberian",
+            "label": "Basque",
+            "parent_id": "iberian",
+            "color": "#485DD9",
+            "description": "Basques are known for their unique language, Euskara, that predates Indo-European arrival and has no known linguistic relatives. Through millennia of relative isolation and resistance to assimilation, they've maintained their distinct language and culture.",
+            "reference_ethnicities": "Basque Country, Navarre",
+            "highlight_countries": [
+              "ESP_NORTH"
+            ],
+            "children": []
+          },
+          {
+            "id": "broadly_iberian",
+            "label": "Broadly Spanish & Portuguese",
+            "parent_id": "iberian",
+            "color": "#4352AB",
+            "description": "“Spanish and Portuguese” ancestry was influenced by several Mediterranean civilizations. Today, this ancestry is common in people of Latin American descent. Some “Spanish & Portuguese” DNA is difficult to assign confidently to a specific subpopulation and receives a “Broadly” designation. This nonspecific Spanish & Portuguese ancestry is particularly common in people with recent ancestry in Latin America.",
+            "reference_ethnicities": null,
+            "highlight_countries": [
+              "AND",
+              "ESP_CANARIES",
+              "ESP_CENTRAL",
+              "ESP_EAST",
+              "ESP_GALICIA",
+              "ESP_NORTH",
+              "PRT"
+            ],
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "french_german",
+        "label": "Western European",
+        "parent_id": "european",
+        "color": "#4371AD",
+        "description": "Western Europeans descend from ancient Celtic and Germanic populations, and inhabit an area extending from the Netherlands to Austria.",
+        "reference_ethnicities": null,
+        "highlight_countries": [
+          "AUT",
+          "AUT_WEST",
+          "BEL",
+          "CHE",
+          "CHE_WEST",
+          "DEU_BADEN",
+          "DEU_EAST",
+          "DEU_NORTH",
+          "DEU_WEST",
+          "FRA",
+          "LIE",
+          "LUX",
+          "NLD_NORTH",
+          "NLD_SOUTH"
+        ],
+        "children": [
+          {
+            "id": "central_german",
+            "label": "Swiss, Southwestern German & Western Austrian",
+            "parent_id": "french_german",
+            "color": "#377CD8",
+            "description": "The Swiss, and their neighbors to the north and east, share alpine Celtic and Roman roots. Later Alemannic-speaking Germanic settlers established stable, mountain-based communities with strong local governance. Today, these areas are known for cooperative confederacies and a cultural emphasis on neutrality, independence, and mountainous rural life.",
+            "reference_ethnicities": "Austria, Switzerland",
+            "highlight_countries": [
+              "AUT_WEST",
+              "CHE",
+              "DEU_BADEN",
+              "LIE"
+            ],
+            "children": []
+          },
+          {
+            "id": "south_german",
+            "label": "Austrian & Southern German",
+            "parent_id": "french_german",
+            "color": "#6FA1E3",
+            "description": "Descending primarily from early Germanic tribes like the Bavarians and Thuringians, people in this region were strongly influenced by the Holy Roman Empire, Christianization, and later Habsburg rule. They share cultural and linguistic ties rooted in High German dialects, with a legacy of centralized statecraft, intellectual movements, and intertwined political histories.",
+            "reference_ethnicities": "Austria, Czech Republic, Germany, Hungary",
+            "highlight_countries": [
+              "AUT",
+              "DEU_EAST"
+            ],
+            "children": []
+          },
+          {
+            "id": "lowlander",
+            "label": "Belgian, Rhinelander & Southern Dutch",
+            "parent_id": "french_german",
+            "color": "#3975C4",
+            "description": "Rooted in a mix of Celtic, Roman, and Germanic peoples (notably the Franks), this densely settled region has been the site of centuries of cultural exchange, political fragmentation, and trade. Despite cultural and linguistic diversity, the people of this region share deep historical ties through the Frankish Empire, medieval principalities, and shared religious and social traditions.",
+            "reference_ethnicities": "Belgium, France, Luxembourg, The Netherlands",
+            "highlight_countries": [
+              "BEL",
+              "DEU_WEST",
+              "LUX",
+              "NLD_SOUTH"
+            ],
+            "children": []
+          },
+          {
+            "id": "northern_german",
+            "label": "Dutch & Northern German",
+            "parent_id": "french_german",
+            "color": "#5394ED",
+            "description": "Formed from ancient Saxon, Frisian, and Frankish populations, with Norse and Slavic influences in some areas, the peoples of this region share common West Germanic roots and histories marked by maritime trade, relative autonomy under shifting empires, and a shared tradition of decentralized governance and Protestant Reformation-era transformations.",
+            "reference_ethnicities": "Germany, The Netherlands",
+            "highlight_countries": [
+              "DEU_NORTH",
+              "NLD_NORTH"
+            ],
+            "children": []
+          },
+          {
+            "id": "french",
+            "label": "French",
+            "parent_id": "french_german",
+            "color": "#2275E5",
+            "description": "The French—and their French-speaking neighbors in the Romandy region of Switzerland—descend from a blend of Gauls (an ancient Celtic group), Roman settlers, and later Frankish populations. They developed a Latin-based language and cultural identity during and after Romanization.",
+            "reference_ethnicities": "France, Switzerland",
+            "highlight_countries": [
+              "CHE_WEST",
+              "FRA"
+            ],
+            "children": []
+          },
+          {
+            "id": "broadly_french_german",
+            "label": "Broadly Western European",
+            "parent_id": "french_german",
+            "color": "#4371AD",
+            "description": "Western Europeans descend from ancient Celtic and Germanic populations, and inhabit an area extending from the Netherlands to Austria. Some “Western European” DNA is difficult to assign confidently to one of the Western European subpopulations and receives a “Broadly” designation. This nonspecific West European ancestry is particularly common in people with recent ancestry in the United States.",
+            "reference_ethnicities": null,
+            "highlight_countries": [
+              "AUT",
+              "AUT_WEST",
+              "BEL",
+              "CHE",
+              "CHE_WEST",
+              "DEU_BADEN",
+              "DEU_EAST",
+              "DEU_NORTH",
+              "DEU_WEST",
+              "FRA",
+              "LIE",
+              "LUX",
+              "NLD_NORTH",
+              "NLD_SOUTH"
+            ],
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "ashkenazi",
+        "label": "Ashkenazi Jewish",
+        "parent_id": "european",
+        "color": "#22BFE5",
+        "description": "Ashkenazi Jewish people trace their roots to ancient migrations from Western Asia to Europe. In the Middle Ages, their ancestors settled near the Rhine River, where a distinct religious, cultural, and genetic Jewish identity formed. Fleeing violent persecution, many Ashkenazi Jewish people moved into Eastern Europe and, centuries later, to Israel and the Americas.",
+        "reference_ethnicities": null,
+        "highlight_countries": [
+          "BLR",
+          "HUN",
+          "LTU",
+          "MDA",
+          "POL",
+          "ROU",
+          "UKR"
+        ],
+        "children": []
+      },
+      {
+        "id": "british_irish",
+        "label": "British & Irish",
+        "parent_id": "european",
+        "color": "#4482AD",
+        "description": "Descended from Celtic, Saxon, and Viking ancestors, the people of Great Britain and Ireland have left their genetic fingerprints around the world.",
+        "reference_ethnicities": null,
+        "highlight_countries": [
+          "GBR_ENGLAND",
+          "GBR_NORTHERN_IRELAND",
+          "GBR_SCOTLAND",
+          "GBR_WALES",
+          "GGY",
+          "IMN",
+          "IRL"
+        ],
+        "children": [
+          {
+            "id": "irish",
+            "label": "Irish",
+            "parent_id": "british_irish",
+            "color": "#6FB3E3",
+            "description": "The Irish are a distinct ethnolinguistic group that emerged from a fusion of ancient Celtic-speaking peoples, particularly the Gaels, who arrived in Ireland during the Iron Age and mixed with earlier Neolithic and Bronze Age inhabitants.",
+            "reference_ethnicities": "Ireland",
+            "highlight_countries": [
+              "GBR_NORTHERN_IRELAND",
+              "IRL"
+            ],
+            "children": []
+          },
+          {
+            "id": "english",
+            "label": "English",
+            "parent_id": "british_irish",
+            "color": "#2294E5",
+            "description": "The English emerged primarily from the fusion of early Brittonic inhabitants, with successive waves of Anglo-Saxon migrants from present-day Germany, Denmark, and the Netherlands. The population was later shaped by Viking and Norman invasions.",
+            "reference_ethnicities": "England",
+            "highlight_countries": [
+              "GBR_ENGLAND"
+            ],
+            "children": []
+          },
+          {
+            "id": "scottish",
+            "label": "Scottish",
+            "parent_id": "british_irish",
+            "color": "#53ADED",
+            "description": "The Scottish people formed through the blending of various groups, including the Gaels from Ireland, Picts native to northern Britain, and later Norse and Anglo-Norman settlers. This mix gave rise to a culturally and linguistically distinct group with deep Celtic roots and layered historical influences. In the 17th century many Scots moved to the northern province of Ulster in Ireland. From there, many later emigrated to North America, where many of their descendants live today.",
+            "reference_ethnicities": "Scotland",
+            "highlight_countries": [
+              "GBR_SCOTLAND"
+            ],
+            "children": []
+          },
+          {
+            "id": "welsh",
+            "label": "Welsh",
+            "parent_id": "british_irish",
+            "color": "#3697DC",
+            "description": "The Welsh trace their origins to the ancient Brittonic-speaking peoples of western Britain, people who remained culturally distinct following the Roman withdrawal and Anglo-Saxon settlement. They preserved a strong Celtic identity and language, rooted in some of the oldest continuous cultural traditions in the British Isles.",
+            "reference_ethnicities": "Wales",
+            "highlight_countries": [
+              "GBR_WALES"
+            ],
+            "children": []
+          },
+          {
+            "id": "broadly_british_irish",
+            "label": "Broadly British & Irish",
+            "parent_id": "british_irish",
+            "color": "#4482AD",
+            "description": "Descended from Celtic, Saxon, and Viking ancestors, the people of Great Britain and Ireland have left their genetic fingerprints around the world. Some “British & Irish” DNA is difficult to assign confidently to a specific subpopulation and receives a “Broadly” designation. This nonspecific British & Irish ancestry is common in people with recent ancestry in the United States.",
+            "reference_ethnicities": null,
+            "highlight_countries": [
+              "GBR_ENGLAND",
+              "GBR_NORTHERN_IRELAND",
+              "GBR_SCOTLAND",
+              "GBR_WALES",
+              "IRL"
+            ],
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "east_european",
+        "label": "Central & Eastern European",
+        "parent_id": "european",
+        "color": "#44AD95",
+        "description": "The genetic heritage of Central and Eastern Europe traces back to peoples living southeast of the Baltic Sea and to a more recent influx of Slavic-speaking peoples from north of the Black Sea. While the region's diverse populations—Baltic, Slavic, Finno-Ugric, and others—retain distinct linguistic and cultural identities, their histories have been shaped by overlapping empires. In recent decades, significant migration from the region has further extended this shared heritage around the world.",
+        "reference_ethnicities": null,
+        "highlight_countries": [
+          "BLR",
+          "CZE",
+          "EST",
+          "HUN",
+          "LTU",
+          "LVA",
+          "POL",
+          "POL_SOUTH",
+          "SVK",
+          "SVN",
+          "UKR",
+          "WEST_RUS"
+        ],
+        "children": [
+          {
+            "id": "ukrainian_polish_belarusian",
+            "label": "Belarusian, Polish & Ukrainian",
+            "parent_id": "east_european",
+            "color": "#3DDEB8",
+            "description": "Belarusians, Poles, and Ukrainians all descend from early Slavic populations that expanded into Eastern Europe, sharing linguistic roots and cultural ties shaped by interactions with Baltic, Finno-Ugric, and steppe peoples. Over time, distinct identities emerged among these groups. Poles developed under strong Western European and Catholic influences. Ukrainians blended Slavic, steppe, and Orthodox traditions on a contested frontier. Belarusians evolved within the Orthodox and later Russian cultural sphere—often under Lithuanian and Russian rule. These differences are still reflected in their languages, faiths, and local histories.",
+            "reference_ethnicities": "Belarus, Poland, Ukraine",
+            "highlight_countries": [
+              "BLR",
+              "POL",
+              "UKR"
+            ],
+            "children": []
+          },
+          {
+            "id": "central_european",
+            "label": "Czech, Hungarian, Slovak & Southern Polish",
+            "parent_id": "east_european",
+            "color": "#53EDC9",
+            "description": "These groups reflect a convergence of early Slavic settlers and Central European influences. While Czechs and Slovaks descend from early West Slavic tribes who settled in Central Europe during the early medieval period, blending with remnants of Celtic and Germanic populations, Hungarians stand apart linguistically due to their Uralic roots as descendants of Magyar tribes who settled in the Carpathian Basin from the Eurasian Steppe. This ancestry is also commonly found in people from Southern Poland, perhaps reflecting the complex and shifting political borders of this region. All of these groups share layered histories while maintaining distinct identities through language, religion, and local governance.",
+            "reference_ethnicities": "Czech Republic, Hungary, Slovakia, Ukraine",
+            "highlight_countries": [
+              "CZE",
+              "HUN",
+              "POL_SOUTH",
+              "SVK"
+            ],
+            "children": []
+          },
+          {
+            "id": "estonian",
+            "label": "Estonian",
+            "parent_id": "east_european",
+            "color": "#5AC7C6",
+            "description": "Estonians descend from ancient Finno-Ugric-speaking peoples, with deep roots in northeastern Europe and cultural ties to Uralic traditions. Their history has been shaped by centuries of Baltic, Scandinavian, and Germanic influence, and today they maintain a unique non-Indo-European language and strong oral folklore tradition.",
+            "reference_ethnicities": "Estonia",
+            "highlight_countries": [
+              "EST"
+            ],
+            "children": []
+          },
+          {
+            "id": "latvian",
+            "label": "Latvian",
+            "parent_id": "east_european",
+            "color": "#39C4A3",
+            "description": "Latvians descend from a blend of ancient Baltic and Finnic peoples with later Germanic and Slavic influences reflecting their history in a famous trading crossroads region. They speak an Indo-European Baltic language and have preserved distinctive folk traditions, music, and a strong agrarian cultural heritage.",
+            "reference_ethnicities": "Latvia",
+            "highlight_countries": [
+              "LVA"
+            ],
+            "children": []
+          },
+          {
+            "id": "lithuanian",
+            "label": "Lithuanian",
+            "parent_id": "east_european",
+            "color": "#59C6AE",
+            "description": "Lithuanians are descended from ancient Baltic tribes and developed a powerful medieval state, the Grand Duchy of Lithuania, which later joined with the Kingdom of Poland to form the Polish-Lithuanian Commonwealth. They speak one of the oldest surviving Indo-European languages and maintain a spirit of independence and resilience.",
+            "reference_ethnicities": "Lithuania",
+            "highlight_countries": [
+              "LTU"
+            ],
+            "children": []
+          },
+          {
+            "id": "russian",
+            "label": "Russian",
+            "parent_id": "east_european",
+            "color": "#22E5BA",
+            "description": "Russians trace their roots to the East Slavic tribes who formed the early Kievan Rus' state, heavily influenced by Norse, Byzantine, and later Mongol rule. Over time, the cultural and political center shifted northeast, giving rise to the Grand Duchy of Moscow and eventually the Russian Empire. Known for Orthodox Christianity, centralized state-building, and expansive territorial integration, they formed a distinct cultural and linguistic core in the eastern Slavic world.",
+            "reference_ethnicities": "Russia",
+            "highlight_countries": [
+              "WEST_RUS"
+            ],
+            "children": []
+          },
+          {
+            "id": "slovenian",
+            "label": "Slovenian",
+            "parent_id": "east_european",
+            "color": "#6FE3C9",
+            "description": "Slovenians emerged from Slavic migrations into the Eastern Alps during the early medieval period, blending with earlier Romanized and later Germanic populations. This mixing led to a unique Alpine Slavic culture influenced by Central European governance, Catholic traditions, and an early literary legacy.",
+            "reference_ethnicities": "Slovenia",
+            "highlight_countries": [
+              "SVN"
+            ],
+            "children": []
+          },
+          {
+            "id": "broadly_east_european",
+            "label": "Broadly Central & Eastern European",
+            "parent_id": "east_european",
+            "color": "#44AD95",
+            "description": "The genetic heritage of Central and Eastern Europe traces back to peoples living southeast of the Baltic Sea and to a more recent influx of Slavic-speaking peoples from north of the Black Sea. While the region's diverse populations—Baltic, Slavic, Finno-Ugric, and others—retain distinct linguistic and cultural identities, their histories have been shaped by overlapping empires. In recent decades, significant migration from the region has further extended this shared heritage around the world. Migrations, changing borders, and shared histories can make some “Central & Eastern European” DNA difficult to assign confidently to a specific subpopulation. In these cases it receives a “Broadly” designation.",
+            "reference_ethnicities": null,
+            "highlight_countries": [
+              "BLR",
+              "CZE",
+              "EST",
+              "HUN",
+              "LTU",
+              "LVA",
+              "POL",
+              "POL_SOUTH",
+              "SVK",
+              "SVN",
+              "UKR",
+              "WEST_RUS"
+            ],
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "balkan",
+        "label": "Greek & Balkan",
+        "parent_id": "european",
+        "color": "#4447AD",
+        "description": "Despite broad cultural diversity, “Greek and Balkan” people are genetically similar to one another, descending from early Mediterranean and Slavic ancestors.",
+        "reference_ethnicities": null,
+        "highlight_countries": [
+          "ALB_NORTH",
+          "ALB_SOUTH",
+          "BGR",
+          "BIH",
+          "GRC",
+          "HRV",
+          "kosovo",
+          "MDA",
+          "MKD",
+          "MNE",
+          "ROU",
+          "SRB"
+        ],
+        "children": [
+          {
+            "id": "macedonian",
+            "label": "Albanian & Macedonian",
+            "parent_id": "balkan",
+            "color": "#5A5CC7",
+            "description": "The people of central and southern Albania, North Macedonia, and nearby regions reflect a historical blend of Hellenistic, Roman, and later Slavic and Ottoman cultures. Their diverse languages and histories were shaped by shifting empires, mountainous terrain, and migrations. As early as the late 13th century CE, some Albanians migrated to southern Greece and southern Italy. Today their descendants are known as Arvanites and Arbëreshë.",
+            "reference_ethnicities": "Albania, North Macedonia",
+            "highlight_countries": [
+              "ALB_SOUTH",
+              "MKD"
+            ],
+            "children": []
+          },
+          {
+            "id": "serbian",
+            "label": "Bosnian, Croatian, Montenegrin & Serbian",
+            "parent_id": "balkan",
+            "color": "#2229E5",
+            "description": "These South Slavic peoples emerged from early Slavic migrations into the Balkans in the 6th and 7th centuries CE, blending with indigenous Illyrians and other local populations. Over time, religious, political, and regional divisions shaped distinct identities.",
+            "reference_ethnicities": "Bosnia, Croatia, Serbia",
+            "highlight_countries": [
+              "BIH",
+              "HRV",
+              "MNE",
+              "SRB"
+            ],
+            "children": []
+          },
+          {
+            "id": "east_balkan",
+            "label": "Bulgarian, Moldovan & Romanian",
+            "parent_id": "balkan",
+            "color": "#6F72E3",
+            "description": "Romanians and Moldovans share a Romance language linked to their history under the Roman Empire. Bulgarians, many of whom have historically lived throughout the broader region, formed around a Slavic-speaking population shaped by Turkic Bulgars and Byzantine interaction. ",
+            "reference_ethnicities": "Bulgaria, Moldova, Romania",
+            "highlight_countries": [
+              "BGR",
+              "MDA",
+              "ROU"
+            ],
+            "children": []
+          },
+          {
+            "id": "greek",
+            "label": "Greek",
+            "parent_id": "balkan",
+            "color": "#474CD8",
+            "description": "Greeks trace their origins to Mycenaean and Classical Hellenic civilizations, maintaining cultural and linguistic continuity over millennia despite interactions with other peoples during the Roman, Byzantine, and Ottoman periods.",
+            "reference_ethnicities": "Greece",
+            "highlight_countries": [
+              "GRC"
+            ],
+            "children": []
+          },
+          {
+            "id": "albanian",
+            "label": "Kosovar & Northern Albanian",
+            "parent_id": "balkan",
+            "color": "#5359ED",
+            "description": "People from Kosovo, northern Albania, and nearby regions descend from a deep mixture of ancient Balkan populations—likely including Illyrians—later influenced by Slavic migrations and Ottoman rule. While they share overlapping cultural and historical influences, and a shared Gheg Albanian language, these groups maintain distinct identities rooted in their specific historical paths and local traditions.",
+            "reference_ethnicities": "Albania, Kosovo, Montenegro, North Macedonia",
+            "highlight_countries": [
+              "ALB_NORTH",
+              "kosovo"
+            ],
+            "children": []
+          },
+          {
+            "id": "broadly_balkan",
+            "label": "Broadly Greek & Balkan",
+            "parent_id": "balkan",
+            "color": "#4447AD",
+            "description": "Despite broad cultural diversity, “Greek and Balkan” people are genetically similar to one another, descending from early Mediterranean and Slavic ancestors. Some “Greek & Balkan” DNA is difficult to assign confidently to a specific subpopulation and receives a “Broadly” designation.",
+            "reference_ethnicities": null,
+            "highlight_countries": [
+              "ALB_NORTH",
+              "ALB_SOUTH",
+              "BGR",
+              "BIH",
+              "GRC",
+              "HRV",
+              "kosovo",
+              "MDA",
+              "MKD",
+              "MNE",
+              "ROU",
+              "SRB"
+            ],
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "italian",
+        "label": "Italian & Maltese",
+        "parent_id": "european",
+        "color": "#4364AD",
+        "description": "The peoples of Italy and Malta descend from a complex blend of ancient populations. Italy, inhabited for more than 30,000 years, was a crossroads of the Mediterranean and was shaped by the rise and fall of the Western Roman Empire and later migrations from Germanic, Greek, North African, and Western Asian peoples. Malta—strategically located between Europe and North Africa—has been shaped by Phoenician, Roman, Arab, Norman, and Italian influences, reflecting its long history as a center of maritime exchange.",
+        "reference_ethnicities": null,
+        "highlight_countries": [
+          "ITA_NORTH",
+          "ITA_SARDINIA",
+          "ITA_SOUTH",
+          "MLT",
+          "SMR",
+          "VAT"
+        ],
+        "children": [
+          {
+            "id": "maltese",
+            "label": "Maltese",
+            "parent_id": "italian",
+            "color": "#6F92E3",
+            "description": "The Maltese people descend from a blend of ancient Mediterranean populations, including Phoenicians, Romans, and later Arab, Norman, and Sicilian settlers. They have a unique Semitic language with heavy Romance influence, and a cultural history shaped by centuries of strategic island trade, conquest, and Catholic tradition.",
+            "reference_ethnicities": null,
+            "highlight_countries": [
+              "MLT"
+            ],
+            "children": []
+          },
+          {
+            "id": "northern_italian",
+            "label": "Northern Italian",
+            "parent_id": "italian",
+            "color": "#225AE5",
+            "description": "Northern Italians descend from a mix of ancient Ligurian, Etruscan, Celtic, and Roman populations, later influenced by Germanic tribes (like the Lombards) and long-standing trade with northern Europe. They maintain a legacy of urbanized city-states, early industrialization, and cultural ties to both Latin and Central European traditions.",
+            "reference_ethnicities": "Emilia-Romagna, Friuli-Venezia Giulia, Liguria, Lombardy, Piedmont, Trentino-South Tyrol, Tuscany, Veneto",
+            "highlight_countries": [
+              "ITA_NORTH",
+              "SMR"
+            ],
+            "children": []
+          },
+          {
+            "id": "sardinian",
+            "label": "Sardinian",
+            "parent_id": "italian",
+            "color": "#5382ED",
+            "description": "Sardinians are outliers in the genetic landscape of Europe. Thanks to the geographic isolation of their rugged island home they have preserved distinct linguistic, cultural, and genetic traits that set them apart from mainland Italian and Mediterranean populations.",
+            "reference_ethnicities": null,
+            "highlight_countries": [
+              "ITA_SARDINIA"
+            ],
+            "children": []
+          },
+          {
+            "id": "southern_italian",
+            "label": "Southern Italian",
+            "parent_id": "italian",
+            "color": "#3365DA",
+            "description": "Southern Italians trace their ancestry to pre-Roman Italic peoples, Greek colonists, and Roman settlers, with later layers of influence from Byzantines, Arabs, Normans, and Spanish rulers, reflecting a deep Mediterranean heritage, shaped by long-standing agricultural societies, seafaring networks, and diverse imperial legacies.",
+            "reference_ethnicities": "Abruzzo, Apulia, Basilicata, Calabria, Campania, Lazio, Marche, Molise, Sicily",
+            "highlight_countries": [
+              "ITA_SOUTH",
+              "VAT"
+            ],
+            "children": []
+          },
+          {
+            "id": "broadly_italian",
+            "label": "Broadly Italian & Maltese",
+            "parent_id": "italian",
+            "color": "#4364AD",
+            "description": "The peoples of Italy and Malta descend from a complex blend of ancient populations. Italy, inhabited for more than 30,000 years, was a crossroads of the Mediterranean and was shaped by the rise and fall of the Western Roman Empire and later migrations from Germanic, Greek, North African, and Western Asian peoples. Malta—strategically located between Europe and North Africa—has been shaped by Phoenician, Roman, Arab, Norman, and Italian influences, reflecting its long history as a center of maritime exchange. Some “Italian & Maltese” DNA is difficult to assign confidently to a specific subpopulation and receives a “Broadly” designation.",
+            "reference_ethnicities": null,
+            "highlight_countries": [
+              "ITA_NORTH",
+              "ITA_SARDINIA",
+              "ITA_SOUTH",
+              "MLT",
+              "SMR",
+              "VAT"
+            ],
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "scandinavian",
+        "label": "Nordic",
+        "parent_id": "european",
+        "color": "#44ADAD",
+        "description": "Nordic peoples share deep cultural and historical ties, even as distinct regional identities have taken shape over time. The people of Norway, Sweden, Denmark, and Iceland largely descend from medieval North Germanic tribes who settled around the North Sea, shaping a common linguistic and genetic heritage often associated with Scandinavia. In contrast, Finns trace their roots to Finno-Ugric-speaking populations, whose language and ancestry are distinct from their Scandinavian neighbors.",
+        "reference_ethnicities": null,
+        "highlight_countries": [
+          "DNK",
+          "FIN",
+          "FRO",
+          "ISL",
+          "NOR",
+          "SJM",
+          "SWE"
+        ],
+        "children": [
+          {
+            "id": "danish",
+            "label": "Danish",
+            "parent_id": "scandinavian",
+            "color": "#6FE3E3",
+            "description": "Danes trace their roots to Iron Age Germanic tribes and became a central hub of the Viking world. They are known for a blend of Norse tradition, strong royal institutions, and centuries of influence across northern Europe.",
+            "reference_ethnicities": "Denmark",
+            "highlight_countries": [
+              "DNK"
+            ],
+            "children": []
+          },
+          {
+            "id": "finnish",
+            "label": "Finnish",
+            "parent_id": "scandinavian",
+            "color": "#39C3C4",
+            "description": "Finns descend from a blend of ancient European hunter-gatherers and later Uralic-speaking migrants from northeastern Siberia, within an area now known as Yakutia. This mixing gave rise to a distinct genetic and linguistic heritage. Unlike their Scandinavian neighbors, Finns speak a Finno-Ugric language unrelated to Indo-European languages, and their ancestry reflects deep continuity in the region alongside influences from both eastern and western Eurasian populations.",
+            "reference_ethnicities": null,
+            "highlight_countries": [
+              "FIN"
+            ],
+            "children": []
+          },
+          {
+            "id": "icelander",
+            "label": "Icelandic",
+            "parent_id": "scandinavian",
+            "color": "#22E3E5",
+            "description": "Icelanders descend primarily from Norse settlers from Norway, along with a significant number of Gaelic peoples—mainly from Ireland and Scotland—who arrived during the 9th and 10th centuries CE. This group maintained a Norse language and culture, shaped by isolation, early literacy, and a strong oral tradition rooted in saga literature.",
+            "reference_ethnicities": "Iceland",
+            "highlight_countries": [
+              "ISL"
+            ],
+            "children": []
+          },
+          {
+            "id": "norwegian",
+            "label": "Norwegian",
+            "parent_id": "scandinavian",
+            "color": "#53ECED",
+            "description": "Norwegians descend from early Germanic tribes who settled along rugged coastlines and fjords. Shaped by a strong tradition of exploration, decentralized chieftains, and Norse mythology, these communities formed the core of seafaring Norse culture during the Viking Age.",
+            "reference_ethnicities": "Norway",
+            "highlight_countries": [
+              "NOR",
+              "SJM"
+            ],
+            "children": []
+          },
+          {
+            "id": "swedish",
+            "label": "Swedish",
+            "parent_id": "scandinavian",
+            "color": "#3EDCDC",
+            "description": "Swedes emerged from Nordic Bronze Age communities and early Germanic tribes, like the Svear, Gutes, and Götar, who later unified under a common monarchy. Their cultural and linguistic identity solidified during the Viking and medieval periods, with a legacy of agrarian society and Norse traditions.",
+            "reference_ethnicities": "Sweden",
+            "highlight_countries": [
+              "SWE"
+            ],
+            "children": []
+          },
+          {
+            "id": "broadly_scandinavian",
+            "label": "Broadly Nordic",
+            "parent_id": "scandinavian",
+            "color": "#44ADAD",
+            "description": "Nordic peoples share deep cultural and historical ties, even as distinct regional identities have taken shape over time. The people of Norway, Sweden, Denmark, and Iceland largely descend from medieval North Germanic tribes who settled around the North Sea, shaping a common linguistic and genetic heritage often associated with Scandinavia. In contrast, Finns trace their roots to Finno-Ugric-speaking populations, whose language and ancestry are distinct from their Scandinavian neighbors.",
+            "reference_ethnicities": null,
+            "highlight_countries": [
+              "DNK",
+              "FIN",
+              "ISL",
+              "NOR",
+              "SJM",
+              "SWE"
+            ],
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "broadly_european",
+        "label": "Broadly European",
+        "parent_id": "european",
+        "color": "#B3DBFF",
+        "description": "Much of Europe was buried under miles of ice ten thousand years ago. As the glaciers receded over millennia, Neolithic farmers from western Asia joined Paleolithic hunter-gatherers to settle Europe. Some European DNA is difficult to assign confidently to one subpopulation and receives a “Broadly” designation.",
+        "reference_ethnicities": null,
+        "highlight_countries": [
+          "ALB_NORTH",
+          "ALB_SOUTH",
+          "AND",
+          "AUT",
+          "AUT_WEST",
+          "BEL",
+          "BGR",
+          "BIH",
+          "BLR",
+          "CHE",
+          "CHE_WEST",
+          "CZE",
+          "DEU_BADEN",
+          "DEU_EAST",
+          "DEU_NORTH",
+          "DEU_WEST",
+          "DNK",
+          "ESP_CANARIES",
+          "ESP_CENTRAL",
+          "ESP_EAST",
+          "ESP_GALICIA",
+          "ESP_NORTH",
+          "EST",
+          "FIN",
+          "FRA",
+          "FRO",
+          "GBR_ENGLAND",
+          "GBR_NORTHERN_IRELAND",
+          "GBR_SCOTLAND",
+          "GBR_WALES",
+          "GGY",
+          "GRC",
+          "HRV",
+          "HUN",
+          "IMN",
+          "IRL",
+          "ISL",
+          "ITA_NORTH",
+          "ITA_SARDINIA",
+          "ITA_SOUTH",
+          "kosovo",
+          "LIE",
+          "LTU",
+          "LUX",
+          "LVA",
+          "MDA",
+          "MKD",
+          "MLT",
+          "MNE",
+          "NLD_NORTH",
+          "NLD_SOUTH",
+          "NOR",
+          "POL",
+          "POL_SOUTH",
+          "PRT",
+          "ROU",
+          "SJM",
+          "SMR",
+          "SRB",
+          "SVK",
+          "SVN",
+          "SWE",
+          "UKR",
+          "VAT",
+          "WEST_RUS"
+        ],
+        "children": []
+      }
+    ]
+  },
+  {
+    "id": "african",
+    "label": "Sub-Saharan African",
+    "parent_id": "root",
+    "color": "#B580FF",
+    "description": "The genetic diversity of Eastern, Middle, Southern, and Western Africa reflects both the deep history of humans in the region and the recent migrations that have carried people from western Africa to both southern and eastern Africa. In contrast, North Africans have deep linguistic and genetic connections to western Asia.",
+    "reference_ethnicities": null,
+    "highlight_countries": [
+      "AGO",
+      "BDI",
+      "BEN",
+      "BFA",
+      "BWA",
+      "CAF",
+      "CIV",
+      "CMR",
+      "COD",
+      "COG",
+      "CPV",
+      "DJI",
+      "ERI",
+      "ETH",
+      "GAB",
+      "GHA",
+      "GIN",
+      "GMB",
+      "GNB",
+      "GNQ",
+      "KEN",
+      "LBR",
+      "LSO",
+      "MDG",
+      "MLI",
+      "MOZ",
+      "MRT",
+      "MWI",
+      "NAM",
+      "NER",
+      "NGA",
+      "RWA",
+      "SDN",
+      "SEN",
+      "SLE",
+      "SOM",
+      "somaliland",
+      "SSD",
+      "SWZ",
+      "TCD",
+      "TGO",
+      "TZA",
+      "UGA",
+      "ZAF",
+      "ZMB",
+      "ZWE"
+    ],
+    "children": [
+      {
+        "id": "west_african",
+        "label": "West African",
+        "parent_id": "african",
+        "color": "#6743AD",
+        "description": "For over a millennium before European colonization and the Atlantic slave trade, West Africans were united under a series of powerful empires, resulting in broad similarities in music, clothing, art, and cuisine.  A gradient of genetic similarity extending from Senegal to Nigeria reflects a richly complex population history in a region home to over 350 million people who form hundreds of distinct ethnic groups.",
+        "reference_ethnicities": null,
+        "highlight_countries": [
+          "BEN",
+          "BFA",
+          "CIV",
+          "CMR",
+          "CPV",
+          "GHA",
+          "GIN",
+          "GMB",
+          "GNB",
+          "LBR",
+          "MLI",
+          "MRT",
+          "NER",
+          "NGA",
+          "SEN",
+          "SLE",
+          "TGO"
+        ],
+        "children": [
+          {
+            "id": "nigerian",
+            "label": "Nigerian",
+            "parent_id": "west_african",
+            "color": "#8653ED",
+            "description": "Nigeria’s population is the largest in Africa and one of the most diverse, with over 250 ethnic groups, including the Hausa, Fulani, Yoruba, and Igbo people.",
+            "reference_ethnicities": "Esan, Nigeria, Yoruba",
+            "highlight_countries": [
+              "NGA"
+            ],
+            "children": []
+          },
+          {
+            "id": "senegambian_guinean",
+            "label": "Senegambian & Guinean",
+            "parent_id": "west_african",
+            "color": "#6423E6",
+            "description": "The people of Senegal, The Gambia, Guinea, and Guinea-Bissau share many traditions related to the history of powerful empires in the region. In The Gambia, the Mandinka people are the largest group, with historical roots along the Niger River basin, while the Wolof people form the majority in neighboring Senegal. In Guinea and Guinea-Bissau the Fulani people predominate, and may have subtle genetic links to North Africa or western Asia. In the 18th century, around 400,000 people from this region were enslaved and transported to the Americas; nearly 50,000 disembarked in the United States alone.",
+            "reference_ethnicities": "Gambia, Guinea, Guinea-Bissau, Mandenka, Senegal",
+            "highlight_countries": [
+              "CPV",
+              "GIN",
+              "GMB",
+              "GNB",
+              "SEN"
+            ],
+            "children": []
+          },
+          {
+            "id": "coastal_west_african",
+            "label": "Ghanaian, Liberian & Sierra Leonean",
+            "parent_id": "west_african",
+            "color": "#7948DA",
+            "description": "The people of the coastal countries above the Gulf of Guinea are genetically similar and are distinct from neighboring regions.",
+            "reference_ethnicities": "Côte d'Ivoire, Ghana, Liberia, Limba, Mende, Sierra Leone, Temne",
+            "highlight_countries": [
+              "CIV",
+              "GHA",
+              "LBR",
+              "SLE"
+            ],
+            "children": []
+          },
+          {
+            "id": "broadly_west_african",
+            "label": "Broadly West African",
+            "parent_id": "west_african",
+            "color": "#6743AD",
+            "description": "For over a millennium before European colonization and the Atlantic slave trade, West Africans were united under a series of powerful empires, resulting in broad similarities in music, clothing, art, and cuisine.  A gradient of genetic similarity extending from Senegal to Nigeria reflects a richly complex population history in a region home to over 350 million people who form hundreds of distinct ethnic groups. Broadly West African DNA may match several populations, making it difficult to assign to just one.",
+            "reference_ethnicities": null,
+            "highlight_countries": [
+              "BEN",
+              "BFA",
+              "CIV",
+              "CPV",
+              "GHA",
+              "GIN",
+              "GMB",
+              "GNB",
+              "LBR",
+              "MLI",
+              "NER",
+              "NGA",
+              "SEN",
+              "SLE",
+              "TGO"
+            ],
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "bantu",
+        "label": "Congolese & Southern East African",
+        "parent_id": "african",
+        "color": "#7944AE",
+        "description": "Starting around 3,000 years ago, Bantu speakers carried metallurgy and agriculture from the highlands of Nigeria and Cameroon in two major streams – one southward and one eastward – resulting in ancestry that transcends geopolitical borders. “Bantu” is a term widely used to describe the largest of Africa’s ethnolinguistic families.",
+        "reference_ethnicities": null,
+        "highlight_countries": [
+          "AGO",
+          "BDI",
+          "COD",
+          "KEN",
+          "RWA",
+          "TZA",
+          "UGA"
+        ],
+        "children": [
+          {
+            "id": "congolese_bantu",
+            "label": "Angolan & Congolese",
+            "parent_id": "bantu",
+            "color": "#8422E5",
+            "description": "Beginning around 3,000 years ago, the genetic tapestry of the Congo basin was transformed by the influx of Bantu-speaking peoples from the north.",
+            "reference_ethnicities": null,
+            "highlight_countries": [
+              "AGO",
+              "COD"
+            ],
+            "children": []
+          },
+          {
+            "id": "east_bantu",
+            "label": "Southern East African",
+            "parent_id": "bantu",
+            "color": "#A053ED",
+            "description": "Within the last 3,000 years, metallurgy and agriculture arrived in Southern East Africa with the migration of Bantu-speaking peoples from Nigeria and Cameroon.",
+            "reference_ethnicities": "Kenya, Kenyan Luhya, Uganda",
+            "highlight_countries": [
+              "BDI",
+              "KEN",
+              "RWA",
+              "TZA",
+              "UGA"
+            ],
+            "children": []
+          },
+          {
+            "id": "broadly_bantu",
+            "label": "Broadly Congolese & Southern East African",
+            "parent_id": "bantu",
+            "color": "#7944AE",
+            "description": "Starting around 3,000 years ago, Bantu speakers carried metallurgy and agriculture from the highlands of Nigeria and Cameroon in two major streams – one southward and one eastward – resulting in ancestry that transcends geopolitical borders. “Bantu” is a term widely used to describe the largest of Africa’s ethnolinguistic families.  Likely as a result of these rapid and widespread expansions across Central and Eastern Africa, it is difficult to assign a specific location within Sub-Saharan Africa to some chromosomal segments with a high degree of confidence.",
+            "reference_ethnicities": null,
+            "highlight_countries": [
+              "AGO",
+              "BDI",
+              "COD",
+              "KEN",
+              "RWA",
+              "TZA",
+              "UGA"
+            ],
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "african_hunter_gatherer",
+        "label": "African Hunter-Gatherer",
+        "parent_id": "african",
+        "color": "#8A44AF",
+        "description": "African hunter-gatherer populations represent some of the most genetically distinct branches in the human family tree.",
+        "reference_ethnicities": "Biaka, Mbuti",
+        "highlight_countries": [
+          "CAF",
+          "CMR",
+          "COD",
+          "COG",
+          "GAB"
+        ],
+        "children": []
+      },
+      {
+        "id": "north_east_african",
+        "label": "Northern East African",
+        "parent_id": "african",
+        "color": "#7044AE",
+        "description": "Northern East Africa, which spans from Sudan in the northwest to Ethiopia and Somalia in the southeast, is home to both Afro-Asiatic and Nilo-Saharan ethnolinguistic groups. The entire region has a rich history of genetic and cultural exchange between indigenous East Africans and immigrants from the Arabian Peninsula.",
+        "reference_ethnicities": null,
+        "highlight_countries": [
+          "DJI",
+          "ERI",
+          "ETH",
+          "SDN",
+          "SOM",
+          "somaliland",
+          "SSD"
+        ],
+        "children": [
+          {
+            "id": "ethiopian_eritrean",
+            "label": "Ethiopian & Eritrean",
+            "parent_id": "north_east_african",
+            "color": "#9F6FE3",
+            "description": "Eritreans and Ethiopians were united under the Kingdom of Aksum for almost 1,000 years until 940 CE, and their DNA reflects that shared history.",
+            "reference_ethnicities": null,
+            "highlight_countries": [
+              "ERI",
+              "ETH"
+            ],
+            "children": []
+          },
+          {
+            "id": "somali",
+            "label": "Somali",
+            "parent_id": "north_east_african",
+            "color": "#875AC7",
+            "description": "With ancient roots in northern east Africa, present-day ethnic Somalis live in Somalia, Ethiopia, Kenya, or Djibouti, and speak Somali – a Cushitic language.",
+            "reference_ethnicities": null,
+            "highlight_countries": [
+              "SOM",
+              "somaliland"
+            ],
+            "children": []
+          },
+          {
+            "id": "sudanese",
+            "label": "Sudanese",
+            "parent_id": "north_east_african",
+            "color": "#7422E5",
+            "description": "The people of Sudan and South Sudan are ethnically diverse, following a history of migration between East Africa and the Arabian peninsula.",
+            "reference_ethnicities": null,
+            "highlight_countries": [
+              "SDN",
+              "SSD"
+            ],
+            "children": []
+          },
+          {
+            "id": "broadly_north_east_african",
+            "label": "Broadly Northern East African",
+            "parent_id": "north_east_african",
+            "color": "#7044AE",
+            "description": "Northern East Africa, which spans from Sudan in the northwest to Ethiopia and Somalia in the southeast, is home to both Afro-Asiatic and Nilo-Saharan ethnolinguistic groups. The entire region has a rich history of genetic and cultural exchange between indigenous East Africans and immigrants from the Arabian Peninsula. As a result of both ancient and recent migrations within the region, broadly Northern East African DNA may be difficult to assign to a specific location.",
+            "reference_ethnicities": null,
+            "highlight_countries": [
+              "DJI",
+              "ERI",
+              "ETH",
+              "SDN",
+              "SOM",
+              "somaliland",
+              "SSD"
+            ],
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "broadly_african",
+        "label": "Broadly Sub-Saharan African",
+        "parent_id": "african",
+        "color": "#D3B2FF",
+        "description": "The genetic diversity of Eastern, Middle, Southern, and Western Africa reflects both the deep history of humans in the region and the recent migrations that have carried people from western Africa to both southern and eastern Africa. In contrast, North Africans have deep linguistic and genetic connections to western Asia. As a result of this ancient and complex population history, it is difficult to assign some DNA to a specific population within Africa.",
+        "reference_ethnicities": null,
+        "highlight_countries": [
+          "AGO",
+          "BDI",
+          "BEN",
+          "BFA",
+          "BWA",
+          "CAF",
+          "CIV",
+          "CMR",
+          "COD",
+          "COG",
+          "CPV",
+          "DJI",
+          "ERI",
+          "ETH",
+          "GAB",
+          "GHA",
+          "GIN",
+          "GMB",
+          "GNB",
+          "GNQ",
+          "KEN",
+          "LBR",
+          "LSO",
+          "MDG",
+          "MLI",
+          "MOZ",
+          "MRT",
+          "MWI",
+          "NAM",
+          "NER",
+          "NGA",
+          "RWA",
+          "SDN",
+          "SEN",
+          "SLE",
+          "SOM",
+          "somaliland",
+          "SSD",
+          "SWZ",
+          "TCD",
+          "TGO",
+          "TZA",
+          "UGA",
+          "ZAF",
+          "ZMB",
+          "ZWE"
+        ],
+        "children": []
+      }
+    ]
+  },
+  {
+    "id": "american",
+    "label": "Indigenous American",
+    "parent_id": "root",
+    "color": "#FF80EC",
+    "description": "Major migrations into the Americas from northeast Asia and Beringia began around 16,000 years ago. These early and subsequent movements helped shape the majority of present-day Indigenous American ancestry.",
+    "reference_ethnicities": null,
+    "highlight_countries": [
+      "ABW",
+      "AIA",
+      "ARG",
+      "ATG",
+      "BES",
+      "BHS",
+      "BLM",
+      "BLZ",
+      "BOL",
+      "BRA",
+      "BRB",
+      "CAN_NORTH",
+      "CAN_PROVINCES",
+      "CHL",
+      "COL",
+      "CRI",
+      "CUW",
+      "CYM",
+      "DMA",
+      "ECU",
+      "FLK",
+      "GLP",
+      "GRD",
+      "GTM",
+      "GUF",
+      "GUY",
+      "HND",
+      "HTI",
+      "JAM",
+      "KNA",
+      "LCA",
+      "MAF",
+      "MEX_NORTH",
+      "MEX_SOUTH",
+      "MSR",
+      "MTQ",
+      "NIC",
+      "PAN",
+      "PER",
+      "PRI",
+      "PRY",
+      "SLV",
+      "SPM",
+      "SUR",
+      "SXM",
+      "TCA",
+      "TTO",
+      "URY",
+      "USA_ALASKA",
+      "USA_CONTINENTAL",
+      "USA_SOUTHWEST",
+      "VCT",
+      "VEN",
+      "VGB",
+      "VIR"
+    ],
+    "children": [
+      {
+        "id": "central_american",
+        "label": "Southern Mesoamerican",
+        "parent_id": "american",
+        "color": "#E51BB9",
+        "description": "Indigenous Peoples of Southern Mesoamerica are descendants of diverse ancestral communities with rich agricultural, linguistic, and spiritual traditions. Most notable among these groups are the Maya, one of the most complex and enduring Indigenous civilizations of the Americas, known for their astronomy, writing, architecture, and calendrical systems. Despite the collapse of ancient city-states and the violence of colonization, the peoples in this region maintain distinct languages and vibrant cultural practices. While this ancestry reaches its highest levels in southern Mexico and throughout Central America, it can be found throughout the Americas. This wide range matches evidence from ancient DNA studies that suggests groups from Mesoamerica expanded both north and south within the last few thousand years.",
+        "reference_ethnicities": "Guatemala, Mexico",
+        "highlight_countries": [
+          "BLZ",
+          "CRI",
+          "GTM",
+          "HND",
+          "MEX_SOUTH",
+          "NIC",
+          "PAN",
+          "SLV"
+        ],
+        "children": []
+      },
+      {
+        "id": "north_mesoamerican",
+        "label": "North American",
+        "parent_id": "american",
+        "color": "#ED53AA",
+        "description": "This ancestry reaches its highest levels in modern-day Mexico, but also appears in varying amounts across the United States, Canada, and Latin America. Ancient DNA studies suggest that groups from Mesoamerica spread both to the north and south over the last few thousand years, which may help explain this wide distribution. In some cases, this ancestry may also represent Indigenous American groups for which direct reference data is missing because of the impacts of colonization, genocide, and population loss. These results are not intended to be used to seek, confirm, or deny any form of citizenship or belonging within Indigenous groups.",
+        "reference_ethnicities": "Mexico",
+        "highlight_countries": [
+          "CAN_PROVINCES",
+          "MEX_NORTH",
+          "USA_CONTINENTAL"
+        ],
+        "children": []
+      },
+      {
+        "id": "ecuadorian",
+        "label": "Northern Andean",
+        "parent_id": "american",
+        "color": "#C73CD9",
+        "description": "Indigenous Peoples of the Northern Andes include highland groups who descend from ancient Andean civilizations that long predate the Inca expansion, with rich traditions in agriculture, textile-making, and communal governance. Despite colonization and centuries of marginalization, they have preserved their languages, cultural practices, and strong ties to the land through resilience and organized social movements. While this ancestry reaches its highest levels in modern-day Ecuador, it can be found throughout Latin America.",
+        "reference_ethnicities": "Ecuador",
+        "highlight_countries": [
+          "ECU"
+        ],
+        "children": []
+      },
+      {
+        "id": "south_american",
+        "label": "Central Andean & Amazonian",
+        "parent_id": "american",
+        "color": "#ED53EB",
+        "description": "This ancestry reaches its highest levels in modern-day Bolivia and Peru, but it can be found throughout South America. Indigenous Peoples of the Central Andes—such as the Quechua and Aymara—descend from ancient Andean civilizations that developed complex societies, terraced agriculture, and high-altitude adaptations over thousands of years. They maintain strong linguistic and cultural identities rooted in communal life and resilience in the face of colonization and modern pressures. It's estimated that some of the first human settlements in the Amazon—a broad rainforest touching nine South American countries—were established around 10,000 years ago. Amazonian peoples developed extraordinary ecological knowledge, diverse languages, and complex societies that shaped the Amazon's landscapes.",
+        "reference_ethnicities": "Bolivia, Karitiana, Peru, Surui",
+        "highlight_countries": [
+          "ARG",
+          "BOL",
+          "BRA",
+          "CHL",
+          "COL",
+          "FLK",
+          "GUF",
+          "GUY",
+          "PER",
+          "PRY",
+          "SUR",
+          "URY",
+          "VEN"
+        ],
+        "children": []
+      },
+      {
+        "id": "arctic",
+        "label": "Arctic North American",
+        "parent_id": "american",
+        "color": "#B43BD9",
+        "description": "Indigenous Arctic Peoples in North America descend from ancient Paleo-Inuit cultures. The people in this region have maintained their distinct languages and cultural traditions, enabling them to thrive in extreme northern environments despite the profound disruptions brought by colonial contact and imposed governance. These results are not intended to be used to seek, confirm, or deny any form of citizenship or belonging within Indigenous groups.",
+        "reference_ethnicities": "Alaska",
+        "highlight_countries": [
+          "CAN_NORTH",
+          "USA_ALASKA"
+        ],
+        "children": []
+      },
+      {
+        "id": "north_american",
+        "label": "Western North American",
+        "parent_id": "american",
+        "color": "#DB357A",
+        "description": "This ancestry reaches its highest levels in the Western United States, but it can be found across North America, perhaps reflecting the shared migrations, histories, and languages between different Indigenous American groups. Indigenous Peoples of Western North America represent many distinct nations with diverse languages and belief systems, with continuous presence for thousands of years. Their histories have been shaped by sophisticated pre-colonial societies, violent displacement, forced assimilation, and ongoing movements for sovereignty, cultural revitalization, and land rights. These results are not intended to be used to seek, confirm, or deny any form of citizenship or belonging within Indigenous groups.",
+        "reference_ethnicities": "Arizona, New Mexico, United States of America, Utah",
+        "highlight_countries": [
+          "USA_SOUTHWEST"
+        ],
+        "children": []
+      },
+      {
+        "id": "broadly_american",
+        "label": "Broadly Indigenous American",
+        "parent_id": "american",
+        "color": "#FFB2F3",
+        "description": "Major migrations into the Americas from northeast Asia and Beringia began around 16,000 years ago. These early and subsequent movements helped shape the majority of present-day Indigenous American ancestry. Colonization, migrations, and shared histories can make some “Indigenous American” DNA difficult to assign confidently to a specific subpopulation. In these cases it receives a “Broadly” designation.",
+        "reference_ethnicities": null,
+        "highlight_countries": [
+          "ABW",
+          "AIA",
+          "ARG",
+          "ATG",
+          "BES",
+          "BHS",
+          "BLM",
+          "BLZ",
+          "BOL",
+          "BRA",
+          "BRB",
+          "CAN_NORTH",
+          "CAN_PROVINCES",
+          "CHL",
+          "COL",
+          "CRI",
+          "CUW",
+          "CYM",
+          "DMA",
+          "ECU",
+          "FLK",
+          "GLP",
+          "GRD",
+          "GTM",
+          "GUF",
+          "GUY",
+          "HND",
+          "HTI",
+          "JAM",
+          "KNA",
+          "LCA",
+          "MAF",
+          "MEX_NORTH",
+          "MEX_SOUTH",
+          "MSR",
+          "MTQ",
+          "NIC",
+          "PAN",
+          "PER",
+          "PRI",
+          "PRY",
+          "SLV",
+          "SPM",
+          "SUR",
+          "SXM",
+          "TCA",
+          "TTO",
+          "URY",
+          "USA_ALASKA",
+          "USA_CONTINENTAL",
+          "USA_SOUTHWEST",
+          "VCT",
+          "VEN",
+          "VGB",
+          "VIR"
+        ],
+        "children": []
+      }
+    ]
+  },
+  {
+    "id": "wana",
+    "label": "Western Asian & North African",
+    "parent_id": "root",
+    "color": "#9580FF",
+    "description": "The peoples of western Asia and North Africa have deep linguistic and genetic connections with one another, dating back to some of the earliest migrations out of Africa. The spread of Islam in the past 1,400 years has also dramatically shaped the region's more recent genetic landscape.",
+    "reference_ethnicities": null,
+    "highlight_countries": [
+      "ARE",
+      "ARM",
+      "AZE",
+      "BHR",
+      "CYP",
+      "DZA",
+      "EGY",
+      "ESH",
+      "GEO",
+      "IRN",
+      "IRQ",
+      "ISR",
+      "JOR",
+      "KWT",
+      "LBN",
+      "LBY",
+      "MAR",
+      "northern_cyprus",
+      "OMN",
+      "PSE",
+      "QAT",
+      "SAU",
+      "SYR",
+      "SYR_NORTH",
+      "TUN",
+      "TUR_ANATOLIAN_AC45",
+      "TUR_CAUCASUS_ASSYRIAN_IRANIAN_AC45",
+      "YEM"
+    ],
+    "children": [
+      {
+        "id": "north_african",
+        "label": "North African",
+        "parent_id": "wana",
+        "color": "#5E39C4",
+        "description": "The genetic heritage of most North African people today reflects an ancient mixture of indigenous North African, southern European, western Asian, and Sub-Saharan ancestry.",
+        "reference_ethnicities": "Algeria, Libya, Morocco, Mozabite, Tunisia",
+        "highlight_countries": [
+          "DZA",
+          "ESH",
+          "LBY",
+          "MAR",
+          "TUN"
+        ],
+        "children": []
+      },
+      {
+        "id": "north_west_asian",
+        "label": "Northern West Asian",
+        "parent_id": "wana",
+        "color": "#4C43AD",
+        "description": "Roughly bounded by Anatolia in the west to Iran in the east, northern West Asia has a shared genetic heritage going back tens of thousands of years. Domestication of grains and livestock emerged 11,000 years ago in this region, sparking the agricultural revolution that spread to parts of Europe, Africa, and other parts of Asia.",
+        "reference_ethnicities": null,
+        "highlight_countries": [
+          "ARM",
+          "AZE",
+          "CYP",
+          "GEO",
+          "IRN",
+          "IRQ",
+          "northern_cyprus",
+          "SYR_NORTH",
+          "TUR_ANATOLIAN_AC45",
+          "TUR_CAUCASUS_ASSYRIAN_IRANIAN_AC45"
+        ],
+        "children": [
+          {
+            "id": "caucasus_assyrian_iranian",
+            "label": "Iranian, Caucasian & Mesopotamian",
+            "parent_id": "north_west_asian",
+            "color": "#5F52EC",
+            "description": "The diverse people of Iran, the Caucasus, Eastern Anatolia, and Mesopotamia share an ancient genetic history dating back to some of the world’s first farmers.",
+            "reference_ethnicities": "Armenia, Assyrian, Azerbaijan, Georgia, Iran, Iraq, Turkey",
+            "highlight_countries": [
+              "ARM",
+              "AZE",
+              "GEO",
+              "IRN",
+              "IRQ",
+              "SYR_NORTH",
+              "TUR_CAUCASUS_ASSYRIAN_IRANIAN_AC45"
+            ],
+            "children": []
+          },
+          {
+            "id": "cypriot",
+            "label": "Cypriot",
+            "parent_id": "north_west_asian",
+            "color": "#3322E5",
+            "description": "By 3,000 years ago, Cypriots were speaking Greek, which remains the language spoken across half the island, even after long periods of foreign rule.",
+            "reference_ethnicities": null,
+            "highlight_countries": [
+              "CYP",
+              "northern_cyprus"
+            ],
+            "children": []
+          },
+          {
+            "id": "anatolian",
+            "label": "Anatolian",
+            "parent_id": "north_west_asian",
+            "color": "#5448D9",
+            "description": "Anatolia, a fertile peninsula above the eastern Mediterranean, has served as a genetic bridge between Asia and Europe for over 40,000 years.",
+            "reference_ethnicities": "Turkey",
+            "highlight_countries": [
+              "TUR_ANATOLIAN_AC45"
+            ],
+            "children": []
+          },
+          {
+            "id": "broadly_north_west_asian",
+            "label": "Broadly Northern West Asian",
+            "parent_id": "north_west_asian",
+            "color": "#4C43AD",
+            "description": "Roughly bounded by Anatolia in the west to Iran in the east, northern West Asia has a shared genetic heritage going back tens of thousands of years. Domestication of grains and livestock emerged 11,000 years ago in this region, sparking the agricultural revolution that spread to parts of Europe, Africa, and other parts of Asia. Broadly northern West Asian DNA matches several specific populations and is difficult to assign to just one.",
+            "reference_ethnicities": null,
+            "highlight_countries": [
+              "ARM",
+              "AZE",
+              "CYP",
+              "GEO",
+              "IRN",
+              "IRQ",
+              "northern_cyprus",
+              "SYR_NORTH",
+              "TUR_ANATOLIAN_AC45",
+              "TUR_CAUCASUS_ASSYRIAN_IRANIAN_AC45"
+            ],
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "arabian_egyptian_levantine",
+        "label": "Arab, Egyptian & Levantine",
+        "parent_id": "wana",
+        "color": "#5543AD",
+        "description": "The region bordering the Red Sea and the eastern Mediterranean has served as an important crossroads of human migration out of Africa over the last 100,000 years. More recently, the Arab conquests of Egypt and the Levant have reinforced this shared genetic heritage.",
+        "reference_ethnicities": null,
+        "highlight_countries": [
+          "ARE",
+          "BHR",
+          "EGY",
+          "ISR",
+          "JOR",
+          "KWT",
+          "LBN",
+          "OMN",
+          "PSE",
+          "QAT",
+          "SAU",
+          "SYR",
+          "YEM"
+        ],
+        "children": [
+          {
+            "id": "arabian",
+            "label": "Peninsular Arab",
+            "parent_id": "arabian_egyptian_levantine",
+            "color": "#4422E5",
+            "description": "With the birth of Islam in western Arabia, the Arabic language — along with an Arab-like genetic signature — spread across much of western Asia and North Africa.",
+            "reference_ethnicities": "Iraq, Kuwait, Oman, Qatar, Saudi Arabia, United Arab Emirates, Yemen",
+            "highlight_countries": [
+              "ARE",
+              "BHR",
+              "KWT",
+              "OMN",
+              "QAT",
+              "SAU",
+              "YEM"
+            ],
+            "children": []
+          },
+          {
+            "id": "egyptian_coptic",
+            "label": "Coptic Egyptian",
+            "parent_id": "arabian_egyptian_levantine",
+            "color": "#826FE3",
+            "description": "Representing over 10% of Egypt’s population, Copts are a Christian minority who share an ancient history with non-Coptic Egyptians, dating back before the first Pharaohs.",
+            "reference_ethnicities": null,
+            "highlight_countries": [
+              "EGY"
+            ],
+            "children": []
+          },
+          {
+            "id": "egyptian",
+            "label": "Egyptian & Southern Levantine",
+            "parent_id": "arabian_egyptian_levantine",
+            "color": "#6D53ED",
+            "description": "Since the 7th-century Islamic Expansion — which brought additional genetic diversity to the Nile River basin — a uniquely Egyptian genetic signature emerged.",
+            "reference_ethnicities": null,
+            "highlight_countries": [
+              "EGY",
+              "ISR",
+              "JOR",
+              "PSE"
+            ],
+            "children": []
+          },
+          {
+            "id": "levantine",
+            "label": "Levantine",
+            "parent_id": "arabian_egyptian_levantine",
+            "color": "#6048D9",
+            "description": "The Levant — Lebanon, Syria, Jordan, Israel, and Palestine — has been an artery of migration between Africa and Asia for over 100,000 years.",
+            "reference_ethnicities": "Druze, Jordan, Lebanon, Palestine, Syria",
+            "highlight_countries": [
+              "ISR",
+              "JOR",
+              "LBN",
+              "PSE",
+              "SYR"
+            ],
+            "children": []
+          },
+          {
+            "id": "broadly_arabian_egyptian_levantine",
+            "label": "Broadly Arab, Egyptian & Levantine",
+            "parent_id": "arabian_egyptian_levantine",
+            "color": "#5543AD",
+            "description": "The region bordering the Red Sea and the eastern Mediterranean has served as an important crossroads of human migration out of Africa over the last 100,000 years. More recently, the Arab conquests of Egypt and the Levant have reinforced this shared genetic heritage. As a result, it may be difficult to assign some DNA to just one population with confidence.",
+            "reference_ethnicities": null,
+            "highlight_countries": [
+              "ARE",
+              "BHR",
+              "EGY",
+              "ISR",
+              "JOR",
+              "KWT",
+              "LBN",
+              "OMN",
+              "PSE",
+              "QAT",
+              "SAU",
+              "SYR",
+              "YEM"
+            ],
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "broadly_wana",
+        "label": "Broadly Western Asian & North African",
+        "parent_id": "wana",
+        "color": "#C0B2FF",
+        "description": "The peoples of western Asia and North Africa have deep linguistic and genetic connections with one another, dating back to some of the earliest migrations out of Africa. The spread of Islam in the past 1,400 years has also dramatically shaped the region's more recent genetic landscape. As a result, it may be difficult to confidently assign some DNA to just one population.",
+        "reference_ethnicities": null,
+        "highlight_countries": [
+          "ARE",
+          "ARM",
+          "AZE",
+          "BHR",
+          "CYP",
+          "DZA",
+          "EGY",
+          "ESH",
+          "GEO",
+          "IRN",
+          "IRQ",
+          "ISR",
+          "JOR",
+          "KWT",
+          "LBN",
+          "LBY",
+          "MAR",
+          "northern_cyprus",
+          "OMN",
+          "PSE",
+          "QAT",
+          "SAU",
+          "SYR",
+          "SYR_NORTH",
+          "TUN",
+          "TUR_ANATOLIAN_AC45",
+          "TUR_CAUCASUS_ASSYRIAN_IRANIAN_AC45",
+          "YEM"
+        ],
+        "children": []
+      }
+    ]
+  },
+  {
+    "id": "south_asian",
+    "label": "Central & South Asian",
+    "parent_id": "root",
+    "color": "#9CFF6B",
+    "description": "Central & South Asia are represented here by diverse populations from India and Sri Lanka in the south to Kazakhstan and Uzbekistan in the north.",
+    "reference_ethnicities": null,
+    "highlight_countries": [
+      "AFG",
+      "BGD",
+      "BTN",
+      "IND_BENGALI_NORTH_EAST_INDIAN_AC45",
+      "IND_CENTRAL_SOUTH_INDIAN",
+      "IND_GUJARAT_PATEL",
+      "IND_KERALITE",
+      "IND_NORTH_INDIAN_PAKISTANI_AC45",
+      "IND_SOUTH_SA_OTHER_AC45",
+      "KAZ",
+      "KGZ",
+      "LKA",
+      "MDV",
+      "MUS",
+      "NPL",
+      "PAK",
+      "TJK",
+      "TKM",
+      "UZB",
+      "XINJIANG"
+    ],
+    "children": [
+      {
+        "id": "bengali_north_east_indian",
+        "label": "Bengali & Northeast Indian",
+        "parent_id": "south_asian",
+        "color": "#A3ED53",
+        "description": "The people of Bangladesh and Northeast India share an ancient genetic history in the fertile Ganges-Brahmaputra delta, at the crossroads between South and East Asia.",
+        "reference_ethnicities": "Assam, Bangladesh, Khasi, Manipur, Meghalaya, Nagaland, West Bengal",
+        "highlight_countries": [
+          "BGD",
+          "IND_BENGALI_NORTH_EAST_INDIAN_AC45",
+          "NPL"
+        ],
+        "children": []
+      },
+      {
+        "id": "central_asian",
+        "label": "Central Asian",
+        "parent_id": "south_asian",
+        "color": "#E5DC1C",
+        "description": "Central Asian peoples have lived at the crossroads between eastern and western Eurasia for millennia, and their genetics reflect that history.",
+        "reference_ethnicities": "Afghanistan, Burusho, Kazakhstan, Kyrgyzstan, Pakistan: Federally Administered Tribal Areas, Pashtun, Tajikistan, Turkmenistan, Uzbekistan, Xinjiang",
+        "highlight_countries": [
+          "AFG",
+          "KAZ",
+          "KGZ",
+          "TJK",
+          "TKM",
+          "UZB",
+          "XINJIANG"
+        ],
+        "children": []
+      },
+      {
+        "id": "gujarat_patel",
+        "label": "Gujarati Patidar",
+        "parent_id": "south_asian",
+        "color": "#4CE51C",
+        "description": "The Gujarati Patidars are a large, genetically distinct community in western India who descend from agricultural and merchant classes.",
+        "reference_ethnicities": null,
+        "highlight_countries": [
+          "IND_GUJARAT_PATEL"
+        ],
+        "children": []
+      },
+      {
+        "id": "keralite",
+        "label": "Malayali Subgroup",
+        "parent_id": "south_asian",
+        "color": "#53ED9E",
+        "description": "This genetic signature reaches high levels among Christian communities who live in Kerala, a large number of whom immigrated to the United States during the last century.",
+        "reference_ethnicities": "Kerala",
+        "highlight_countries": [
+          "IND_KERALITE"
+        ],
+        "children": []
+      },
+      {
+        "id": "north_indian_pakistani",
+        "label": "Northern Indian & Pakistani",
+        "parent_id": "south_asian",
+        "color": "#BDE51B",
+        "description": "The people of this region have a shared genetic history rooted in the Indus Valley civilization that flourished around 4,000 years ago.",
+        "reference_ethnicities": "Gujarat, Haryana, Kashmir, Madhya Pradesh, Punjab, Rajasthan, Sindh, Uttarakhand",
+        "highlight_countries": [
+          "IND_NORTH_INDIAN_PAKISTANI_AC45",
+          "PAK"
+        ],
+        "children": []
+      },
+      {
+        "id": "south_sa_other",
+        "label": "Southern Indian & Sri Lankan",
+        "parent_id": "south_asian",
+        "color": "#3ED888",
+        "description": "Southern Indian and Sri Lankan peoples trace their deep ancestry to some of the earliest human migrations into South Asia, arriving over 70,000 years ago. A genetic signature unique to South Asia reaches its highest levels in this region, and may be related to the spread of Dravidian languages.",
+        "reference_ethnicities": "Goa, Karnataka, Kerala, Sri Lanka, Tamil Nadu, Telangana",
+        "highlight_countries": [
+          "IND_SOUTH_SA_OTHER_AC45",
+          "LKA",
+          "MUS"
+        ],
+        "children": []
+      },
+      {
+        "id": "central_south_indian",
+        "label": "Southern Indian Subgroup",
+        "parent_id": "south_asian",
+        "color": "#39C44C",
+        "description": "The Southern Indian Subgroup reflects a distinct genetic signature found at high levels among individuals with ancestry from southern India who identify as Brahmin. People with this ancestry migrated to the United States at higher rates than others and are therefore more genetically represented in the 23andMe customer database.",
+        "reference_ethnicities": null,
+        "highlight_countries": [
+          "IND_CENTRAL_SOUTH_INDIAN",
+          "LKA"
+        ],
+        "children": []
+      },
+      {
+        "id": "broadly_south_asian",
+        "label": "Broadly Central & South Asian",
+        "parent_id": "south_asian",
+        "color": "#C2FFA3",
+        "description": "Central & South Asia are represented here by diverse populations from India and Sri Lanka in the south to Kazakhstan and Uzbekistan in the north. Some Central & South Asian DNA is difficult to assign confidently to one subpopulation and receives a “Broadly” designation.",
+        "reference_ethnicities": null,
+        "highlight_countries": [
+          "AFG",
+          "BGD",
+          "BTN",
+          "IND_BENGALI_NORTH_EAST_INDIAN_AC45",
+          "IND_CENTRAL_SOUTH_INDIAN",
+          "IND_GUJARAT_PATEL",
+          "IND_KERALITE",
+          "IND_NORTH_INDIAN_PAKISTANI_AC45",
+          "IND_SOUTH_SA_OTHER_AC45",
+          "KAZ",
+          "KGZ",
+          "LKA",
+          "MDV",
+          "MUS",
+          "NPL",
+          "PAK",
+          "TJK",
+          "TKM",
+          "UZB",
+          "XINJIANG"
+        ],
+        "children": []
+      }
+    ]
+  },
+  {
+    "id": "east_asian",
+    "label": "East Asian",
+    "parent_id": "root",
+    "color": "#FFBF80",
+    "description": "The peoples of East Asia and the Americas have a shared genetic history. Their common ancestors left western Asia over 50,000 years ago, migrating east across the continent. The ancestors of Indigenous Americans began to cross into the Americas 12,000 to 15,000 years ago.",
+    "reference_ethnicities": null,
+    "highlight_countries": [
+      "ASM",
+      "CHN_DAI",
+      "EAST_RUS",
+      "FSM",
+      "GUM",
+      "HKG",
+      "IDN",
+      "JPN",
+      "KHM",
+      "KOR",
+      "LAO",
+      "MDG",
+      "MMR",
+      "MNG",
+      "MNP",
+      "MYS",
+      "NORTH_CHINESE",
+      "PHL",
+      "PLW",
+      "PRK",
+      "SOUTH_CHINESE",
+      "SOUTHERNMOST_CHINESE",
+      "THA",
+      "TLS",
+      "TON",
+      "TWN",
+      "VNM",
+      "WSM"
+    ],
+    "children": [
+      {
+        "id": "chinese",
+        "label": "Chinese",
+        "parent_id": "east_asian",
+        "color": "#AD4E44",
+        "description": "China is home to one of the world’s earliest and most enduring civilizations, with over 50 official ethnic groups, including the Han Chinese.",
+        "reference_ethnicities": null,
+        "highlight_countries": [
+          "HKG",
+          "NORTH_CHINESE",
+          "SOUTH_CHINESE",
+          "SOUTHERNMOST_CHINESE",
+          "TWN"
+        ],
+        "children": [
+          {
+            "id": "north_chinese",
+            "label": "Northern Chinese & Tibetan",
+            "parent_id": "chinese",
+            "color": "#E52F1B",
+            "description": "Northern Chinese and Tibetan peoples share ancient roots tracing back to early millet-farming cultures in the Yellow River basin. These early farmers and their descendants helped shape one of the world's oldest continuous civilizations. While they share ancestry from more than 2,000 years ago, Tibetans also carry distinct genetic contributions from Indigenous high-altitude hunter-gatherers of the Tibetan Plateau.",
+            "reference_ethnicities": "Beijing, Gansu, Hebei, Heilongjiang, Henan, Inner Mongolia, Jilin, Liaoning, Qinghai, Shaanxi, Shandong, Shanxi, Tianjin, Tibet",
+            "highlight_countries": [
+              "NORTH_CHINESE"
+            ],
+            "children": []
+          },
+          {
+            "id": "south_chinese",
+            "label": "Southern Chinese & Taiwanese",
+            "parent_id": "chinese",
+            "color": "#ED6253",
+            "description": "Southern Chinese and Taiwanese peoples trace much of their ancestry to early rice-farming cultures like the Shangshan, who began domesticating rice near the Yangtze River around 10,000 years ago. Although later migrations from northern dynasties introduced northern genetic influences, a distinct southern ancestry—rooted in ancient agricultural societies—still predominates across southern China and among the majority of Taiwanese, shaped by centuries of migration from the mainland.",
+            "reference_ethnicities": "Anhui, Chongqing, Fujian, Hubei, Hunan, Jiangsu, Jiangxi, Shanghai, Sichuan, Taiwan, Yunnan, Zhejiang",
+            "highlight_countries": [
+              "SOUTH_CHINESE",
+              "TWN"
+            ],
+            "children": []
+          },
+          {
+            "id": "southernmost_chinese",
+            "label": "Southern Coastal Chinese",
+            "parent_id": "chinese",
+            "color": "#DB4433",
+            "description": "South Chinese ancestry is deeply rooted in the ancient rice-farming cultures of the Pearl River system, where some of the earliest rice domestication likely took place. Despite the Han dynasty's southward expansion around 2,000 years ago, the region retains a distinct genetic signature, with Yue dialects like Cantonese and Taishanese preserving linguistic ties among South Chinese communities worldwide.",
+            "reference_ethnicities": "Guangdong, Guangxi, Hainan, Hong Kong",
+            "highlight_countries": [
+              "HKG",
+              "SOUTHERNMOST_CHINESE"
+            ],
+            "children": []
+          },
+          {
+            "id": "broadly_chinese",
+            "label": "Broadly Chinese",
+            "parent_id": "chinese",
+            "color": "#AD4E44",
+            "description": "China is home to one of the world’s earliest and most enduring civilizations, with over 50 official ethnic groups, including the Han Chinese. Genetic markers associated with Chinese ancestry may be relics of these far-reaching migrations, and cannot be confidently assigned to a specific region or group.",
+            "reference_ethnicities": null,
+            "highlight_countries": [
+              "HKG",
+              "NORTH_CHINESE",
+              "SOUTH_CHINESE",
+              "SOUTHERNMOST_CHINESE",
+              "TWN"
+            ],
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "dai",
+        "label": "Chinese Dai",
+        "parent_id": "east_asian",
+        "color": "#DB6938",
+        "description": "Most Chinese Dai live in Yunnan Province, and are genetically more similar to their Vietnamese neighbors than they are to the Han Chinese.",
+        "reference_ethnicities": null,
+        "highlight_countries": [
+          "CHN_DAI"
+        ],
+        "children": []
+      },
+      {
+        "id": "filipino",
+        "label": "Filipino & Austronesian",
+        "parent_id": "east_asian",
+        "color": "#E5881C",
+        "description": "Most Filipinos can trace their ancestry to a migration of seafarers. Today, this genetic signature – called “Austronesian” – is found from Hawaii to Madagascar.",
+        "reference_ethnicities": null,
+        "highlight_countries": [
+          "ASM",
+          "FSM",
+          "GUM",
+          "MDG",
+          "MNP",
+          "PHL",
+          "PLW",
+          "TON",
+          "WSM"
+        ],
+        "children": []
+      },
+      {
+        "id": "sea_other",
+        "label": "Indonesian, Thai, Khmer & Myanma",
+        "parent_id": "east_asian",
+        "color": "#E6A71C",
+        "description": "From Myanmar to Indonesia, the people of southeast Asia are genetically diverse, reflecting the legacies of several migrations beginning over 40,000 years ago.",
+        "reference_ethnicities": "Cambodia, Indonesia, Malaysia, Thailand",
+        "highlight_countries": [
+          "IDN",
+          "KHM",
+          "LAO",
+          "MMR",
+          "MYS",
+          "THA",
+          "TLS"
+        ],
+        "children": []
+      },
+      {
+        "id": "japanese",
+        "label": "Japanese",
+        "parent_id": "east_asian",
+        "color": "#ED5372",
+        "description": "Modern Japanese people can trace most of their ancestry to the Stone Age Jōmon and late Stone Age Yayoi cultures.",
+        "reference_ethnicities": null,
+        "highlight_countries": [
+          "JPN"
+        ],
+        "children": []
+      },
+      {
+        "id": "north_asian",
+        "label": "Northern Asian",
+        "parent_id": "east_asian",
+        "color": "#AD5944",
+        "description": "Northern Asian ancestry reflects a history of rapid, widespread human migrations across the vast Central Asian plains, and along the plateaus and waterways of Siberia.",
+        "reference_ethnicities": null,
+        "highlight_countries": [
+          "EAST_RUS",
+          "MNG",
+          "NORTH_CHINESE"
+        ],
+        "children": [
+          {
+            "id": "manchurian_mongolian",
+            "label": "Manchurian & Mongolian",
+            "parent_id": "north_asian",
+            "color": "#DD5735",
+            "description": "The Manchurian and Mongolian population includes ethnolinguistic minorities like the Daur and the Oroqen.",
+            "reference_ethnicities": "Daur, Mongolia, Oroqen",
+            "highlight_countries": [
+              "MNG",
+              "NORTH_CHINESE"
+            ],
+            "children": []
+          },
+          {
+            "id": "siberian",
+            "label": "Siberian",
+            "parent_id": "north_asian",
+            "color": "#ED7253",
+            "description": "Many ethnolinguistic groups call Siberia home, including the Yakuts, who migrated North and East from southern Siberia to escape raiders.",
+            "reference_ethnicities": "Yakut",
+            "highlight_countries": [
+              "EAST_RUS"
+            ],
+            "children": []
+          },
+          {
+            "id": "broadly_north_asian",
+            "label": "Broadly Northern Asian",
+            "parent_id": "north_asian",
+            "color": "#AD5944",
+            "description": "Northern Asian ancestry reflects a history of rapid, widespread human migrations across the vast Central Asian plains, and along the plateaus and waterways of Siberia. Genetic markers associated with northern Asian ancestry may be relics of these far-reaching migrations, and cannot be confidently assigned to a specific region or group.",
+            "reference_ethnicities": null,
+            "highlight_countries": [
+              "EAST_RUS",
+              "MNG",
+              "NORTH_CHINESE"
+            ],
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "vietnamese",
+        "label": "Vietnamese",
+        "parent_id": "east_asian",
+        "color": "#DB7C38",
+        "description": "Present-day Vietnam was the cradle of one of the world’s earliest civilizations, and one of the world’s first regions to develop rice-based agriculture.",
+        "reference_ethnicities": null,
+        "highlight_countries": [
+          "VNM"
+        ],
+        "children": []
+      },
+      {
+        "id": "broadly_east_asian",
+        "label": "Broadly East Asian",
+        "parent_id": "east_asian",
+        "color": "#FFD9B2",
+        "description": "The peoples of East Asia and the Americas have a shared genetic history. Their common ancestors left western Asia over 50,000 years ago, migrating east across the continent. The ancestors of Indigenous Americans began to cross into the Americas 12,000 to 15,000 years ago. Broadly East Asian & Indigenous American DNA is a relic of this ancient population split, and reflects shared roots in central and northern Asia.",
+        "reference_ethnicities": null,
+        "highlight_countries": [
+          "ASM",
+          "CHN_DAI",
+          "EAST_RUS",
+          "FSM",
+          "GUM",
+          "HKG",
+          "IDN",
+          "JPN",
+          "KHM",
+          "KOR",
+          "LAO",
+          "MDG",
+          "MMR",
+          "MNG",
+          "MNP",
+          "MYS",
+          "NORTH_CHINESE",
+          "PHL",
+          "PLW",
+          "PRK",
+          "SOUTH_CHINESE",
+          "SOUTHERNMOST_CHINESE",
+          "THA",
+          "TLS",
+          "TON",
+          "TWN",
+          "VNM",
+          "WSM"
+        ],
+        "children": []
+      },
+      {
+        "id": "korean",
+        "label": "Korean",
+        "parent_id": "east_asian",
+        "color": "#E51B1D",
+        "description": "The Korean peninsula was first inhabited by hunter-gatherers who were genetically similar to Stone Age peoples living in eastern Russia.",
+        "reference_ethnicities": "North Korea, South Korea",
+        "highlight_countries": [
+          "KOR",
+          "PRK"
+        ],
+        "children": []
+      }
+    ]
+  },
+  {
+    "id": "oceanian",
+    "label": "Melanesian",
+    "parent_id": "root",
+    "color": "#FFDF6B",
+    "description": "Melanesia was first peopled by voyagers over 45,000 years ago, when the ancestors of indigenous Australians and Papuans arrived from Indonesia.",
+    "reference_ethnicities": "Non-Austronesian Melanesian, Papuan",
+    "highlight_countries": [
+      "FJI",
+      "NCL",
+      "PNG",
+      "SLB",
+      "VUT"
+    ],
+    "children": [
+      {
+        "id": "broadly_oceanian",
+        "label": "Melanesian",
+        "parent_id": "oceanian",
+        "color": "#FFDF6B",
+        "description": "Melanesia was first peopled by voyagers over 45,000 years ago, when the ancestors of indigenous Australians and Papuans arrived from Indonesia.",
+        "reference_ethnicities": null,
+        "highlight_countries": [
+          "FJI",
+          "NCL",
+          "PNG",
+          "SLB",
+          "VUT"
+        ],
+        "children": []
+      }
+    ]
+  }
+]

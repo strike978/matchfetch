@@ -11,7 +11,6 @@
 
   var s = {
     matchData: null,
-    activeTab: 'ancestry',
     expandedKeys: {},
     expandedTrace: false,
     hideNames: hideNames,
@@ -303,20 +302,6 @@
     }
   }
 
-  var Tabs = {
-    view: function () {
-      var hg = s.matchData.ancestry && s.matchData.ancestry.haplogroups
-      var hasHg = !!(hg && (hg.ydna || hg.mtdna))
-      var tabs = ['ancestry']
-      if (hasHg) tabs.push('haplogroups')
-      return m('.tabs', tabs.map(function (tab) {
-        return m('button.tab' + (s.activeTab === tab ? '.active' : ''), {
-          onclick: function () { setState({ activeTab: tab }) }
-        }, tab === 'ancestry' ? 'Regions' : 'Haplogroups')
-      }))
-    }
-  }
-
   var MatchDetail = {
     oninit: function () {
       DB.getSession(guid, '23andme').then(function (session) {
@@ -335,9 +320,8 @@
       return [
         m(Modal),
         m(ProfileCard),
-        m(Tabs),
-        m('.tab-content', { style: { display: s.activeTab === 'ancestry' ? '' : 'none' } }, m(RegionsPanel)),
-        m('.tab-content', { style: { display: s.activeTab === 'haplogroups' ? '' : 'none' } }, m(HaplogroupsPanel))
+        m(HaplogroupsPanel),
+        m(RegionsPanel)
       ]
     }
   }

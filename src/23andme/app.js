@@ -729,7 +729,7 @@
           m('button.btn.fetch-list-btn', {
             disabled: s.isFetching || s.matchCountLoading,
             onclick: function () { if (s.isFetching || s.matchCountLoading) return; if (s.fetchComplete) { fetchMatchCount().then(doFetch) } else { doFetch() } }
-          }, s.isFetching ? [m('.spinner-ring', { style: { width: '16px', height: '16px', borderWidth: '2px' } }), ' Fetching...'] : [m.trust('<span>&#x25B6;</span>'), ' ' + (s.fetchComplete ? 'Check for new matches' : 'Fetch')])
+          }, s.isFetching ? [m('.spinner-ring', { style: { width: '16px', height: '16px', borderWidth: '2px' } }), ' Fetching...'] : [m.trust('<span>' + (s.fetchComplete ? '&#x21BB;' : '&#x25B6;') + '</span>'), ' ' + (s.fetchComplete ? 'Check for new matches' : 'Fetch')])
         ]) : null,
         s.fetchMsg ? m('#fetchStatus', { style: { textAlign: 'center', padding: '6px 0' } }, [
           m('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' } }, [

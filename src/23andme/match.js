@@ -340,8 +340,8 @@
     reader.onload = function (ev) {
       try {
         var data = JSON.parse(ev.target.result)
-        if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('Invalid format')
-        var total = (data.ancestry || []).length + (data.twentyThreeAndMe || []).length
+        if (!data || typeof data !== 'object') throw new Error('Invalid format')
+        var total = Array.isArray(data) ? data.length : (data.ancestry || []).length + (data.twentyThreeAndMe || []).length
         setState({ modal: { title: 'Import database?', text: 'Restore ' + total + ' profile(s) from this file? Existing data will be overwritten.', confirmText: 'Import', cancelText: 'Cancel', onConfirm: function () { if (typeof DB !== 'undefined') DB.importDatabase(data).then(function () { m.redraw() }) } } })
       } catch (err) { alert('Import failed: ' + err.message) }
     }

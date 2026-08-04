@@ -12,16 +12,20 @@ var DB = (function() {
         return provider === '23andme' ? db.TwentyThreeAndMe : db.Ancestry;
     }
 
-    function mergeSessions(existingArr, incomingArr) {
-        var map = {};
-        var written = 0;
-        existingArr.forEach(function(r) { if (r && r.guid) map[r.guid] = r; });
-        incomingArr.forEach(function(r) {
-            if (!r || !r.guid) return;
-            map[r.guid] = r;
-            written++;
-        });
-        return { records: Object.keys(map).map(function(k) { return map[k]; }), written: written };
+    function splitImport(data) {
+        var ancestry = [];
+        var t23 = [];
+        if (Array.isArray(data)) {
+            data.forEach(function(r) {
+                if (!r || !r.guid) return;
+                if (r.provider === '23andme') { delete r.provider; t23.push(r); }
+                else { delete r.provider; ancestry.push(r); }
+            });
+        } else {
+            (data.ancestry || []).forEach(function(r) { if (r && r.guid) { delete r.provider; ancestry.push(r); } });
+            (data.twentyThreeAndMe || []).forEach(function(r) { if (r && r.guid) { delete r.provider; t23.push(r); } });
+        }
+        return { ancestry: ancestry, t23: t23 };
     }
 
     function mergeMatchData(existing, matchList, profiles, ethnicity, communities) {
@@ -201,20 +205,13 @@ var DB = (function() {
         },
 
         importDatabase: function(data) {
-            var ancestry = [];
-            var t23 = [];
-            (data.ancestry || []).forEach(function(r) { if (r) { delete r.provider; ancestry.push(r); } });
-            (data.twentyThreeAndMe || []).forEach(function(r) { if (r) { delete r.provider; t23.push(r); } });
+            var split = splitImport(data);
             return db.transaction('rw', db.Ancestry, db.TwentyThreeAndMe, function() {
-                return Promise.all([db.Ancestry.toArray(), db.TwentyThreeAndMe.toArray()]).then(function(existing) {
-                    var mAncestry = mergeSessions(existing[0], ancestry);
-                    var mT23 = mergeSessions(existing[1], t23);
-                    return Promise.all([
-                        db.Ancestry.bulkPut(mAncestry.records),
-                        db.TwentyThreeAndMe.bulkPut(mT23.records)
-                    ]).then(function() {
-                        return mAncestry.written + mT23.written;
-                    });
+                return Promise.all([
+                    db.Ancestry.clear().then(function() { return db.Ancestry.bulkPut(split.ancestry); }),
+                    db.TwentyThreeAndMe.clear().then(function() { return db.TwentyThreeAndMe.bulkPut(split.t23); })
+                ]).then(function() {
+                    return split.ancestry.length + split.t23.length;
                 });
             });
         }

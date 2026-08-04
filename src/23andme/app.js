@@ -47,7 +47,7 @@
 
   function delay(ms) { return new Promise(function (r) { setTimeout(r, ms) }) }
 
-  var FETCH_DELAY = 1200
+  var FETCH_DELAY = 500
 
   function apiFetch(url, options) {
     return new Promise(function (resolve, reject) {
@@ -232,7 +232,6 @@
   async function fetchMatchDetails(match) {
     var enriched = pickRelativeFields(match)
     try {
-      await delay(FETCH_DELAY)
       var ancestryUrl = 'https://you.23andme.com/p/' + s.selectedProfileId + '/profile/' + match.relative_profile_id + '/ancestry_composition/?sort_by=remote&include_ibd_countries=false'
       var data = await apiFetch(ancestryUrl, {
         credentials: 'include',

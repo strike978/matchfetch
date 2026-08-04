@@ -712,10 +712,11 @@
         reader.onload = function (ev) {
           try {
             var data = JSON.parse(ev.target.result)
-            if (!Array.isArray(data)) throw new Error('Invalid format: expected an array')
+            if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('Invalid format: expected an export file')
+            var total = (data.ancestry || []).length + (data.twentyThreeAndMe || []).length
             s.modal = {
               title: 'Import database?',
-              text: 'Merge ' + data.length + ' profile(s) from this file into your saved data? Your existing data will be kept and combined with the file.',
+              text: 'Restore ' + total + ' profile(s) from this file? Existing data will be overwritten.',
               confirmText: 'Import',
               cancelText: 'Cancel',
               onConfirm: function () {

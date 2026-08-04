@@ -14,18 +14,14 @@ var DB = (function() {
 
     function mergeSessions(existingArr, incomingArr) {
         var map = {};
-        var added = 0;
+        var written = 0;
         existingArr.forEach(function(r) { if (r && r.guid) map[r.guid] = r; });
         incomingArr.forEach(function(r) {
             if (!r || !r.guid) return;
-            var cur = map[r.guid];
-            if (!cur) { map[r.guid] = r; added++; return; }
-            if (!cur.matches) cur.matches = {};
-            var inMatches = r.matches || {};
-            Object.keys(inMatches).forEach(function(k) { cur.matches[k] = inMatches[k]; });
-            if (r.fetchState) cur.fetchState = r.fetchState;
+            map[r.guid] = r;
+            written++;
         });
-        return { records: Object.keys(map).map(function(k) { return map[k]; }), added: added };
+        return { records: Object.keys(map).map(function(k) { return map[k]; }), written: written };
     }
 
     function mergeMatchData(existing, matchList, profiles, ethnicity, communities) {
@@ -194,10 +190,8 @@ var DB = (function() {
 
         exportDatabase: function() {
             return Promise.all([db.Ancestry.toArray(), db.TwentyThreeAndMe.toArray()]).then(function(results) {
-                var ancestry = results[0].map(function(r) { r.provider = 'ancestry'; return r; });
-                var t23 = results[1].map(function(r) { r.provider = '23andme'; return r; });
-                var all = ancestry.concat(t23);
-                var blob = new Blob([JSON.stringify(all, null, 2)], { type: 'application/json' });
+                var data = { ancestry: results[0], twentyThreeAndMe: results[1] };
+                var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
                 var url = URL.createObjectURL(blob);
                 var a = document.createElement('a');
                 a.href = url; a.download = 'matchfetch-export.json';
@@ -209,12 +203,8 @@ var DB = (function() {
         importDatabase: function(data) {
             var ancestry = [];
             var t23 = [];
-            for (var i = 0; i < data.length; i++) {
-                var rec = data[i];
-                if (!rec) continue;
-                if (rec.provider === '23andme') t23.push(rec);
-                else { rec.provider = 'ancestry'; ancestry.push(rec); }
-            }
+            (data.ancestry || []).forEach(function(r) { if (r) { delete r.provider; ancestry.push(r); } });
+            (data.twentyThreeAndMe || []).forEach(function(r) { if (r) { delete r.provider; t23.push(r); } });
             return db.transaction('rw', db.Ancestry, db.TwentyThreeAndMe, function() {
                 return Promise.all([db.Ancestry.toArray(), db.TwentyThreeAndMe.toArray()]).then(function(existing) {
                     var mAncestry = mergeSessions(existing[0], ancestry);
@@ -223,7 +213,7 @@ var DB = (function() {
                         db.Ancestry.bulkPut(mAncestry.records),
                         db.TwentyThreeAndMe.bulkPut(mT23.records)
                     ]).then(function() {
-                        return mAncestry.added + mT23.added;
+                        return mAncestry.written + mT23.written;
                     });
                 });
             });

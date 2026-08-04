@@ -12,6 +12,22 @@ var DB = (function() {
         return provider === '23andme' ? db.TwentyThreeAndMe : db.Ancestry;
     }
 
+    function mergeSessions(existingArr, incomingArr) {
+        var map = {};
+        var added = 0;
+        existingArr.forEach(function(r) { if (r && r.guid) map[r.guid] = r; });
+        incomingArr.forEach(function(r) {
+            if (!r || !r.guid) return;
+            var cur = map[r.guid];
+            if (!cur) { map[r.guid] = r; added++; return; }
+            if (!cur.matches) cur.matches = {};
+            var inMatches = r.matches || {};
+            Object.keys(inMatches).forEach(function(k) { cur.matches[k] = inMatches[k]; });
+            if (r.fetchState) cur.fetchState = r.fetchState;
+        });
+        return { records: Object.keys(map).map(function(k) { return map[k]; }), added: added };
+    }
+
     function mergeMatchData(existing, matchList, profiles, ethnicity, communities) {
         if (!existing) existing = { guid: '', matches: {} };
         if (matchList) {
@@ -199,11 +215,17 @@ var DB = (function() {
                 if (rec.provider === '23andme') t23.push(rec);
                 else { rec.provider = 'ancestry'; ancestry.push(rec); }
             }
-            return Promise.all([
-                db.Ancestry.clear().then(function() { return db.Ancestry.bulkPut(ancestry); }),
-                db.TwentyThreeAndMe.clear().then(function() { return db.TwentyThreeAndMe.bulkPut(t23); })
-            ]).then(function() {
-                return data.length;
+            return db.transaction('rw', db.Ancestry, db.TwentyThreeAndMe, function() {
+                return Promise.all([db.Ancestry.toArray(), db.TwentyThreeAndMe.toArray()]).then(function(existing) {
+                    var mAncestry = mergeSessions(existing[0], ancestry);
+                    var mT23 = mergeSessions(existing[1], t23);
+                    return Promise.all([
+                        db.Ancestry.bulkPut(mAncestry.records),
+                        db.TwentyThreeAndMe.bulkPut(mT23.records)
+                    ]).then(function() {
+                        return mAncestry.added + mT23.added;
+                    });
+                });
             });
         }
     };

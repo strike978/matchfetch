@@ -715,7 +715,7 @@
             if (!Array.isArray(data)) throw new Error('Invalid format: expected an array')
             s.modal = {
               title: 'Import database?',
-              text: 'This will overwrite your entire database with ' + data.length + ' profile(s) from this file. This cannot be undone.',
+              text: 'Merge ' + data.length + ' profile(s) from this file into your saved data? Your existing data will be kept and combined with the file.',
               confirmText: 'Import',
               cancelText: 'Cancel',
               onConfirm: function () {

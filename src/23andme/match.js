@@ -291,6 +291,7 @@
       if (!s.modal) return null
       return m('.modal-overlay', { onclick: function (e) { if (e.target === e.currentTarget) { s.modal = null; m.redraw() } } }, [
         m('.modal', [
+          s.modal.icon ? m('.modal-icon', m.trust(s.modal.icon)) : null,
           s.modal.title ? m('.modal-title', s.modal.title) : null,
           s.modal.text ? m('.modal-text', s.modal.text) : null,
           m('.modal-actions', [
@@ -342,8 +343,18 @@
         var data = JSON.parse(ev.target.result)
         if (!data || typeof data !== 'object') throw new Error('Invalid format')
         var total = Array.isArray(data) ? data.length : (data.ancestry || []).length + (data.twentyThreeAndMe || []).length
-        setState({ modal: { title: 'Import database?', text: 'Restore ' + total + ' profile(s) from this file? Existing data will be overwritten.', confirmText: 'Import', cancelText: 'Cancel', onConfirm: function () { if (typeof DB !== 'undefined') DB.importDatabase(data).then(function () { m.redraw() }) } } })
-      } catch (err) { alert('Import failed: ' + err.message) }
+        setState({ modal: { icon: '<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>', title: 'Import database?', text: 'Restore ' + total + ' profile(s) from this file? Existing data will be overwritten.', confirmText: 'Import', cancelText: 'Cancel', onConfirm: function () {
+          if (typeof DB === 'undefined') return
+          setState({ modal: { icon: '<div class="spinner-ring" style="margin:0 auto;width:28px;height:28px;border-width:3px"></div>', title: 'Importing your data', text: 'Restoring your database...' } })
+          DB.importDatabase(data).then(function (count) {
+            setState({ modal: { icon: '<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.5 2.5L16 9"/></svg>', title: 'Import complete', text: 'Restored ' + count + ' record(s) from your file.', cancelText: 'OK' } })
+          }).catch(function (err) {
+            setState({ modal: { icon: '<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16.5" x2="12.01" y2="16.5"/></svg>', title: 'Import failed', text: 'Could not import your database. ' + (err && err.message || String(err)), cancelText: 'OK' } })
+          })
+        } } })
+      } catch (err) {
+        setState({ modal: { icon: '<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16.5" x2="12.01" y2="16.5"/></svg>', title: 'Import failed', text: err.message, cancelText: 'OK' } })
+      }
     }
     reader.readAsText(file)
   })
@@ -357,7 +368,16 @@
     } else if (id === 'importBtn') {
       el.addEventListener('click', function () { document.getElementById('importFileInput').click() })
     } else if (id === 'exportBtn') {
-      el.addEventListener('click', function () { if (typeof DB !== 'undefined' && DB.exportDatabase) DB.exportDatabase() })
+      el.addEventListener('click', function () {
+        if (typeof DB === 'undefined' || !DB.exportDatabase) return
+        setState({ modal: { icon: '<div class="spinner-ring" style="margin:0 auto;width:28px;height:28px;border-width:3px"></div>', title: 'Exporting your data', text: 'Preparing your database...' } })
+        DB.exportDatabase().then(function (count) {
+          setState({ modal: { icon: '<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.5 2.5L16 9"/></svg>', title: 'Export complete', text: 'Saved ' + count + ' record(s) to your selected file.', cancelText: 'OK' } })
+        }).catch(function (err) {
+          if (err && err.name === 'AbortError') { setState({ modal: null }); return }
+          setState({ modal: { icon: '<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16.5" x2="12.01" y2="16.5"/></svg>', title: 'Export failed', text: 'Could not export your database. ' + (err && err.message || String(err)), cancelText: 'OK' } })
+        })
+      })
     }
   })
 

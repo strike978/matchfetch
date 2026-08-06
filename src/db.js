@@ -110,6 +110,27 @@ var DB = (function() {
         return existing;
     }
 
+    function serializeArray(arr, name, isFirst) {
+        return new Promise(function(resolve, reject) {
+            var out = [];
+            if (!isFirst) out.push(',');
+            out.push(JSON.stringify(name) + ':[');
+            var i = 0;
+            function next() {
+                try {
+                    var end = Math.min(i + 500, arr.length);
+                    for (; i < end; i++) {
+                        if (i > 0) out.push(',');
+                        out.push(JSON.stringify(arr[i]));
+                    }
+                    if (i < arr.length) { setTimeout(next, 0); }
+                    else { out.push(']'); resolve(out); }
+                } catch (e) { reject(e); }
+            }
+            next();
+        });
+    }
+
     return {
         saveSession: function(guid, matchList, profiles, ethnicity, communities, provider) {
             var t = table(provider);
@@ -193,14 +214,34 @@ var DB = (function() {
         },
 
         exportDatabase: function() {
+            var pickerPromise = null;
+            if (typeof window.showSaveFilePicker === 'function') {
+                pickerPromise = window.showSaveFilePicker({
+                    suggestedName: 'matchfetch-export.json',
+                    types: [{ description: 'JSON file', accept: { 'application/json': ['.json'] } }]
+                });
+            }
             return Promise.all([db.Ancestry.toArray(), db.TwentyThreeAndMe.toArray()]).then(function(results) {
-                var data = { ancestry: results[0], twentyThreeAndMe: results[1] };
-                var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-                var url = URL.createObjectURL(blob);
-                var a = document.createElement('a');
-                a.href = url; a.download = 'matchfetch-export.json';
-                document.body.appendChild(a); a.click();
-                document.body.removeChild(a); URL.revokeObjectURL(url);
+                return serializeArray(results[0], 'ancestry', true).then(function(ancestryChunks) {
+                    return serializeArray(results[1], 'twentyThreeAndMe', false).then(function(t23Chunks) {
+                        var chunks = ['{'].concat(ancestryChunks, t23Chunks, ['}']);
+                        var blob = new Blob(chunks, { type: 'application/json' });
+                        var count = results[0].length + results[1].length;
+                        if (pickerPromise) {
+                            return pickerPromise.then(function(handle) {
+                                return handle.createWritable().then(function(w) {
+                                    return w.write(blob).then(function() { return w.close(); });
+                                });
+                            }).then(function() { return count; });
+                        }
+                        var url = URL.createObjectURL(blob);
+                        var a = document.createElement('a');
+                        a.href = url; a.download = 'matchfetch-export.json';
+                        document.body.appendChild(a); a.click();
+                        document.body.removeChild(a); URL.revokeObjectURL(url);
+                        return count;
+                    });
+                });
             });
         },
 

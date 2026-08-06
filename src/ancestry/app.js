@@ -703,7 +703,16 @@
 
   var App = {
     oninit: function () {
-      document.getElementById('exportBtn').addEventListener('click', function () { if (typeof DB !== 'undefined' && DB.exportDatabase) DB.exportDatabase() })
+      document.getElementById('exportBtn').addEventListener('click', function () {
+        if (typeof DB === 'undefined' || !DB.exportDatabase) return
+        setState({ modal: { icon: '<div class="spinner-ring" style="margin:0 auto;width:28px;height:28px;border-width:3px"></div>', title: 'Exporting your data', text: 'Preparing your database...' } })
+        DB.exportDatabase().then(function (count) {
+          setState({ modal: { icon: '<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.5 2.5L16 9"/></svg>', title: 'Export complete', text: 'Saved ' + count + ' profile(s) to your selected file.', cancelText: 'OK' } })
+        }).catch(function (err) {
+          if (err && err.name === 'AbortError') { setState({ modal: null }); return }
+          setState({ modal: { icon: '<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16.5" x2="12.01" y2="16.5"/></svg>', title: 'Export failed', text: 'Could not export your database. ' + (err && err.message || String(err)), cancelText: 'OK' } })
+        })
+      })
       document.getElementById('importBtn').addEventListener('click', function () { document.getElementById('importFileInput').click() })
       document.getElementById('importFileInput').addEventListener('change', function (e) {
         var file = e.target.files[0]
@@ -715,21 +724,24 @@
             if (!data || typeof data !== 'object') throw new Error('Invalid format: expected an export file')
             var total = Array.isArray(data) ? data.length : (data.ancestry || []).length + (data.twentyThreeAndMe || []).length
             s.modal = {
+              icon: '<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>',
               title: 'Import database?',
               text: 'Restore ' + total + ' profile(s) from this file? Existing data will be overwritten.',
               confirmText: 'Import',
               cancelText: 'Cancel',
               onConfirm: function () {
-                setState({ statusMsg: 'Importing...' })
+                setState({ modal: { icon: '<div class="spinner-ring" style="margin:0 auto;width:28px;height:28px;border-width:3px"></div>', title: 'Importing your data', text: 'Restoring your database...' } })
                 DB.importDatabase(data).then(function (count) {
-                  setState({ statusMsg: 'Imported ' + count + ' profile(s)' })
+                  setState({ modal: { icon: '<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.5 2.5L16 9"/></svg>', title: 'Import complete', text: 'Restored ' + count + ' profile(s) from your file.', cancelText: 'OK' } })
                   fetchTests()
+                }).catch(function (err) {
+                  setState({ modal: { icon: '<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16.5" x2="12.01" y2="16.5"/></svg>', title: 'Import failed', text: 'Could not import your database. ' + (err && err.message || String(err)), cancelText: 'OK' } })
                 })
               }
             }
             m.redraw()
           } catch (err) {
-            s.modal = { title: 'Import failed', text: err.message, cancelText: 'OK' }
+            s.modal = { icon: '<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16.5" x2="12.01" y2="16.5"/></svg>', title: 'Import failed', text: err.message, cancelText: 'OK' }
             m.redraw()
           }
         }

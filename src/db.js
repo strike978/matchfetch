@@ -12,20 +12,140 @@ var DB = (function() {
         return provider === '23andme' ? db.TwentyThreeAndMe : db.Ancestry;
     }
 
-    function splitImport(data) {
-        var ancestry = [];
-        var t23 = [];
-        if (Array.isArray(data)) {
-            data.forEach(function(r) {
-                if (!r || !r.guid) return;
-                if (r.provider === '23andme') { delete r.provider; t23.push(r); }
-                else { delete r.provider; ancestry.push(r); }
-            });
-        } else {
-            (data.ancestry || []).forEach(function(r) { if (r && r.guid) { delete r.provider; ancestry.push(r); } });
-            (data.twentyThreeAndMe || []).forEach(function(r) { if (r && r.guid) { delete r.provider; t23.push(r); } });
+    function readFileInChunks(file, onText, onEnd, onError) {
+        var CHUNK = 4 * 1024 * 1024;
+        var offset = 0;
+        var decoder = new TextDecoder('utf-8');
+        function next() {
+            if (offset >= file.size) { onEnd(); return; }
+            var end = Math.min(offset + CHUNK, file.size);
+            var last = end >= file.size;
+            var slice = file.slice(offset, end);
+            offset = end;
+            var reader = new FileReader();
+            reader.onload = function() {
+                try { onText(decoder.decode(reader.result, { stream: !last })); setTimeout(next, 0); }
+                catch (e) { onError(e); }
+            };
+            reader.onerror = function() { onError(reader.error || new Error('Could not read file')); };
+            reader.readAsArrayBuffer(slice);
         }
-        return { ancestry: ancestry, t23: t23 };
+        next();
+    }
+
+    function makeStreamParser(onElement, onError) {
+        var buf = '';
+        var pos = 0;
+        var mode = 'outer';
+        var section = null;
+        var outerDepth = 0;
+        var rel = 0;
+        var inString = false;
+        var escaped = false;
+        var elemStart = -1;
+        var keyStart = -1;
+        var expectArray = false;
+        var sawSection = false;
+        var stopped = false;
+
+        function process(text) {
+            if (stopped) return;
+            buf += text;
+            var n = buf.length;
+            while (pos < n) {
+                var c = buf[pos];
+                if (inString) {
+                    if (escaped) escaped = false;
+                    else if (c === '\\') escaped = true;
+                    else if (c === '"') {
+                        inString = false;
+                        if (mode === 'outer' && keyStart !== -1) {
+                            var key = buf.substring(keyStart, pos);
+                            keyStart = -1;
+                            if (key === 'ancestry' || key === 'twentyThreeAndMe') {
+                                section = key === 'ancestry' ? 'ancestry' : 'twentyThreeAndMe';
+                                sawSection = true;
+                                expectArray = true;
+                            }
+                        }
+                    }
+                    pos++;
+                    continue;
+                }
+                if (c === '"') {
+                    inString = true;
+                    if (mode === 'outer' && outerDepth === 1) keyStart = pos + 1;
+                    pos++;
+                    continue;
+                }
+                if (expectArray) {
+                    if (c === '[') { mode = 'array'; rel = 0; expectArray = false; }
+                    pos++;
+                    continue;
+                }
+                if (mode === 'array') {
+                    if (c === '{') { if (rel === 0 && elemStart === -1) elemStart = pos; rel++; }
+                    else if (c === '[') { rel++; }
+                    else if (c === '}') {
+                        rel--;
+                        if (rel === 0 && elemStart !== -1) {
+                            var raw = buf.substring(elemStart, pos + 1);
+                            elemStart = -1;
+                            try { onElement(section, raw); }
+                            catch (e) { onError(e); stopped = true; return; }
+                        }
+                    }
+                    else if (c === ']') {
+                        rel--;
+                        if (rel < 0) { mode = 'outer'; section = null; rel = 0; expectArray = false; }
+                    }
+                    pos++;
+                    continue;
+                }
+                if (c === '{' || c === '[') {
+                    if (c === '[' && outerDepth === 0) { mode = 'array'; section = 'array'; sawSection = true; rel = 0; }
+                    else outerDepth++;
+                }
+                else if (c === '}' || c === ']') { outerDepth--; if (outerDepth < 0) outerDepth = 0; }
+                pos++;
+            }
+            var keep = pos - 128;
+            if (keep < 0) keep = 0;
+            if (elemStart !== -1 && elemStart < keep) keep = elemStart;
+            if (keyStart !== -1 && keyStart < keep) keep = keyStart;
+            if (keep > 0) {
+                buf = buf.substring(keep);
+                pos -= keep;
+                if (elemStart !== -1) elemStart -= keep;
+                if (keyStart !== -1) keyStart -= keep;
+            }
+        }
+
+        function isComplete() {
+            return !stopped && mode === 'outer' && outerDepth === 0 && rel === 0 &&
+                elemStart === -1 && keyStart === -1 && !expectArray && sawSection;
+        }
+        return { process: process, isComplete: isComplete };
+    }
+
+    function parseRecord(section, raw) {
+        var rec = JSON.parse(raw);
+        if (!rec || !rec.guid) return null;
+        return { rec: rec, target: section === 'array' ? (rec.provider === '23andme' ? 'twentyThreeAndMe' : 'ancestry') : section };
+    }
+
+    function validateExport(file) {
+        return new Promise(function(resolve, reject) {
+            var total = 0;
+            var scanner = makeStreamParser(function(section, raw) {
+                try { if (parseRecord(section, raw)) total++; }
+                catch (e) { throw new Error('Corrupt record in export file'); }
+            }, function(e) { reject(e); });
+            readFileInChunks(file, scanner.process, function() {
+                if (!scanner.isComplete()) { reject(new Error('Invalid format: expected an export file')); return; }
+                resolve(total);
+            }, function(e) { reject(e); });
+        });
     }
 
     function mergeMatchData(existing, matchList, profiles, ethnicity, communities) {
@@ -110,24 +230,116 @@ var DB = (function() {
         return existing;
     }
 
-    function serializeArray(arr, name, isFirst) {
-        return new Promise(function(resolve, reject) {
-            var out = [];
-            if (!isFirst) out.push(',');
-            out.push(JSON.stringify(name) + ':[');
+    function streamTable(tbl, name, isFirst, write) {
+        var PAGE = 1000;
+        var first = true;
+        var count = 0;
+        function streamKeys(keys) {
             var i = 0;
             function next() {
-                try {
-                    var end = Math.min(i + 500, arr.length);
-                    for (; i < end; i++) {
-                        if (i > 0) out.push(',');
-                        out.push(JSON.stringify(arr[i]));
-                    }
-                    if (i < arr.length) { setTimeout(next, 0); }
-                    else { out.push(']'); resolve(out); }
-                } catch (e) { reject(e); }
+                if (i >= keys.length) return write(']').then(function() { return count; });
+                var chunk = keys.slice(i, i + PAGE);
+                i += PAGE;
+                return tbl.bulkGet(chunk).then(function(records) {
+                    return records.reduce(function(p, rec) {
+                        if (!rec) return p;
+                        return p.then(function() {
+                            count++;
+                            var text = (first ? '' : ',') + JSON.stringify(rec);
+                            first = false;
+                            return write(text);
+                        });
+                    }, Promise.resolve()).then(next);
+                });
             }
-            next();
+            return next();
+        }
+        return write((isFirst ? '' : ',') + JSON.stringify(name) + ':[')
+            .then(function() { return tbl.toCollection().keys(); })
+            .then(streamKeys);
+    }
+
+    function exportDatabase() {
+        var pickerPromise = null;
+        if (typeof window.showSaveFilePicker === 'function') {
+            pickerPromise = window.showSaveFilePicker({
+                suggestedName: 'matchfetch-export.json',
+                types: [{ description: 'JSON file', accept: { 'application/json': ['.json'] } }]
+            });
+        }
+
+        var buffer = '';
+        var writeChain = Promise.resolve();
+        var blobParts = null;
+        var pickerWritable = null;
+
+        function writer(text) {
+            buffer += text;
+            if (buffer.length >= 1024 * 1024) {
+                var chunk = buffer;
+                buffer = '';
+                writeChain = writeChain.then(function() {
+                    if (pickerWritable) return pickerWritable.write(chunk);
+                    blobParts.push(chunk);
+                });
+            }
+            return writeChain;
+        }
+        function flush() {
+            if (buffer) {
+                var chunk = buffer;
+                buffer = '';
+                writeChain = writeChain.then(function() {
+                    if (pickerWritable) return pickerWritable.write(chunk);
+                    blobParts.push(chunk);
+                });
+            }
+            return writeChain;
+        }
+        function close() {
+            return flush().then(function() {
+                if (pickerWritable) return pickerWritable.close().then(function() { return 0; });
+                var blob = new Blob(blobParts, { type: 'application/json' });
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url; a.download = 'matchfetch-export.json';
+                document.body.appendChild(a); a.click();
+                document.body.removeChild(a); URL.revokeObjectURL(url);
+                return 0;
+            });
+        }
+
+        var count = 0;
+        if (pickerPromise) {
+            pickerWritable = null;
+            return pickerPromise.then(function(handle) {
+                return handle.createWritable();
+            }).then(function(w) {
+                pickerWritable = w;
+                return writer('{');
+            }).then(function() {
+                return streamTable(db.Ancestry, 'ancestry', true, writer);
+            }).then(function(n) {
+                count += n;
+                return streamTable(db.TwentyThreeAndMe, 'twentyThreeAndMe', false, writer);
+            }).then(function(n) {
+                count += n;
+                return writer('}');
+            }).then(function() {
+                return close().then(function() { return count; });
+            });
+        }
+        blobParts = [];
+        return writer('{').then(function() {
+            return streamTable(db.Ancestry, 'ancestry', true, writer);
+        }).then(function(n) {
+            count += n;
+            return streamTable(db.TwentyThreeAndMe, 'twentyThreeAndMe', false, writer);
+        }).then(function(n) {
+            count += n;
+            return writer('}');
+        }).then(function() {
+            return close().then(function() { return count; });
         });
     }
 
@@ -213,46 +425,47 @@ var DB = (function() {
             return table(provider).delete(guid);
         },
 
-        exportDatabase: function() {
-            var pickerPromise = null;
-            if (typeof window.showSaveFilePicker === 'function') {
-                pickerPromise = window.showSaveFilePicker({
-                    suggestedName: 'matchfetch-export.json',
-                    types: [{ description: 'JSON file', accept: { 'application/json': ['.json'] } }]
-                });
-            }
-            return Promise.all([db.Ancestry.toArray(), db.TwentyThreeAndMe.toArray()]).then(function(results) {
-                return serializeArray(results[0], 'ancestry', true).then(function(ancestryChunks) {
-                    return serializeArray(results[1], 'twentyThreeAndMe', false).then(function(t23Chunks) {
-                        var chunks = ['{'].concat(ancestryChunks, t23Chunks, ['}']);
-                        var blob = new Blob(chunks, { type: 'application/json' });
-                        var count = results[0].length + results[1].length;
-                        if (pickerPromise) {
-                            return pickerPromise.then(function(handle) {
-                                return handle.createWritable().then(function(w) {
-                                    return w.write(blob).then(function() { return w.close(); });
-                                });
-                            }).then(function() { return count; });
-                        }
-                        var url = URL.createObjectURL(blob);
-                        var a = document.createElement('a');
-                        a.href = url; a.download = 'matchfetch-export.json';
-                        document.body.appendChild(a); a.click();
-                        document.body.removeChild(a); URL.revokeObjectURL(url);
-                        return count;
-                    });
-                });
-            });
+        exportDatabase: exportDatabase,
+
+        countExport: function(file) {
+            return validateExport(file);
         },
 
-        importDatabase: function(data) {
-            var split = splitImport(data);
-            return db.transaction('rw', db.Ancestry, db.TwentyThreeAndMe, function() {
-                return Promise.all([
-                    db.Ancestry.clear().then(function() { return db.Ancestry.bulkPut(split.ancestry); }),
-                    db.TwentyThreeAndMe.clear().then(function() { return db.TwentyThreeAndMe.bulkPut(split.t23); })
-                ]).then(function() {
-                    return split.ancestry.length + split.t23.length;
+        importDatabase: function(file) {
+            var BATCH = 5000;
+            return validateExport(file).then(function() {
+                return db.transaction('rw', db.Ancestry, db.TwentyThreeAndMe, function() {
+                    return Promise.all([db.Ancestry.clear(), db.TwentyThreeAndMe.clear()]);
+                });
+            }).then(function() {
+                return new Promise(function(resolve, reject) {
+                    var batches = { ancestry: [], twentyThreeAndMe: [] };
+                    var imported = 0;
+                    var writeChain = Promise.resolve();
+
+                    function flush(target) {
+                        var b = batches[target];
+                        if (!b.length) return;
+                        batches[target] = [];
+                        imported += b.length;
+                        writeChain = writeChain.then(function() {
+                            return db[target === 'twentyThreeAndMe' ? 'TwentyThreeAndMe' : 'Ancestry'].bulkPut(b);
+                        });
+                    }
+
+                    var scanner = makeStreamParser(function(section, raw) {
+                        var parsed = parseRecord(section, raw);
+                        if (!parsed) return;
+                        delete parsed.rec.provider;
+                        batches[parsed.target].push(parsed.rec);
+                        if (batches[parsed.target].length >= BATCH) flush(parsed.target);
+                    }, function(e) { reject(e); });
+
+                    readFileInChunks(file, scanner.process, function() {
+                        flush('ancestry');
+                        flush('twentyThreeAndMe');
+                        writeChain.then(function() { resolve(imported); }).catch(reject);
+                    }, function(e) { reject(e); });
                 });
             });
         }

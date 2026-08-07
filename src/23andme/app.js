@@ -88,6 +88,13 @@
     return n.trim() || p.initials || 'Profile'
   }
 
+  function currentProfileName() {
+    for (var i = 0; i < s.profiles.length; i++) {
+      if (s.profiles[i].id === s.selectedProfileId) return profileName(s.profiles[i])
+    }
+    return ''
+  }
+
   async function loadAccount() {
     setState({ loading: true, statusMsg: '' })
     try {
@@ -112,6 +119,7 @@
     setState({ selectedProfileId: id, matches: {}, matchCount: null, matchCountLoading: false, isFetching: false, fetchComplete: false, statusMsg: '', fetchMsg: '', fetchProgress: 0, fetchPct: '', currentPage: 1, filters: { name: '', cmMin: null, cmMax: null, side: '', regions: [{ region: '', min: null, max: null }], ydna: '', mtdna: '', gpbLocations: [{ country: '', min: null }] } })
     await loadSaved()
     await fetchMatchCount()
+    if (typeof DB !== 'undefined') DB.setProfileName(id, currentProfileName(), '23andme')
   }
 
   async function loadSaved() {

@@ -56,6 +56,15 @@
 
   function delay(ms) { return new Promise(function (r) { setTimeout(r, ms) }) }
 
+  function currentTestName() {
+    for (var i = 0; i < s.tests.length; i++) {
+      var t = s.tests[i]
+      var guid = t.testGuid || t.testId || t.guid || t.id || ''
+      if (guid === s.selectedGuid) return t.subjectName || t.displayName || t.name || ''
+    }
+    return ''
+  }
+
   function chunkArray(arr, size) { var c = []; for (var i = 0; i < arr.length; i += size) c.push(arr.slice(i, i + size)); return c }
 
   async function loadRegionMap() {
@@ -293,6 +302,7 @@
 
       setBadgeFetching()
       saveState()
+      DB.setProfileName(guid, currentTestName())
       if (mode === 'count') { _progressDone = allMatches.length; setProgress(_progressDone, _progressTotal) }
       var incomplete = findIncompleteSampleIds()
       debugLog('resume: mode=' + mode + ' have=' + allMatches.length + (mode === 'cmRange' ? '' : ' target=' + desiredCount) + ' incomplete=' + incomplete.length)
@@ -1139,6 +1149,7 @@
     if (guid) {
       fetchMatchCount(guid)
       var session = await DB.getSession(guid)
+      if (typeof DB !== 'undefined') DB.setProfileName(guid, currentTestName())
       if (session && session.matches) {
         s.sessionMatches = session.matches
         var matchList = []

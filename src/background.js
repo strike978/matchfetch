@@ -102,6 +102,12 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     return true
 })
 
+chrome.runtime.onInstalled.addListener(function(details) {
+    if (details.reason === 'install') {
+        chrome.tabs.create({ url: chrome.runtime.getURL('src/welcome.html') })
+    }
+});
+
 chrome.action.onClicked.addListener(function() {
     chrome.tabs.query({ url: chrome.runtime.getURL('src/ancestry/app.html') }, function(t) {
         if (t && t.length) chrome.tabs.update(t[0].id, { active: true })

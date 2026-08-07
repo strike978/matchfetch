@@ -215,7 +215,7 @@
     async function processChunk24(guid, chunk, rangeStart, total) {
       setState({ fetchMsg: 'Fetching regions for matches ' + rangeStart + '-' + (rangeStart + chunk.length - 1) + ' of ' + total + '...' })
       var ethData = await fetchBatchEthnicity(guid, chunk)
-      for (var k in ethData) s.batchEthnicityData[k] = ethData[k]
+      for (var i = 0; i < chunk.length; i++) s.batchEthnicityData[chunk[i]] = ethData[chunk[i]] || { regions: [] }
       if (s.regionMap) {
         for (var k in ethData) {
           var regions = ethData[k] && ethData[k].regions
@@ -228,7 +228,7 @@
       await delay(FETCH_DELAY)
       setState({ fetchMsg: 'Fetching journeys for matches ' + rangeStart + '-' + (rangeStart + chunk.length - 1) + ' of ' + total + '...' })
       var comData = await fetchBatchCommunities(guid, chunk)
-      for (var k in comData) s.batchCommunitiesData[k] = comData[k]
+      for (var i = 0; i < chunk.length; i++) s.batchCommunitiesData[chunk[i]] = comData[chunk[i]] || { branches: [] }
       for (var ci = 0; ci < chunk.length; ci++) {
         var branches = s.batchCommunitiesData[chunk[ci]] && s.batchCommunitiesData[chunk[ci]].branches
         if (branches) resolveJourneyNames(branches)
@@ -274,7 +274,7 @@
             var m = sm[sids[i]]
             allMatches.push({ sampleId: sids[i], relationship: m.relationship || {}, createdDate: m.createdDate || null })
             s.profileData[sids[i]] = { matchName: m.matchName, matchNameInitials: m.matchNameInitials, displayGender: m.displayGender, photoUrl: m.photoUrl }
-            if (m.journeys && m.journeys.length) {
+            if (m.journeys) {
               s.batchCommunitiesData[sids[i]] = { branches: m.journeys }
               resolveJourneyNames(s.batchCommunitiesData[sids[i]].branches)
               if (sm[sids[i]]) sm[sids[i]].journeys = s.batchCommunitiesData[sids[i]].branches
@@ -422,7 +422,7 @@
           var chunk = chunks[ci]
           setState({ fetchMsg: 'Fetching regions for new matches ' + (ci * 24 + 1) + '-' + (ci * 24 + chunk.length) + ' of ' + allNewSids.length + '...' })
           var ethData = await fetchBatchEthnicity(guid, chunk)
-          for (var k in ethData) s.batchEthnicityData[k] = ethData[k]
+          for (var e = 0; e < chunk.length; e++) s.batchEthnicityData[chunk[e]] = ethData[chunk[e]] || { regions: [] }
           if (s.regionMap) {
             for (var k in ethData) {
               var regions = ethData[k] && ethData[k].regions
@@ -435,7 +435,7 @@
 
           setState({ fetchMsg: 'Fetching journeys for new matches ' + (ci * 24 + 1) + '-' + (ci * 24 + chunk.length) + ' of ' + allNewSids.length + '...' })
           var comData = await fetchBatchCommunities(guid, chunk)
-          for (var k in comData) s.batchCommunitiesData[k] = comData[k]
+          for (var c = 0; c < chunk.length; c++) s.batchCommunitiesData[chunk[c]] = comData[chunk[c]] || { branches: [] }
           for (var cci = 0; cci < chunk.length; cci++) {
             var branches = s.batchCommunitiesData[chunk[cci]] && s.batchCommunitiesData[chunk[cci]].branches
             if (branches) resolveJourneyNames(branches)

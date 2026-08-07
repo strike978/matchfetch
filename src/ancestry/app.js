@@ -388,7 +388,10 @@
     var existingSids = {}
     if (s.sessionMatches) {
       var keys = Object.keys(s.sessionMatches)
-      for (var i = 0; i < keys.length; i++) existingSids[keys[i]] = true
+      for (var i = 0; i < keys.length; i++) {
+        var existingMatch = s.sessionMatches[keys[i]]
+        if (existingMatch && existingMatch.regions && existingMatch.journeys) existingSids[keys[i]] = true
+      }
     }
 
     try {
@@ -402,13 +405,17 @@
         if (!Array.isArray(matches)) break
 
         var pageNewSids = []
+        var inList = {}
+        if (s.matchListData && s.matchListData.matchList) {
+          for (var li = 0; li < s.matchListData.matchList.length; li++) inList[s.matchListData.matchList[li].sampleId] = true
+        }
         for (var i = 0; i < matches.length; i++) {
           var sid = matches[i].sampleId
           if (sid && !existingSids[sid]) {
             pageNewSids.push(sid)
             allNewSids.push(sid)
             if (!s.matchListData) s.matchListData = { matchList: [] }
-            s.matchListData.matchList.push(matches[i])
+            if (!inList[sid]) { s.matchListData.matchList.push(matches[i]); inList[sid] = true }
           }
         }
         setState({ matchListData: s.matchListData })

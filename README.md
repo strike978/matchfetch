@@ -6,7 +6,7 @@ Fetch and explore your match data from **AncestryDNA** and **23andMe**.
 
 ## Features
 
-- **Two providers** — Switch between AncestryDNA and 23andMe with the service toggle in the top bar. Each provider keeps its own profiles and match data, stored separately in IndexedDB.
+- **Switch between AncestryDNA and 23andMe** with the toggle in the top bar. Each keeps its own profiles and match data, stored separately in IndexedDB.
 - **Match List** —
   - **AncestryDNA** — view all matches in a card layout with photos, names, and cM/segments. Filter by name, cM range, ancestral journeys, and ethnicity regions (with percentage ranges).
   - **23andMe** — view matches in a card layout with photos, names, shared cM/segments, and haplogroups. Filter by name, cM range, ancestry regions (with percentage ranges), Y-DNA/mtDNA, side, and grandparent birth locations (by country with a minimum of 1–4 locations).
@@ -28,7 +28,7 @@ Fetch and explore your match data from **AncestryDNA** and **23andMe**.
 ## Usage
 
 1. Click the MatchFetch icon in your browser toolbar
-2. Pick a provider (AncestryDNA or 23andMe) with the toggle in the top bar
+2. Pick AncestryDNA or 23andMe with the toggle in the top bar
 3. **AncestryDNA** — select a profile, then click **Fetch** (or expand **Fetch options** for Count / cM Range). After fetching, use **Check for new matches** to pick up any new matches.
 4. **23andMe** — select a profile, then click **Fetch** to fetch matches and pull in their ancestry and haplogroups. After fetching, use **Check for new matches** to pick up any new matches.
 5. Cards appear progressively as data is fetched. Use **Filtering options** to narrow the list

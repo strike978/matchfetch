@@ -1,6 +1,6 @@
 # MatchFetch
 
-Fetch and explore your DNA match data from **AncestryDNA** and **23andMe**.
+Fetch and explore your match data from **AncestryDNA** and **23andMe**.
 
 ![MatchFetch screenshot](screenshot.png)
 

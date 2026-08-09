@@ -878,11 +878,11 @@
             }
           }, m.trust('<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>')) : null
         ]),
-        s.selectedProfileId ? m('.fetch-row', [
+        s.selectedProfileId && !s.isFetching && (s.buttonLabel || !s.fetchComplete) ? m('.fetch-row', [
           m('button.btn.fetch-list-btn', {
-            disabled: s.isFetching || s.matchCountLoading,
+            disabled: s.matchCountLoading,
             onclick: function () { if (s.isFetching || s.matchCountLoading) return; doFetch() }
-          }, s.isFetching ? [m('.spinner-ring', { style: { width: '16px', height: '16px', borderWidth: '2px' } }), ' Fetching...'] : [m.trust('<span>&#x25B6;</span>'), ' ' + (s.buttonLabel || 'Fetch')])
+          }, [m.trust('<span>&#x25B6;</span>'), ' ' + (s.buttonLabel || 'Fetch')])
         ]) : null,
         s.fetchMsg ? m('#fetchStatus', { style: { textAlign: 'center', padding: '6px 0' } }, [
           m('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' } }, [

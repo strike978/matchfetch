@@ -357,15 +357,22 @@
     refreshRegionGroups()
     refreshHaploOptions()
     refreshGpbOptions()
+    var totalComplete = 0
+    for (var mi in s.matches) {
+      var m = s.matches[mi]
+      if (m.ancestry && m.ancestry.haplogroups) totalComplete++
+    }
+    var summary = 'Fetched ' + total + (total === 1 ? ' match' : ' matches')
+    if (totalComplete > total) summary += ' \u2014 ' + totalComplete + (totalComplete === 1 ? ' match complete' : ' matches complete')
     try {
       chrome.notifications.create({
         type: 'basic',
         iconUrl: chrome.runtime.getURL('icons/icon48.png'),
         title: 'MatchFetch',
-        message: 'Finished fetching ' + total + ' matches'
+        message: summary
       })
     } catch (e) { }
-    setState({ isFetching: false, fetchMsg: '', fetchPct: '', fetchComplete: true, buttonLabel: null, statusMsg: 'Fetched ancestry and haplogroups for ' + total + ' match(es)' })
+    setState({ isFetching: false, fetchMsg: '', fetchPct: '', fetchComplete: true, buttonLabel: null, statusMsg: summary })
   }
 
   function matchesFilter(m) {

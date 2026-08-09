@@ -257,7 +257,7 @@
         chrome.notifications.create({
           type: 'basic', iconUrl: chrome.runtime.getURL('icons/icon48.png'),
           title: 'MatchFetch',
-          message: mode === 'cmRange' ? 'Finished fetching ' + allMatches.length + ' matches in range ' + params.range + ' cM' : 'Finished fetching ' + allMatches.length + ' matches'
+          message: mode === 'cmRange' ? 'Fetched ' + allMatches.length + ' match' + (allMatches.length === 1 ? '' : 'es') + ' in range ' + params.range + ' cM' : 'Fetched ' + allMatches.length + (allMatches.length === 1 ? ' match' : ' matches')
         })
       } catch (e) { console.log('Notification error:', e) }
     }

@@ -12,6 +12,7 @@
     fetchPct: '',
     fetchProgress: 0,
     fetchComplete: false,
+    buttonLabel: null,
     showFilterBody: false,
     filters: { name: '', cmMin: null, cmMax: null, side: '', regions: [{ region: '', min: null, max: null }], ydna: '', mtdna: '', gpbLocations: [{ country: '', min: null }] },
     currentPage: 1,
@@ -38,6 +39,13 @@
     if (/Bad JSON/.test(msg)) return 'Unexpected response from 23andMe. Reload the MatchFetch extension and make sure you are logged into 23andMe.'
     if (/Fetch failed/.test(msg)) return 'Could not reach 23andMe. Check your internet connection.'
     return msg
+  }
+
+  function isStoppableError(msg) {
+    if (!msg) return true
+    if (/Status 404/.test(msg)) return false
+    if (/Status 403/.test(msg)) return false
+    return true
   }
 
   function titleize(str) {
@@ -116,7 +124,7 @@
     _regionGroupsCache = null
     _haploOptionsCache = null
     _gpbOptionsCache = null
-    setState({ selectedProfileId: id, matches: {}, matchCount: null, matchCountLoading: false, isFetching: false, fetchComplete: false, statusMsg: '', fetchMsg: '', fetchProgress: 0, fetchPct: '', currentPage: 1, filters: { name: '', cmMin: null, cmMax: null, side: '', regions: [{ region: '', min: null, max: null }], ydna: '', mtdna: '', gpbLocations: [{ country: '', min: null }] } })
+    setState({ selectedProfileId: id, matches: {}, matchCount: null, matchCountLoading: false, isFetching: false, fetchComplete: false, buttonLabel: null, statusMsg: '', fetchMsg: '', fetchProgress: 0, fetchPct: '', currentPage: 1, filters: { name: '', cmMin: null, cmMax: null, side: '', regions: [{ region: '', min: null, max: null }], ydna: '', mtdna: '', gpbLocations: [{ country: '', min: null }] } })
     await loadSaved()
     await fetchMatchCount()
     if (typeof DB !== 'undefined') DB.setProfileName(id, currentProfileName(), '23andme')
@@ -131,6 +139,7 @@
   }
 
   function extractNodes(node, allNodes) {
+    if (!node) return allNodes
     if (node.totalPercent && parseFloat(node.totalPercent) > 0 && node.id !== 'root') {
       allNodes.push({ id: node.id, label: node.label, totalPercent: node.totalPercent, color: node.color, parent_id: node.parent_id, is_trace: node.is_trace === true })
     }
@@ -198,32 +207,28 @@
   }
 
   async function fetchHaplogroups(targetProfileId) {
-    try {
-      await delay(FETCH_DELAY)
-      var url = 'https://you.23andme.com/p/' + s.selectedProfileId + '/ancestry/compute-result/?profile_id=' + targetProfileId + '%2C' + s.selectedProfileId + '&name=mthaplo_build_7%3Ahaplogroup%2Cyhaplo_2023%3Ahaplogroup'
-      var data = await apiFetch(url, {
-        credentials: 'include',
-        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
-      })
-      var h = {}
-      if (Array.isArray(data)) {
-        for (var i = 0; i < data.length; i++) {
-          var item = data[i]
-          if (!item || item.profile_id !== targetProfileId || !item.result || !item.result.haplogroup_id) continue
-          var v = item.result.haplogroup_id
-          var colonIndex = v.indexOf(':')
-          if (item.name === 'yhaplo_2023:haplogroup') {
-            if (v.indexOf('FEMALE') !== -1) h.ydna = ''
-            else h.ydna = colonIndex !== -1 ? v.substring(colonIndex + 1) : v
-          } else if (item.name === 'mthaplo_build_7:haplogroup') {
-            h.mtdna = colonIndex !== -1 ? v.substring(colonIndex + 1) : v
-          }
+    await delay(FETCH_DELAY)
+    var url = 'https://you.23andme.com/p/' + s.selectedProfileId + '/ancestry/compute-result/?profile_id=' + targetProfileId + '%2C' + s.selectedProfileId + '&name=mthaplo_build_7%3Ahaplogroup%2Cyhaplo_2023%3Ahaplogroup'
+    var data = await apiFetch(url, {
+      credentials: 'include',
+      headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    var h = {}
+    if (Array.isArray(data)) {
+      for (var i = 0; i < data.length; i++) {
+        var item = data[i]
+        if (!item || item.profile_id !== targetProfileId || !item.result || !item.result.haplogroup_id) continue
+        var v = item.result.haplogroup_id
+        var colonIndex = v.indexOf(':')
+        if (item.name === 'yhaplo_2023:haplogroup') {
+          if (v.indexOf('FEMALE') !== -1) h.ydna = ''
+          else h.ydna = colonIndex !== -1 ? v.substring(colonIndex + 1) : v
+        } else if (item.name === 'mthaplo_build_7:haplogroup') {
+          h.mtdna = colonIndex !== -1 ? v.substring(colonIndex + 1) : v
         }
       }
-      return Object.keys(h).length ? h : null
-    } catch (e) {
-      return null
     }
+    return Object.keys(h).length ? h : null
   }
 
   var RELATIVE_FIELDS = ['relative_profile_id', 'tree_node_id', 'date_opted_in', 'first_name', 'last_name', 'initials', 'profile_image_url', 'grandparent_birth_locations', 'ibd_proportion', 'max_segment_length', 'num_segments', 'is_maternal_side', 'is_paternal_side', 'is_open_sharing', 'predicted_relationship_id', 'sex', 'surnames']
@@ -239,23 +244,44 @@
 
   async function fetchMatchDetails(match) {
     var enriched = pickRelativeFields(match)
+    var priorAncestry = match.ancestry || null
+    if (priorAncestry && !priorAncestry.haplogroups) {
+      try {
+        var hg = await fetchHaplogroups(match.relative_profile_id)
+        if (hg) priorAncestry.haplogroups = hg
+      } catch (err) {
+        if (isStoppableError(err.message)) throw err
+      }
+      enriched.ancestry = priorAncestry
+      return enriched
+    }
+    var data
     try {
       var ancestryUrl = 'https://you.23andme.com/p/' + s.selectedProfileId + '/profile/' + match.relative_profile_id + '/ancestry_composition/?sort_by=remote&include_ibd_countries=false'
-      var data = await apiFetch(ancestryUrl, {
+      data = await apiFetch(ancestryUrl, {
         credentials: 'include',
         headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
       })
-      var tree = findPopulationTree(data, match.relative_profile_id)
-      if (tree) {
-        var nodes = extractNodes(tree.population_tree, [])
-        var built = buildRegions(nodes)
-        var haplogroups = await fetchHaplogroups(match.relative_profile_id)
-        enriched.ancestry = { using_latest_compute: tree.using_latest_compute, haplogroups: haplogroups, regions: built.regions, trace: built.trace }
-      } else {
-        enriched.ancestry_error = 'No ancestry composition data for this match'
-      }
     } catch (err) {
+      if (isStoppableError(err.message)) throw err
       enriched.ancestry_error = err.message
+      if (priorAncestry) enriched.ancestry = priorAncestry
+      return enriched
+    }
+    var tree = findPopulationTree(data, match.relative_profile_id)
+    if (tree && tree.population_tree) {
+      var nodes = extractNodes(tree.population_tree, [])
+      var built = buildRegions(nodes)
+      var haplogroups = null
+      try {
+        haplogroups = await fetchHaplogroups(match.relative_profile_id)
+      } catch (err) {
+        if (isStoppableError(err.message)) throw err
+      }
+      enriched.ancestry = { using_latest_compute: tree.using_latest_compute, haplogroups: haplogroups, regions: built.regions, trace: built.trace }
+    } else {
+      enriched.ancestry_error = 'No ancestry composition data for this match'
+      if (priorAncestry) enriched.ancestry = priorAncestry
     }
     return enriched
   }
@@ -317,15 +343,18 @@
     }
     var total = targets.length
     if (total === 0) {
-      setState({ isFetching: false, fetchComplete: true, statusMsg: 'No match details to fetch' })
+      setState({ isFetching: false, fetchComplete: true, buttonLabel: null, statusMsg: 'No match details to fetch' })
       return
     }
-    setState({ isFetching: true, fetchComplete: false, statusMsg: '', fetchMsg: '', fetchProgress: 0, fetchPct: '' })
+    setState({ isFetching: true, fetchComplete: false, buttonLabel: null, statusMsg: '', fetchMsg: '', fetchProgress: 0, fetchPct: '' })
+    var successCount = 0
+    var i
     try {
-      for (var i = 0; i < total; i++) {
+      for (i = 0; i < total; i++) {
         var match = targets[i]
         setState({ fetchMsg: 'Fetching ancestry and haplogroups ' + (i + 1) + ' of ' + total + (match.initials ? ' (' + match.initials + ')' : '') + '...' })
         var enriched = await fetchMatchDetails(match)
+        if (enriched.ancestry && enriched.ancestry.haplogroups) successCount++
         s.matches[match.relative_profile_id] = enriched
         if (typeof DB !== 'undefined') DB.saveMatches(s.selectedProfileId, [enriched], '23andme')
         _dataVersion++
@@ -333,12 +362,17 @@
         await delay(FETCH_DELAY)
       }
     } catch (err) {
-      setState({ isFetching: false, fetchMsg: '', fetchPct: '', statusMsg: 'Fetch error: ' + friendlyError(err.message) })
+      setState({ isFetching: false, fetchMsg: '', fetchPct: '', fetchComplete: false, buttonLabel: 'Resume', statusMsg: 'Fetch stopped at match ' + (i + 1) + ' of ' + total + ': ' + friendlyError(err.message) + ' Click Fetch to resume.' })
       return
     }
     refreshRegionGroups()
     refreshHaploOptions()
     refreshGpbOptions()
+    var failedCount = total - successCount
+    if (failedCount > 0) {
+      setState({ isFetching: false, fetchMsg: '', fetchPct: '', fetchComplete: false, buttonLabel: 'Resume', statusMsg: 'Fetched ' + successCount + ' of ' + total + ' match(es) — ' + failedCount + ' failed. Click Resume to continue.' })
+      return
+    }
     try {
       chrome.notifications.create({
         type: 'basic',
@@ -347,7 +381,7 @@
         message: 'Finished fetching ' + total + ' matches'
       })
     } catch (e) { }
-    setState({ isFetching: false, fetchMsg: '', fetchPct: '', fetchComplete: true, statusMsg: 'Fetched ancestry and haplogroups for ' + total + ' match(es)' })
+    setState({ isFetching: false, fetchMsg: '', fetchPct: '', fetchComplete: true, buttonLabel: null, statusMsg: 'Fetched ancestry and haplogroups for ' + total + ' match(es)' })
   }
 
   function matchesFilter(m) {
@@ -852,7 +886,7 @@
                     _haploOptionsCache = null
                     _gpbOptionsCache = null
                     _dataVersion++
-                    setState({ matches: {}, matchCount: null, matchCountLoading: false, fetchComplete: false, currentPage: 1, statusMsg: '', fetchMsg: '', fetchProgress: 0, fetchPct: '' })
+                    setState({ matches: {}, matchCount: null, matchCountLoading: false, fetchComplete: false, buttonLabel: null, currentPage: 1, statusMsg: '', fetchMsg: '', fetchProgress: 0, fetchPct: '' })
                   })
                 }
               }
@@ -864,7 +898,7 @@
           m('button.btn.fetch-list-btn', {
             disabled: s.isFetching || s.matchCountLoading,
             onclick: function () { if (s.isFetching || s.matchCountLoading) return; if (s.fetchComplete) { fetchMatchCount().then(doFetch) } else { doFetch() } }
-          }, s.isFetching ? [m('.spinner-ring', { style: { width: '16px', height: '16px', borderWidth: '2px' } }), ' Fetching...'] : [m.trust('<span>' + (s.fetchComplete ? '&#x21BB;' : '&#x25B6;') + '</span>'), ' ' + (s.fetchComplete ? 'Check for new matches' : 'Fetch')])
+          }, s.isFetching ? [m('.spinner-ring', { style: { width: '16px', height: '16px', borderWidth: '2px' } }), ' Fetching...'] : [m.trust('<span>' + (s.fetchComplete ? '&#x21BB;' : '&#x25B6;') + '</span>'), ' ' + (s.buttonLabel || (s.fetchComplete ? 'Check for new matches' : 'Fetch'))])
         ]) : null,
         s.fetchMsg ? m('#fetchStatus', { style: { textAlign: 'center', padding: '6px 0' } }, [
           m('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' } }, [

@@ -41,13 +41,6 @@
     return msg
   }
 
-  function isStoppableError(msg) {
-    if (!msg) return true
-    if (/Status 404/.test(msg)) return false
-    if (/Status 403/.test(msg)) return false
-    return true
-  }
-
   function titleize(str) {
     if (!str) return ''
     return String(str).replace(/_/g, ' ').replace(/\w\S*/g, function (txt) { return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase() })
@@ -200,8 +193,10 @@
 
   function findPopulationTree(data, targetProfileId) {
     if (!data || !data.population_trees || !Array.isArray(data.population_trees)) return null
+    var want = String(targetProfileId)
     for (var i = 0; i < data.population_trees.length; i++) {
-      if (data.population_trees[i].profile_id === targetProfileId) return data.population_trees[i]
+      var t = data.population_trees[i]
+      if (t && String(t.profile_id) === want) return t
     }
     return null
   }
@@ -244,45 +239,30 @@
 
   async function fetchMatchDetails(match) {
     var enriched = pickRelativeFields(match)
-    var priorAncestry = match.ancestry || null
-    if (priorAncestry && !priorAncestry.haplogroups) {
-      try {
-        var hg = await fetchHaplogroups(match.relative_profile_id)
-        if (hg) priorAncestry.haplogroups = hg
-      } catch (err) {
-        if (isStoppableError(err.message)) throw err
-      }
-      enriched.ancestry = priorAncestry
+    if (match.ancestry && !match.ancestry.haplogroups) {
+      var hg = await fetchHaplogroups(match.relative_profile_id)
+      if (!hg) throw new Error('No haplogroup data for this match')
+      match.ancestry.haplogroups = hg
+      enriched.ancestry = match.ancestry
       return enriched
     }
-    var data
-    try {
-      var ancestryUrl = 'https://you.23andme.com/p/' + s.selectedProfileId + '/profile/' + match.relative_profile_id + '/ancestry_composition/?sort_by=remote&include_ibd_countries=false'
-      data = await apiFetch(ancestryUrl, {
-        credentials: 'include',
-        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
-      })
-    } catch (err) {
-      if (isStoppableError(err.message)) throw err
-      enriched.ancestry_error = err.message
-      if (priorAncestry) enriched.ancestry = priorAncestry
-      return enriched
-    }
+    var ancestryUrl = 'https://you.23andme.com/p/' + s.selectedProfileId + '/profile/' + match.relative_profile_id + '/ancestry_composition/?sort_by=remote&include_ibd_countries=false'
+    var data = await apiFetch(ancestryUrl, {
+      credentials: 'include',
+      headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+    })
     var tree = findPopulationTree(data, match.relative_profile_id)
-    if (tree && tree.population_tree) {
-      var nodes = extractNodes(tree.population_tree, [])
-      var built = buildRegions(nodes)
-      var haplogroups = null
-      try {
-        haplogroups = await fetchHaplogroups(match.relative_profile_id)
-      } catch (err) {
-        if (isStoppableError(err.message)) throw err
-      }
-      enriched.ancestry = { using_latest_compute: tree.using_latest_compute, haplogroups: haplogroups, regions: built.regions, trace: built.trace }
-    } else {
-      enriched.ancestry_error = 'No ancestry composition data for this match'
-      if (priorAncestry) enriched.ancestry = priorAncestry
+    if (!tree || !tree.population_tree) {
+      var trees = data && data.population_trees
+      var treeIds = Array.isArray(trees) ? trees.map(function (t) { return typeof t.profile_id + ':' + t.profile_id }) : null
+      console.log('[MatchFetch 23] NO TREE for match', match.relative_profile_id, '(', typeof match.relative_profile_id, ') | data keys:', data ? Object.keys(data) : null, '| population_trees:', Array.isArray(trees) ? 'array(' + trees.length + ')' : typeof trees, '| tree ids:', treeIds)
+      throw new Error('No ancestry composition data for this match')
     }
+    var nodes = extractNodes(tree.population_tree, [])
+    var built = buildRegions(nodes)
+    var haplogroups = await fetchHaplogroups(match.relative_profile_id)
+    if (!haplogroups) throw new Error('No haplogroup data for this match')
+    enriched.ancestry = { using_latest_compute: tree.using_latest_compute, haplogroups: haplogroups, regions: built.regions, trace: built.trace }
     return enriched
   }
 
@@ -347,14 +327,12 @@
       return
     }
     setState({ isFetching: true, fetchComplete: false, buttonLabel: null, statusMsg: '', fetchMsg: '', fetchProgress: 0, fetchPct: '' })
-    var successCount = 0
     var i
     try {
       for (i = 0; i < total; i++) {
         var match = targets[i]
         setState({ fetchMsg: 'Fetching ancestry and haplogroups ' + (i + 1) + ' of ' + total + (match.initials ? ' (' + match.initials + ')' : '') + '...' })
         var enriched = await fetchMatchDetails(match)
-        if (enriched.ancestry && enriched.ancestry.haplogroups) successCount++
         s.matches[match.relative_profile_id] = enriched
         if (typeof DB !== 'undefined') DB.saveMatches(s.selectedProfileId, [enriched], '23andme')
         _dataVersion++
@@ -362,17 +340,12 @@
         await delay(FETCH_DELAY)
       }
     } catch (err) {
-      setState({ isFetching: false, fetchMsg: '', fetchPct: '', fetchComplete: false, buttonLabel: 'Resume', statusMsg: 'Fetch stopped at match ' + (i + 1) + ' of ' + total + ': ' + friendlyError(err.message) + ' Click Fetch to resume.' })
+      setState({ isFetching: false, fetchMsg: '', fetchPct: '', fetchComplete: false, buttonLabel: 'Resume', statusMsg: 'Fetch stopped at match ' + (i + 1) + ' of ' + total + ': ' + friendlyError(err.message) + ' Click Resume to continue.' })
       return
     }
     refreshRegionGroups()
     refreshHaploOptions()
     refreshGpbOptions()
-    var failedCount = total - successCount
-    if (failedCount > 0) {
-      setState({ isFetching: false, fetchMsg: '', fetchPct: '', fetchComplete: false, buttonLabel: 'Resume', statusMsg: 'Fetched ' + successCount + ' of ' + total + ' match(es) — ' + failedCount + ' failed. Click Resume to continue.' })
-      return
-    }
     try {
       chrome.notifications.create({
         type: 'basic',

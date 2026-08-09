@@ -120,6 +120,16 @@
     setState({ selectedProfileId: id, matches: {}, matchCount: null, matchCountLoading: false, isFetching: false, fetchComplete: false, buttonLabel: null, statusMsg: '', fetchMsg: '', fetchProgress: 0, fetchPct: '', currentPage: 1, filters: { name: '', cmMin: null, cmMax: null, side: '', regions: [{ region: '', min: null, max: null }], ydna: '', mtdna: '', gpbLocations: [{ country: '', min: null }] } })
     await loadSaved()
     await fetchMatchCount()
+    var openCount = 0
+    var completeCount = 0
+    for (var mi in s.matches) {
+      var m = s.matches[mi]
+      if (m.is_open_sharing !== true) continue
+      openCount++
+      if (m.ancestry && m.ancestry.haplogroups) completeCount++
+    }
+    if (openCount > 0 && completeCount === openCount) setState({ fetchComplete: true, buttonLabel: null })
+    else if (completeCount > 0) setState({ fetchComplete: false, buttonLabel: 'Resume' })
     if (typeof DB !== 'undefined') DB.setProfileName(id, currentProfileName(), '23andme')
   }
 
@@ -311,7 +321,7 @@
     }
   }
 
-  async function doFetch() {
+  async function doFetch(isCheck) {
     if (!s.selectedProfileId || s.isFetching) return
     if (s.matchCountLoading) return
     if (Object.keys(s.matches).length === 0) await fetchMatchCount()
@@ -323,7 +333,7 @@
     }
     var total = targets.length
     if (total === 0) {
-      setState({ isFetching: false, fetchComplete: true, buttonLabel: null, statusMsg: 'No match details to fetch' })
+      setState({ isFetching: false, fetchComplete: true, buttonLabel: null, statusMsg: isCheck ? 'No new matches found' : 'No match details to fetch' })
       return
     }
     setState({ isFetching: true, fetchComplete: false, buttonLabel: null, statusMsg: '', fetchMsg: '', fetchProgress: 0, fetchPct: '' })
@@ -870,7 +880,7 @@
         s.selectedProfileId ? m('.fetch-row', [
           m('button.btn.fetch-list-btn', {
             disabled: s.isFetching || s.matchCountLoading,
-            onclick: function () { if (s.isFetching || s.matchCountLoading) return; if (s.fetchComplete) { fetchMatchCount().then(doFetch) } else { doFetch() } }
+            onclick: function () { if (s.isFetching || s.matchCountLoading) return; if (s.fetchComplete) { fetchMatchCount().then(function () { doFetch(true) }) } else { doFetch(false) } }
           }, s.isFetching ? [m('.spinner-ring', { style: { width: '16px', height: '16px', borderWidth: '2px' } }), ' Fetching...'] : [m.trust('<span>' + (s.fetchComplete ? '&#x21BB;' : '&#x25B6;') + '</span>'), ' ' + (s.buttonLabel || (s.fetchComplete ? 'Check for new matches' : 'Fetch'))])
         ]) : null,
         s.fetchMsg ? m('#fetchStatus', { style: { textAlign: 'center', padding: '6px 0' } }, [

@@ -219,10 +219,11 @@
       headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
     })
     var h = {}
+    var want = String(targetProfileId)
     if (Array.isArray(data)) {
       for (var i = 0; i < data.length; i++) {
         var item = data[i]
-        if (!item || item.profile_id !== targetProfileId || !item.result || !item.result.haplogroup_id) continue
+        if (!item || String(item.profile_id) !== want || !item.result || !item.result.haplogroup_id) continue
         var v = item.result.haplogroup_id
         var colonIndex = v.indexOf(':')
         if (item.name === 'yhaplo_2023:haplogroup') {

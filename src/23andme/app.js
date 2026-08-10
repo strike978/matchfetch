@@ -89,9 +89,9 @@
     return n.trim() || p.initials || 'Profile'
   }
 
-  function currentProfileName() {
+  function currentProfileName(profileId) {
     for (var i = 0; i < s.profiles.length; i++) {
-      if (s.profiles[i].id === s.selectedProfileId) return profileName(s.profiles[i])
+      if (s.profiles[i].id === profileId) return profileName(s.profiles[i])
     }
     return ''
   }
@@ -130,7 +130,7 @@
     }
     if (openCount > 0 && completeCount === openCount) setState({ fetchComplete: true, buttonLabel: null })
     else if (completeCount > 0) setState({ fetchComplete: false, buttonLabel: 'Resume' })
-    if (typeof DB !== 'undefined') DB.setProfileName(id, currentProfileName(), '23andme')
+    if (typeof DB !== 'undefined') DB.setProfileName(id, currentProfileName(id), '23andme')
   }
 
   async function loadSaved(profileId) {

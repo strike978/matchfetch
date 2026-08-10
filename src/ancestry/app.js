@@ -205,9 +205,6 @@
     var _progressDone = 0
     var _progressTotal = mode === 'cmRange' || mode === 'all' ? 300 : desiredCount * 3
 
-    function setBadgeFetching() { try { chrome.action.setBadgeText({ text: '\u21bb' }); chrome.action.setBadgeBackgroundColor({ color: '#3b82f6' }) } catch (e) { } }
-    function clearBadge() { try { chrome.action.setBadgeText({ text: '' }) } catch (e) { } }
-
     function saveState() {
       DB.saveFetchState(guid, 0, mode, params, currentPage)
       var label = mode === 'cmRange' ? allMatches.length + ' [' + params.range + ' cM] page ' + (currentPage - 1) : mode === 'all' ? allMatches.length + ' all page ' + (currentPage - 1) : allMatches.length + '/' + desiredCount + ' page ' + (currentPage - 1)
@@ -248,7 +245,6 @@
     }
 
     function finishFetch() {
-      clearBadge()
       setState({ fetchMsg: '', fetchPct: '', isFetching: false, fetchComplete: true, buttonLabel: null })
       DB.saveFetchState(guid, 1, mode, params)
       var label = mode === 'cmRange' ? '\u2713 ' + allMatches.length + ' [' + params.range + ' cM]' : mode === 'all' ? '\u2713 ' + allMatches.length + ' all matches' : '\u2713 ' + allMatches.length + '/' + (params.desiredCount || '?') + ' matches'
@@ -300,7 +296,6 @@
         }
       }
 
-      setBadgeFetching()
       saveState()
       DB.setProfileName(guid, currentTestName())
       if (mode === 'count') { _progressDone = allMatches.length; setProgress(_progressDone, _progressTotal) }
@@ -386,7 +381,6 @@
 
       finishFetch()
     } catch (err) {
-      clearBadge()
       setState({ isFetching: false, fetchMsg: '' })
       restoreFetchUI(guid)
     }

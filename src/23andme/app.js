@@ -70,6 +70,7 @@
 
   var _filterCache = { key: '', sorted: [], filtered: [] }
   var _dataVersion = 0
+  var _fetchToken = 0
   var _gpbOptionsCache = null
 
   function friendlyError(msg) {
@@ -156,6 +157,7 @@
 
   async function onProfileSelect(id) {
     if (!id) return
+    _fetchToken++
     _filterCache = { key: '', sorted: [], filtered: [] }
     _regionGroupsCache = null
     _haploOptionsCache = null
@@ -172,7 +174,7 @@
       if (m.ancestry && m.ancestry.haplogroups) completeCount++
     }
     if (openCount > 0 && completeCount === openCount) setState({ fetchComplete: true, buttonLabel: null })
-    else if (completeCount > 0) setState({ fetchComplete: false, buttonLabel: 'Resume' })
+    else setState({ fetchComplete: false, buttonLabel: null })
     if (typeof DB !== 'undefined') DB.setProfileName(id, currentProfileName(id), '23andme')
   }
 
@@ -398,12 +400,15 @@
       return
     }
     setState({ isFetching: true, fetchComplete: false, buttonLabel: null, statusMsg: '', fetchMsg: '', fetchProgress: 0, fetchPct: '' })
+    var token = ++_fetchToken
     var i
     try {
       for (i = 0; i < total; i++) {
+        if (token !== _fetchToken) return
         var match = targets[i]
         setState({ fetchMsg: 'Fetching ancestry and haplogroups ' + (i + 1) + ' of ' + total + (match.initials ? ' (' + match.initials + ')' : '') + '...' })
         var enriched = await fetchMatchDetails(profileId, match)
+        if (token !== _fetchToken) return
         s.matches[match.relative_profile_id] = enriched
         if (typeof DB !== 'undefined') DB.saveMatches(profileId, [enriched], '23andme')
         _dataVersion++

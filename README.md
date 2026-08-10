@@ -37,4 +37,4 @@ Fetch and explore your match data from **AncestryDNA** and **23andMe**.
 
 ---
 
-Created by Omar Nunez · Version 1.3.5
+Created by Omar Nunez · Version 1.3.6

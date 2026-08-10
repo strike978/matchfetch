@@ -19,6 +19,7 @@
     cmRangeMin: '',
     cmRangeMax: '',
     birthCountry: '',
+    targetIds: [],
     showFilterBody: false,
     filters: { name: '', cmMin: null, cmMax: null, side: '', regions: [{ region: '', min: null, max: null }], ydna: '', mtdna: '', gpbLocations: [{ country: '', min: null }] },
     currentPage: 1,
@@ -71,7 +72,7 @@
   function saveFetchOptions(profileId) {
     var id = profileId || s.selectedProfileId
     if (!id || typeof DB === 'undefined') return
-    DB.saveFetchOptions(id, { fetchMode: s.fetchMode, desiredCount: s.desiredCount, cmRangeMin: s.cmRangeMin, cmRangeMax: s.cmRangeMax, birthCountry: s.birthCountry }, '23andme')
+    DB.saveFetchOptions(id, { fetchMode: s.fetchMode, desiredCount: s.desiredCount, cmRangeMin: s.cmRangeMin, cmRangeMax: s.cmRangeMax, birthCountry: s.birthCountry, targetIds: s.targetIds || [] }, '23andme')
   }
 
   var _filterCache = { key: '', sorted: [], filtered: [] }
@@ -168,7 +169,7 @@
     _regionGroupsCache = null
     _haploOptionsCache = null
     _gpbOptionsCache = null
-    setState({ selectedProfileId: id, matches: {}, matchCount: null, matchCountLoading: false, isFetching: false, fetchComplete: false, buttonLabel: null, statusMsg: '', fetchMsg: '', fetchProgress: 0, fetchPct: '', currentPage: 1, showFetchOptions: false, fetchMode: 'all', desiredCount: '100', cmRangeMin: '', cmRangeMax: '', birthCountry: '', filters: { name: '', cmMin: null, cmMax: null, side: '', regions: [{ region: '', min: null, max: null }], ydna: '', mtdna: '', gpbLocations: [{ country: '', min: null }] } })
+    setState({ selectedProfileId: id, matches: {}, matchCount: null, matchCountLoading: false, isFetching: false, fetchComplete: false, buttonLabel: null, statusMsg: '', fetchMsg: '', fetchProgress: 0, fetchPct: '', currentPage: 1, showFetchOptions: false, fetchMode: 'all', desiredCount: '100', cmRangeMin: '', cmRangeMax: '', birthCountry: '', targetIds: [], filters: { name: '', cmMin: null, cmMax: null, side: '', regions: [{ region: '', min: null, max: null }], ydna: '', mtdna: '', gpbLocations: [{ country: '', min: null }] } })
     await loadSaved(id)
     await fetchMatchCount(id)
     var openCount = 0
@@ -196,6 +197,7 @@
         o.cmRangeMin = fo.cmRangeMin || ''
         o.cmRangeMax = fo.cmRangeMax || ''
         o.birthCountry = fo.birthCountry || ''
+        o.targetIds = fo.targetIds || []
       }
       setState(Object.assign({ matches: (session && session.matches) || {} }, o))
     } catch (e) { console.log('loadSaved error:', e) }
@@ -388,10 +390,17 @@
     if (Object.keys(s.matches).length === 0) await fetchMatchCount(profileId)
     if (Object.keys(s.matches).length === 0) return
     var targets = []
+    var useStored = s.fetchMode !== 'all' && s.targetIds && s.targetIds.length > 0
+    var storedSet = null
+    if (useStored) {
+      storedSet = {}
+      for (var ti = 0; ti < s.targetIds.length; ti++) storedSet[s.targetIds[ti]] = true
+    }
     for (var mi in s.matches) {
       var m = s.matches[mi]
       if (m.is_open_sharing !== true) continue
       if (m.ancestry && m.ancestry.haplogroups) continue
+      if (storedSet && !storedSet[m.relative_profile_id]) continue
       if (s.fetchMode === 'cmRange') {
         var cm = matchCM(m)
         var min = parseFloat(s.cmRangeMin)
@@ -408,6 +417,10 @@
       var n = Math.max(1, parseInt(s.desiredCount, 10) || 1)
       targets.sort(function (a, b) { return (b.ibd_proportion || 0) - (a.ibd_proportion || 0) })
       targets = targets.slice(0, n)
+    }
+    if (s.fetchMode !== 'all' && targets.length > 0) {
+      s.targetIds = targets.map(function (m) { return m.relative_profile_id })
+      saveFetchOptions(profileId)
     }
     var total = targets.length
     if (total === 0) {
@@ -968,26 +981,26 @@
         ]),
         s.selectedProfileId && !s.isFetching && (s.buttonLabel || !s.fetchComplete) ? [
           !s.buttonLabel ? m('.fetch-toggle', {
-            onclick: function () { setState({ showFetchOptions: !s.showFetchOptions, fetchMode: s.showFetchOptions ? 'all' : s.fetchMode }); saveFetchOptions() }
+            onclick: function () { s.targetIds = []; setState({ showFetchOptions: !s.showFetchOptions, fetchMode: s.showFetchOptions ? 'all' : s.fetchMode }); saveFetchOptions() }
           }, [
             m('span.fetch-arrow', { style: { transform: s.showFetchOptions ? 'rotate(90deg)' : '' } }, '\u25B6'),
             ' Fetch options'
           ]) : null,
           s.showFetchOptions ? m('#fetchOptions', [
             m('.mode-toggle', [
-              m('button.mode-btn', { class: s.fetchMode === 'country' ? 'active' : '', onclick: function () { setState({ fetchMode: 'country' }); saveFetchOptions() } }, 'Country'),
-              m('button.mode-btn', { class: s.fetchMode === 'count' ? 'active' : '', onclick: function () { setState({ fetchMode: 'count' }); saveFetchOptions() } }, 'Count'),
-              m('button.mode-btn', { class: s.fetchMode === 'cmRange' ? 'active' : '', onclick: function () { setState({ fetchMode: 'cmRange' }); saveFetchOptions() } }, 'cM Range')
+              m('button.mode-btn', { class: s.fetchMode === 'country' ? 'active' : '', onclick: function () { s.targetIds = []; setState({ fetchMode: 'country' }); saveFetchOptions() } }, 'Country'),
+              m('button.mode-btn', { class: s.fetchMode === 'count' ? 'active' : '', onclick: function () { s.targetIds = []; setState({ fetchMode: 'count' }); saveFetchOptions() } }, 'Count'),
+              m('button.mode-btn', { class: s.fetchMode === 'cmRange' ? 'active' : '', onclick: function () { s.targetIds = []; setState({ fetchMode: 'cmRange' }); saveFetchOptions() } }, 'cM Range')
             ]),
             m('.fetch-row#countModeRow', { style: { display: s.fetchMode === 'count' ? '' : 'none' } }, [
-              m('label.input-label', ['Matches ', m('input#matchCountInput.count-input', { type: 'number', value: s.desiredCount, min: 1, step: '1', oninput: function (e) { s.desiredCount = e.target.value }, onblur: function (e) { var v = parseInt(e.target.value, 10); if (e.target.value && !isNaN(v)) { var max = s.matchCount && s.matchCount.count; var clamped = max ? Math.max(1, Math.min(max, v)) : Math.max(1, v); e.target.value = clamped; s.desiredCount = String(clamped) } saveFetchOptions() } })])
+              m('label.input-label', ['Matches ', m('input#matchCountInput.count-input', { type: 'number', value: s.desiredCount, min: 1, step: '1', oninput: function (e) { s.desiredCount = e.target.value }, onblur: function (e) { var v = parseInt(e.target.value, 10); if (e.target.value && !isNaN(v)) { var max = s.matchCount && s.matchCount.count; var clamped = max ? Math.max(1, Math.min(max, v)) : Math.max(1, v); e.target.value = clamped; s.desiredCount = String(clamped) } s.targetIds = []; saveFetchOptions() } })])
             ]),
             m('.fetch-row#cmRangeModeRow', { style: { display: s.fetchMode === 'cmRange' ? '' : 'none' } }, [
-              m('label.input-label', ['Min ', m('input#cmRangeMin.count-input', { type: 'number', placeholder: '6', min: 6, value: s.cmRangeMin, oninput: function (e) { s.cmRangeMin = e.target.value }, onblur: function (e) { var v = parseFloat(e.target.value); if (e.target.value && !isNaN(v)) { var clamped = Math.max(6, Math.min(3490, v)); e.target.value = clamped; s.cmRangeMin = String(clamped) } saveFetchOptions() } })]),
-              m('label.input-label', ['Max ', m('input#cmRangeMax.count-input', { type: 'number', placeholder: '3490', max: 3490, value: s.cmRangeMax, oninput: function (e) { s.cmRangeMax = e.target.value }, onblur: function (e) { var v = parseFloat(e.target.value); if (e.target.value && !isNaN(v)) { var clamped = Math.max(6, Math.min(3490, v)); e.target.value = clamped; s.cmRangeMax = String(clamped) } saveFetchOptions() } })])
+              m('label.input-label', ['Min ', m('input#cmRangeMin.count-input', { type: 'number', placeholder: '6', min: 6, value: s.cmRangeMin, oninput: function (e) { s.cmRangeMin = e.target.value }, onblur: function (e) { var v = parseFloat(e.target.value); if (e.target.value && !isNaN(v)) { var clamped = Math.max(6, Math.min(3490, v)); e.target.value = clamped; s.cmRangeMin = String(clamped) } s.targetIds = []; saveFetchOptions() } })]),
+              m('label.input-label', ['Max ', m('input#cmRangeMax.count-input', { type: 'number', placeholder: '3490', max: 3490, value: s.cmRangeMax, oninput: function (e) { s.cmRangeMax = e.target.value }, onblur: function (e) { var v = parseFloat(e.target.value); if (e.target.value && !isNaN(v)) { var clamped = Math.max(6, Math.min(3490, v)); e.target.value = clamped; s.cmRangeMax = String(clamped) } s.targetIds = []; saveFetchOptions() } })])
             ]),
             m('.fetch-row#countryModeRow', { style: { display: s.fetchMode === 'country' ? '' : 'none' } }, [
-              m('label.input-label', ['Country ', m('select#birthCountrySel.filter-select', { style: { width: '200px' }, value: s.birthCountry, onchange: function (e) { s.birthCountry = e.target.value; saveFetchOptions(); m.redraw() } }, [
+              m('label.input-label', ['Country ', m('select#birthCountrySel.filter-select', { style: { width: '200px' }, value: s.birthCountry, onchange: function (e) { s.birthCountry = e.target.value; s.targetIds = []; saveFetchOptions(); m.redraw() } }, [
                 m('option', { value: '' }, 'Select country...'),
                 s.fetchMode === 'country' ? getCountryOptions().map(function (c) { return m('option', { value: c.code }, c.name + ' (n=' + c.count + ')') }) : null
               ])])

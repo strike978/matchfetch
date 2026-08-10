@@ -13,6 +13,12 @@
     fetchProgress: 0,
     fetchComplete: false,
     buttonLabel: null,
+    showFetchOptions: false,
+    fetchMode: 'all',
+    desiredCount: '100',
+    cmRangeMin: '',
+    cmRangeMax: '',
+    birthCountry: '',
     showFilterBody: false,
     filters: { name: '', cmMin: null, cmMax: null, side: '', regions: [{ region: '', min: null, max: null }], ydna: '', mtdna: '', gpbLocations: [{ country: '', min: null }] },
     currentPage: 1,
@@ -24,6 +30,37 @@
   }
 
   function setState(o) { Object.assign(s, o); m.redraw() }
+
+  function matchCM(m) {
+    return m.ibd_proportion != null ? Math.round(m.ibd_proportion * 6800) : null
+  }
+
+  function grandparentCountry(m) {
+    var locs = m.grandparent_birth_locations
+    if (!locs) return null
+    var keys = ['maternal_gma', 'maternal_gpa', 'paternal_gma', 'paternal_gpa']
+    var country = null
+    for (var i = 0; i < keys.length; i++) {
+      var gp = locs[keys[i]]
+      if (!gp || !gp.country) return null
+      var c = String(gp.country).toUpperCase()
+      if (country === null) country = c
+      else if (c !== country) return null
+    }
+    return country
+  }
+
+  function getCountryOptions() {
+    var set = {}
+    for (var mi in s.matches) {
+      var m = s.matches[mi]
+      if (m.is_open_sharing !== true) continue
+      var c = grandparentCountry(m)
+      if (c) set[c] = (s.countryNames && s.countryNames[c]) || c
+    }
+    var names = Object.keys(set).sort(function (a, b) { return set[a].localeCompare(set[b]) })
+    return names.map(function (c) { return { code: c, name: set[c] } })
+  }
 
   var _filterCache = { key: '', sorted: [], filtered: [] }
   var _dataVersion = 0
@@ -117,7 +154,7 @@
     _regionGroupsCache = null
     _haploOptionsCache = null
     _gpbOptionsCache = null
-    setState({ selectedProfileId: id, matches: {}, matchCount: null, matchCountLoading: false, isFetching: false, fetchComplete: false, buttonLabel: null, statusMsg: '', fetchMsg: '', fetchProgress: 0, fetchPct: '', currentPage: 1, filters: { name: '', cmMin: null, cmMax: null, side: '', regions: [{ region: '', min: null, max: null }], ydna: '', mtdna: '', gpbLocations: [{ country: '', min: null }] } })
+    setState({ selectedProfileId: id, matches: {}, matchCount: null, matchCountLoading: false, isFetching: false, fetchComplete: false, buttonLabel: null, statusMsg: '', fetchMsg: '', fetchProgress: 0, fetchPct: '', currentPage: 1, showFetchOptions: false, fetchMode: 'all', desiredCount: '100', cmRangeMin: '', cmRangeMax: '', birthCountry: '', filters: { name: '', cmMin: null, cmMax: null, side: '', regions: [{ region: '', min: null, max: null }], ydna: '', mtdna: '', gpbLocations: [{ country: '', min: null }] } })
     await loadSaved(id)
     await fetchMatchCount(id)
     var openCount = 0
@@ -330,7 +367,24 @@
     var targets = []
     for (var mi in s.matches) {
       var m = s.matches[mi]
-      if (m.is_open_sharing === true && (!m.ancestry || !m.ancestry.haplogroups)) targets.push(m)
+      if (m.is_open_sharing !== true) continue
+      if (m.ancestry && m.ancestry.haplogroups) continue
+      if (s.fetchMode === 'cmRange') {
+        var cm = matchCM(m)
+        var min = parseFloat(s.cmRangeMin)
+        var max = parseFloat(s.cmRangeMax)
+        if (cm == null) continue
+        if (!isNaN(min) && cm < min) continue
+        if (!isNaN(max) && cm > max) continue
+      } else if (s.fetchMode === 'country') {
+        if (!s.birthCountry || grandparentCountry(m) !== s.birthCountry) continue
+      }
+      targets.push(m)
+    }
+    if (s.fetchMode === 'count') {
+      var n = Math.max(1, parseInt(s.desiredCount, 10) || 1)
+      targets.sort(function (a, b) { return (b.ibd_proportion || 0) - (a.ibd_proportion || 0) })
+      targets = targets.slice(0, n)
     }
     var total = targets.length
     if (total === 0) {
@@ -885,12 +939,47 @@
             }
           }, m.trust('<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>')) : null
         ]),
-        s.selectedProfileId && !s.isFetching && (s.buttonLabel || !s.fetchComplete) ? m('.fetch-row', [
+        s.selectedProfileId && !s.isFetching && (s.buttonLabel || !s.fetchComplete) ? [
+          !s.buttonLabel ? m('.fetch-toggle', {
+            onclick: function () { setState({ showFetchOptions: !s.showFetchOptions, fetchMode: s.showFetchOptions ? 'all' : s.fetchMode }) }
+          }, [
+            m('span.fetch-arrow', { style: { transform: s.showFetchOptions ? 'rotate(90deg)' : '' } }, '\u25B6'),
+            ' Fetch options'
+          ]) : null,
+          s.showFetchOptions ? m('#fetchOptions', [
+            m('.mode-toggle', [
+              m('button.mode-btn', { class: s.fetchMode === 'count' ? 'active' : '', onclick: function () { setState({ fetchMode: 'count' }) } }, 'Count'),
+              m('button.mode-btn', { class: s.fetchMode === 'cmRange' ? 'active' : '', onclick: function () { setState({ fetchMode: 'cmRange' }) } }, 'cM Range'),
+              m('button.mode-btn', { class: s.fetchMode === 'country' ? 'active' : '', onclick: function () { setState({ fetchMode: 'country' }) } }, 'Country')
+            ]),
+            m('.fetch-row#countModeRow', { style: { display: s.fetchMode === 'count' ? '' : 'none' } }, [
+              m('label.input-label', ['Matches ', m('input#matchCountInput.count-input', { type: 'number', value: s.desiredCount, min: 1, step: '1', oninput: function (e) { s.desiredCount = e.target.value }, onblur: function (e) { var v = parseInt(e.target.value, 10); if (e.target.value && !isNaN(v)) { var max = s.matchCount && s.matchCount.count; var clamped = max ? Math.max(1, Math.min(max, v)) : Math.max(1, v); e.target.value = clamped; s.desiredCount = String(clamped) } } })])
+            ]),
+            m('.fetch-row#cmRangeModeRow', { style: { display: s.fetchMode === 'cmRange' ? '' : 'none' } }, [
+              m('label.input-label', ['Min ', m('input#cmRangeMin.count-input', { type: 'number', placeholder: '6', min: 6, value: s.cmRangeMin, oninput: function (e) { s.cmRangeMin = e.target.value }, onblur: function (e) { var v = parseFloat(e.target.value); if (e.target.value && !isNaN(v)) { var clamped = Math.max(6, Math.min(3490, v)); e.target.value = clamped; s.cmRangeMin = String(clamped) } } })]),
+              m('label.input-label', ['Max ', m('input#cmRangeMax.count-input', { type: 'number', placeholder: '3490', max: 3490, value: s.cmRangeMax, oninput: function (e) { s.cmRangeMax = e.target.value }, onblur: function (e) { var v = parseFloat(e.target.value); if (e.target.value && !isNaN(v)) { var clamped = Math.max(6, Math.min(3490, v)); e.target.value = clamped; s.cmRangeMax = String(clamped) } } })])
+            ]),
+            m('.fetch-row#countryModeRow', { style: { display: s.fetchMode === 'country' ? '' : 'none' } }, [
+              m('label.input-label', ['Country ', m('select#birthCountrySel.filter-select', { style: { width: '200px' }, value: s.birthCountry, onchange: function (e) { s.birthCountry = e.target.value; m.redraw() } }, [
+                m('option', { value: '' }, 'Select country...'),
+                s.fetchMode === 'country' ? getCountryOptions().map(function (c) { return m('option', { value: c.code }, c.name) }) : null
+              ])])
+            ])
+          ]) : null,
           m('button.btn.fetch-list-btn', {
-            disabled: s.matchCountLoading,
-            onclick: function () { if (s.isFetching || s.matchCountLoading) return; doFetch(s.selectedProfileId) }
+            disabled: s.matchCountLoading || (s.fetchMode === 'cmRange' && (!s.cmRangeMin || !s.cmRangeMax)) || (s.fetchMode === 'country' && !s.birthCountry),
+            onclick: function () {
+              if (s.isFetching || s.matchCountLoading) return
+              if (s.fetchMode === 'cmRange') {
+                var min = Math.max(6, parseFloat(s.cmRangeMin) || 0)
+                var max = Math.min(3490, parseFloat(s.cmRangeMax) || 0)
+                if (!min || !max || min > max) { s.statusMsg = 'Enter Min (6\u20133490) and Max (\u2265Min)'; m.redraw(); return }
+                s.cmRangeMin = String(min); s.cmRangeMax = String(max)
+              }
+              doFetch(s.selectedProfileId)
+            }
           }, [m.trust('<span>&#x25B6;</span>'), ' ' + (s.buttonLabel || 'Fetch')])
-        ]) : null,
+        ] : null,
         s.fetchMsg ? m('#fetchStatus', { style: { textAlign: 'center', padding: '6px 0' } }, [
           m('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' } }, [
             m.trust('<svg class="helix-svg" viewBox="0 0 18 18" width="18" height="18"><g><animateTransform attributeName="transform" type="rotate" from="0 9 9" to="360 9 9" dur="2s" repeatCount="indefinite"/><path d="M2,4 C4,1 7,1 9,4 C11,7 14,7 16,4" stroke="#3b82f6" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M2,14 C4,17 7,17 9,14 C11,11 14,11 16,14" stroke="#60a5fa" stroke-width="1.5" fill="none" stroke-linecap="round" opacity=".6"/><line x1="2" y1="4" x2="2" y2="14" stroke="#60a5fa" stroke-width=".7" opacity=".35"/><line x1="5.5" y1="2.5" x2="5.5" y2="15.5" stroke="#60a5fa" stroke-width=".7" opacity=".35"/><line x1="9" y1="4" x2="9" y2="14" stroke="#60a5fa" stroke-width=".7" opacity=".35"/><line x1="12.5" y1="5.5" x2="12.5" y2="12.5" stroke="#60a5fa" stroke-width=".7" opacity=".35"/><line x1="16" y1="4" x2="16" y2="14" stroke="#60a5fa" stroke-width=".7" opacity=".35"/></g></svg>'),

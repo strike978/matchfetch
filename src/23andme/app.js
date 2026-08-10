@@ -51,15 +51,21 @@
   }
 
   function getCountryOptions() {
-    var set = {}
+    var counts = {}
     for (var mi in s.matches) {
       var m = s.matches[mi]
       if (m.is_open_sharing !== true) continue
       var c = grandparentCountry(m)
-      if (c) set[c] = (s.countryNames && s.countryNames[c]) || c
+      if (c) counts[c] = (counts[c] || 0) + 1
     }
-    var names = Object.keys(set).sort(function (a, b) { return set[a].localeCompare(set[b]) })
-    return names.map(function (c) { return { code: c, name: set[c] } })
+    var names = Object.keys(counts).sort(function (a, b) {
+      var na = (s.countryNames && s.countryNames[a]) || a
+      var nb = (s.countryNames && s.countryNames[b]) || b
+      return na.localeCompare(nb)
+    })
+    return names.map(function (c) {
+      return { code: c, name: (s.countryNames && s.countryNames[c]) || c, count: counts[c] }
+    })
   }
 
   var _filterCache = { key: '', sorted: [], filtered: [] }
@@ -948,9 +954,9 @@
           ]) : null,
           s.showFetchOptions ? m('#fetchOptions', [
             m('.mode-toggle', [
+              m('button.mode-btn', { class: s.fetchMode === 'country' ? 'active' : '', onclick: function () { setState({ fetchMode: 'country' }) } }, 'Country'),
               m('button.mode-btn', { class: s.fetchMode === 'count' ? 'active' : '', onclick: function () { setState({ fetchMode: 'count' }) } }, 'Count'),
-              m('button.mode-btn', { class: s.fetchMode === 'cmRange' ? 'active' : '', onclick: function () { setState({ fetchMode: 'cmRange' }) } }, 'cM Range'),
-              m('button.mode-btn', { class: s.fetchMode === 'country' ? 'active' : '', onclick: function () { setState({ fetchMode: 'country' }) } }, 'Country')
+              m('button.mode-btn', { class: s.fetchMode === 'cmRange' ? 'active' : '', onclick: function () { setState({ fetchMode: 'cmRange' }) } }, 'cM Range')
             ]),
             m('.fetch-row#countModeRow', { style: { display: s.fetchMode === 'count' ? '' : 'none' } }, [
               m('label.input-label', ['Matches ', m('input#matchCountInput.count-input', { type: 'number', value: s.desiredCount, min: 1, step: '1', oninput: function (e) { s.desiredCount = e.target.value }, onblur: function (e) { var v = parseInt(e.target.value, 10); if (e.target.value && !isNaN(v)) { var max = s.matchCount && s.matchCount.count; var clamped = max ? Math.max(1, Math.min(max, v)) : Math.max(1, v); e.target.value = clamped; s.desiredCount = String(clamped) } } })])
@@ -962,7 +968,7 @@
             m('.fetch-row#countryModeRow', { style: { display: s.fetchMode === 'country' ? '' : 'none' } }, [
               m('label.input-label', ['Country ', m('select#birthCountrySel.filter-select', { style: { width: '200px' }, value: s.birthCountry, onchange: function (e) { s.birthCountry = e.target.value; m.redraw() } }, [
                 m('option', { value: '' }, 'Select country...'),
-                s.fetchMode === 'country' ? getCountryOptions().map(function (c) { return m('option', { value: c.code }, c.name) }) : null
+                s.fetchMode === 'country' ? getCountryOptions().map(function (c) { return m('option', { value: c.code }, c.name + ' (n=' + c.count + ')') }) : null
               ])])
             ])
           ]) : null,

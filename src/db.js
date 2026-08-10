@@ -385,6 +385,18 @@ var DB = (function() {
             });
         },
 
+        saveFetchOptions: function(guid, opts, provider) {
+            var t = table(provider);
+            return db.transaction('rw', t, function() {
+                return t.get(guid).then(function(existing) {
+                    var data = existing || { guid: guid, matches: {} };
+                    data.guid = guid;
+                    data.fetchOptions = opts;
+                    return t.put(data);
+                });
+            });
+        },
+
         setProfileName: function(guid, profileName, provider) {
             if (!profileName) return Promise.resolve();
             var t = table(provider);

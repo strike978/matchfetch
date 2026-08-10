@@ -118,8 +118,8 @@
     _haploOptionsCache = null
     _gpbOptionsCache = null
     setState({ selectedProfileId: id, matches: {}, matchCount: null, matchCountLoading: false, isFetching: false, fetchComplete: false, buttonLabel: null, statusMsg: '', fetchMsg: '', fetchProgress: 0, fetchPct: '', currentPage: 1, filters: { name: '', cmMin: null, cmMax: null, side: '', regions: [{ region: '', min: null, max: null }], ydna: '', mtdna: '', gpbLocations: [{ country: '', min: null }] } })
-    await loadSaved()
-    await fetchMatchCount()
+    await loadSaved(id)
+    await fetchMatchCount(id)
     var openCount = 0
     var completeCount = 0
     for (var mi in s.matches) {
@@ -133,10 +133,10 @@
     if (typeof DB !== 'undefined') DB.setProfileName(id, currentProfileName(), '23andme')
   }
 
-  async function loadSaved() {
-    if (!s.selectedProfileId) return
+  async function loadSaved(profileId) {
+    if (!profileId) return
     try {
-      var session = await DB.getSession(s.selectedProfileId, '23andme')
+      var session = await DB.getSession(profileId, '23andme')
       setState({ matches: (session && session.matches) || {} })
     } catch (e) { console.log('loadSaved error:', e) }
   }
@@ -211,9 +211,9 @@
     return null
   }
 
-  async function fetchHaplogroups(targetProfileId) {
+  async function fetchHaplogroups(profileId, targetProfileId) {
     await delay(FETCH_DELAY)
-    var url = 'https://you.23andme.com/p/' + s.selectedProfileId + '/ancestry/compute-result/?profile_id=' + targetProfileId + '%2C' + s.selectedProfileId + '&name=mthaplo_build_7%3Ahaplogroup%2Cyhaplo_2023%3Ahaplogroup'
+    var url = 'https://you.23andme.com/p/' + profileId + '/ancestry/compute-result/?profile_id=' + targetProfileId + '%2C' + profileId + '&name=mthaplo_build_7%3Ahaplogroup%2Cyhaplo_2023%3Ahaplogroup'
     var data = await apiFetch(url, {
       credentials: 'include',
       headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
@@ -248,16 +248,16 @@
     return out
   }
 
-  async function fetchMatchDetails(match) {
+  async function fetchMatchDetails(profileId, match) {
     var enriched = pickRelativeFields(match)
     if (match.ancestry && !match.ancestry.haplogroups) {
-      var hg = await fetchHaplogroups(match.relative_profile_id)
+      var hg = await fetchHaplogroups(profileId, match.relative_profile_id)
       if (!hg) throw new Error('No haplogroup data for this match')
       match.ancestry.haplogroups = hg
       enriched.ancestry = match.ancestry
       return enriched
     }
-    var ancestryUrl = 'https://you.23andme.com/p/' + s.selectedProfileId + '/profile/' + match.relative_profile_id + '/ancestry_composition/?sort_by=remote&include_ibd_countries=false'
+    var ancestryUrl = 'https://you.23andme.com/p/' + profileId + '/profile/' + match.relative_profile_id + '/ancestry_composition/?sort_by=remote&include_ibd_countries=false'
     var data = await apiFetch(ancestryUrl, {
       credentials: 'include',
       headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
@@ -271,7 +271,7 @@
     }
     var nodes = extractNodes(tree.population_tree, [])
     var built = buildRegions(nodes)
-    var haplogroups = await fetchHaplogroups(match.relative_profile_id)
+    var haplogroups = await fetchHaplogroups(profileId, match.relative_profile_id)
     if (!haplogroups) throw new Error('No haplogroup data for this match')
     enriched.ancestry = { using_latest_compute: tree.using_latest_compute, haplogroups: haplogroups, regions: built.regions, trace: built.trace }
     return enriched
@@ -290,11 +290,11 @@
     if (pctEl) { pctEl.textContent = Math.round(pct) + '%'; pctEl.style.color = 'rgb(' + r + ',' + g + ',' + b + ')' }
   }
 
-  async function fetchMatchCount() {
-    if (!s.selectedProfileId) return
+  async function fetchMatchCount(profileId) {
+    if (!profileId) return
     setState({ matchCount: null, matchCountLoading: true })
     try {
-      var data = await apiFetch('https://you.23andme.com/p/' + s.selectedProfileId + '/family/relatives/ajax/', {
+      var data = await apiFetch('https://you.23andme.com/p/' + profileId + '/family/relatives/ajax/', {
         credentials: 'include',
         headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
       })
@@ -316,16 +316,16 @@
         if (rel[si].is_open_sharing === true) sharingCount++
       }
       setState({ matches: matches, matchCount: { count: sharingCount }, matchCountLoading: false })
-      if (typeof DB !== 'undefined') DB.saveMatches(s.selectedProfileId, Object.keys(matches).map(function (id) { return matches[id] }), '23andme')
+      if (typeof DB !== 'undefined') DB.saveMatches(profileId, Object.keys(matches).map(function (id) { return matches[id] }), '23andme')
     } catch (err) {
       setState({ matchCount: { error: friendlyError(err.message) }, matchCountLoading: false })
     }
   }
 
-  async function doFetch() {
-    if (!s.selectedProfileId || s.isFetching) return
+  async function doFetch(profileId) {
+    if (!profileId || s.isFetching) return
     if (s.matchCountLoading) return
-    if (Object.keys(s.matches).length === 0) await fetchMatchCount()
+    if (Object.keys(s.matches).length === 0) await fetchMatchCount(profileId)
     if (Object.keys(s.matches).length === 0) return
     var targets = []
     for (var mi in s.matches) {
@@ -343,9 +343,9 @@
       for (i = 0; i < total; i++) {
         var match = targets[i]
         setState({ fetchMsg: 'Fetching ancestry and haplogroups ' + (i + 1) + ' of ' + total + (match.initials ? ' (' + match.initials + ')' : '') + '...' })
-        var enriched = await fetchMatchDetails(match)
+        var enriched = await fetchMatchDetails(profileId, match)
         s.matches[match.relative_profile_id] = enriched
-        if (typeof DB !== 'undefined') DB.saveMatches(s.selectedProfileId, [enriched], '23andme')
+        if (typeof DB !== 'undefined') DB.saveMatches(profileId, [enriched], '23andme')
         _dataVersion++
         setProgress(i + 1, total)
         await delay(FETCH_DELAY)
@@ -782,7 +782,7 @@
               setState({ modal: { icon: '<div class="spinner-ring" style="margin:0 auto;width:28px;height:28px;border-width:3px"></div>', title: 'Importing your data', text: 'Restoring your database...' } })
               DB.importDatabase(file).then(function (count) {
                 setState({ modal: { icon: '<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.5 2.5L16 9"/></svg>', title: 'Import complete', text: 'Restored ' + count + ' record(s) from your file.', cancelText: 'OK' } })
-                loadSaved()
+                loadSaved(s.selectedProfileId)
               }).catch(function (err) {
                 setState({ modal: { icon: '<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16.5" x2="12.01" y2="16.5"/></svg>', title: 'Import failed', text: 'Could not import your database. ' + (err && err.message || String(err)), cancelText: 'OK' } })
               })
@@ -888,7 +888,7 @@
         s.selectedProfileId && !s.isFetching && (s.buttonLabel || !s.fetchComplete) ? m('.fetch-row', [
           m('button.btn.fetch-list-btn', {
             disabled: s.matchCountLoading,
-            onclick: function () { if (s.isFetching || s.matchCountLoading) return; doFetch() }
+            onclick: function () { if (s.isFetching || s.matchCountLoading) return; doFetch(s.selectedProfileId) }
           }, [m.trust('<span>&#x25B6;</span>'), ' ' + (s.buttonLabel || 'Fetch')])
         ]) : null,
         s.fetchMsg ? m('#fetchStatus', { style: { textAlign: 'center', padding: '6px 0' } }, [

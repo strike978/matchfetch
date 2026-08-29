@@ -95,7 +95,7 @@
         if (!gj.coordinates || !gj.coordinates.length) return
         try {
           var map = L.map(el, { zoomControl: true, attributionControl: false })
-          L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map)
+          L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 }).addTo(map)
           var color = vnode.attrs.color || '#3b82f6'
           if (!vnode.attrs.color && type === 'journey' && s.matchData) {
             ;(function findCol(nodes) {

@@ -23,6 +23,7 @@
     mode: 'all',
     matchCount: null,
     fetchStateBadge: '',
+    ethnicityVersion: null,
     showFetchOptions: false,
     fetchComplete: false,
     sortBy: 'cm',
@@ -69,8 +70,13 @@
 
   function chunkArray(arr, size) { var c = []; for (var i = 0; i < arr.length; i += size) c.push(arr.slice(i, i + size)); return c }
 
+  function regionsFileName() {
+    var y = s.ethnicityVersion || '2025'
+    return 'regions_' + y + '.json'
+  }
+
   async function loadRegionMap() {
-    var r = await fetch(chrome.runtime.getURL('data/ancestry/regions_2025.json'))
+    var r = await fetch(chrome.runtime.getURL('data/ancestry/' + regionsFileName()))
     var data = await r.json()
     var m = {};
     for (var id in data) m[id] = data[id].displayName
@@ -195,6 +201,7 @@
   }
 
   async function fetchMatchList(guid, mode, params) {
+    await ensureEthnicityVersion()
     s.currentPage = 1
     s.matchListData = null
     s.profileData = {}
@@ -541,6 +548,36 @@
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify(sampleIds)
     })
+  }
+
+  function extractEthnicityVersion(body) {
+    return body ? String(body) : null
+  }
+
+  var _versionPromise = null
+
+  function fetchEthnicityVersion() {
+    return apiFetch('https://www.ancestry.com/dna/origins/public/site-setting/dnaapps.originsfe.updateEthnicityVersion', {
+      method: 'GET', credentials: 'include', mode: 'cors', responseType: 'text',
+      headers: { 'Accept': 'text/plain' }
+    }).then(function (body) {
+      debugLog('Ethnicity version response: ' + String(body).substring(0, 500))
+      var v = extractEthnicityVersion(body)
+      setState({ ethnicityVersion: v })
+      if (v) loadRegionMap()
+      return v
+    }).catch(function (err) {
+      debugLog('Ethnicity version request failed: ' + err.message)
+      setState({ ethnicityVersion: null })
+      return null
+    })
+  }
+
+  function ensureEthnicityVersion() {
+    if (s.ethnicityVersion) return Promise.resolve(s.ethnicityVersion)
+    if (_versionPromise) return _versionPromise
+    _versionPromise = fetchEthnicityVersion().finally(function () { _versionPromise = null })
+    return _versionPromise
   }
 
   function debugLog(msg) {
@@ -1150,7 +1187,7 @@
       return m('.card.match-card', {
         'data-guid': guid,
         'data-sample': matchObj.sampleId,
-        onclick: function () { if (guid && matchObj.sampleId) window.open('match.html?guid=' + guid + '&sampleId=' + matchObj.sampleId + (s.hideNames ? '&hideNames=1' : ''), '_blank') }
+        onclick: function () { if (guid && matchObj.sampleId) window.open('match.html?guid=' + guid + '&sampleId=' + matchObj.sampleId + (s.hideNames ? '&hideNames=1' : '') + '&version=' + (s.ethnicityVersion || '2025'), '_blank') }
       }, [
         m('.card-top', [
           p.photoUrl ? m('img.avatar', { src: p.photoUrl }) : m('.avatar.avatar-initials.' + gc, p.matchNameInitials || '?'),
@@ -1200,6 +1237,7 @@
     m.redraw()
     if (guid) {
       fetchMatchCount(guid)
+      ensureEthnicityVersion()
       var session = await DB.getSession(guid)
       if (typeof DB !== 'undefined') DB.setProfileName(guid, currentTestName())
       if (session && session.matches) {

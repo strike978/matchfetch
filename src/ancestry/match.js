@@ -3,6 +3,7 @@
   var guid = params.get('guid')
   var sampleId = params.get('sampleId')
   var hideNames = params.get('hideNames') === '1'
+  var version = params.get('version') || '2025'
 
   if (!guid || !sampleId) {
     document.getElementById('content').innerHTML = '<div class="error">Missing guid or sampleId</div>'
@@ -40,7 +41,7 @@
   }
 
   function loadRegionCoords() {
-    fetch(chrome.runtime.getURL('data/ancestry/regions_2025.json')).then(function (r) { return r.json() }).then(function (d) {
+    fetch(chrome.runtime.getURL('data/ancestry/regions_' + version + '.json')).then(function (r) { return r.json() }).then(function (d) {
       setState({ regionCoords: d })
     }, function () { })
   }
@@ -58,7 +59,7 @@
   }
 
   function loadRegionNames() {
-    fetch(chrome.runtime.getURL('data/ancestry/regions_2025.json')).then(function (r) { return r.json() }).then(function (d) {
+    fetch(chrome.runtime.getURL('data/ancestry/regions_' + version + '.json')).then(function (r) { return r.json() }).then(function (d) {
       setState({ regionNameData: d })
     }, function () { })
   }

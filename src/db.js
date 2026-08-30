@@ -166,7 +166,8 @@ var DB = (function() {
                     displayGender: em.displayGender || null,
                     photoUrl: em.photoUrl || null,
                     regions: em.regions || null,
-                    journeys: em.journeys || null
+                    journeys: em.journeys || null,
+                    version: em.version || null
                 };
             }
         }
@@ -199,6 +200,7 @@ var DB = (function() {
                     }
                 }
                 em.regions = regions;
+                em.version = eth.version || em.version || null;
                 existing.matches[sid] = em;
             }
         }

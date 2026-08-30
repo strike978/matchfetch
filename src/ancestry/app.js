@@ -159,6 +159,7 @@
         }
         if (s.batchEthnicityData && s.batchEthnicityData[sid]) s.sessionMatches[sid].regions = s.batchEthnicityData[sid].regions
         if (s.batchCommunitiesData && s.batchCommunitiesData[sid]) s.sessionMatches[sid].journeys = s.batchCommunitiesData[sid].branches
+        s.sessionMatches[sid].version = s.ethnicityVersion || '2025'
       }
       var filteredMatches = []
       if (matchList) {
@@ -172,7 +173,7 @@
       for (var si = 0; si < targetSids.length; si++) {
         var sid = targetSids[si]
         if (s.profileData && s.profileData[sid]) fp[sid] = s.profileData[sid]
-        if (s.batchEthnicityData && s.batchEthnicityData[sid]) fe[sid] = s.batchEthnicityData[sid]
+        if (s.batchEthnicityData && s.batchEthnicityData[sid]) { fe[sid] = s.batchEthnicityData[sid]; fe[sid].version = s.ethnicityVersion || '2025' }
         if (s.batchCommunitiesData && s.batchCommunitiesData[sid]) fc[sid] = s.batchCommunitiesData[sid]
       }
       _dataVersion++
@@ -190,8 +191,9 @@
             s.sessionMatches[sid].displayGender = s.profileData[sid].displayGender
             s.sessionMatches[sid].photoUrl = s.profileData[sid].photoUrl
           }
-          if (s.batchEthnicityData && s.batchEthnicityData[sid]) s.sessionMatches[sid].regions = s.batchEthnicityData[sid].regions
+          if (s.batchEthnicityData && s.batchEthnicityData[sid]) { s.sessionMatches[sid].regions = s.batchEthnicityData[sid].regions; s.batchEthnicityData[sid].version = s.ethnicityVersion || '2025' }
           if (s.batchCommunitiesData && s.batchCommunitiesData[sid]) s.sessionMatches[sid].journeys = s.batchCommunitiesData[sid].branches
+          s.sessionMatches[sid].version = s.ethnicityVersion || '2025'
         }
       }
       _dataVersion++
@@ -1187,7 +1189,7 @@
       return m('.card.match-card', {
         'data-guid': guid,
         'data-sample': matchObj.sampleId,
-        onclick: function () { if (guid && matchObj.sampleId) window.open('match.html?guid=' + guid + '&sampleId=' + matchObj.sampleId + (s.hideNames ? '&hideNames=1' : '') + '&version=' + (s.ethnicityVersion || '2025'), '_blank') }
+        onclick: function () { if (guid && matchObj.sampleId) window.open('match.html?guid=' + guid + '&sampleId=' + matchObj.sampleId + (s.hideNames ? '&hideNames=1' : '') + '&version=' + (sm && sm.version || '2025'), '_blank') }
       }, [
         m('.card-top', [
           p.photoUrl ? m('img.avatar', { src: p.photoUrl }) : m('.avatar.avatar-initials.' + gc, p.matchNameInitials || '?'),

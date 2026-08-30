@@ -40,7 +40,7 @@
   }
 
   function loadRegionCoords() {
-    fetch(chrome.runtime.getURL('data/ancestry/region_coordinates.json')).then(function (r) { return r.json() }).then(function (d) {
+    fetch(chrome.runtime.getURL('data/ancestry/regions_2025.json')).then(function (r) { return r.json() }).then(function (d) {
       setState({ regionCoords: d })
     }, function () { })
   }
@@ -58,10 +58,8 @@
   }
 
   function loadRegionNames() {
-    fetch(chrome.runtime.getURL('data/ancestry/ancestry_region_names.json')).then(function (r) { return r.json() }).then(function (d) {
-      var m = {};
-      for (var i = 0; i < d.items.length; i++) m[d.items[i].region] = d.items[i];
-      setState({ regionNameData: m })
+    fetch(chrome.runtime.getURL('data/ancestry/regions_2025.json')).then(function (r) { return r.json() }).then(function (d) {
+      setState({ regionNameData: d })
     }, function () { })
   }
 
@@ -82,6 +80,12 @@
     setState({ expandedJourneyKey: s.expandedJourneyKey === key ? null : key, expandedRegionKey: null })
   }
 
+  function toMultiPolygon(coords) {
+    if (!coords || !coords.length) return coords
+    var third = coords[0] && coords[0][0] && coords[0][0][0]
+    return Array.isArray(third) ? coords : [coords]
+  }
+
   var InlineMap = {
     oncreate: function (vnode) {
       var itemKey = vnode.attrs.itemKey
@@ -91,7 +95,7 @@
         if (!el) return
         var entry = type === 'region' ? (s.regionCoords || {})[itemKey] : (s.journeyCoords || {})[itemKey] || (s.subjourneyCoords || {})[itemKey]
         if (!entry) return
-        var gj = entry.type ? entry : { type: 'MultiPolygon', coordinates: entry.coordinates }
+        var gj = entry.type ? entry : { type: 'MultiPolygon', coordinates: toMultiPolygon(entry.coordinates) }
         if (!gj.coordinates || !gj.coordinates.length) return
         try {
           var map = L.map(el, { zoomControl: true, attributionControl: false })

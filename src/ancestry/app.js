@@ -10,6 +10,8 @@
     batchCommunitiesData: {},
     sessionMatches: null,
     filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, regions: [{ region: '', pctMin: null, pctMax: null }] },
+    journeySearch: '',
+    regionSearch: '',
     currentPage: 1,
     pageSize: 20,
     hideNames: false,
@@ -682,6 +684,51 @@
     _cachedJourneyOpts = buildJourneyOptions()
   }
 
+  function filterSelectOptions(opts, query, keepValue) {
+    if (!query) return opts
+    var q = query.toLowerCase()
+    var out = []
+    for (var i = 0; i < opts.length; i++) {
+      var o = opts[i]
+      if (!o.value || o.value === keepValue || (o.label || '').toLowerCase().indexOf(q) !== -1) out.push(o)
+    }
+    return out
+  }
+
+  function filterRegionOptions(opts, query, keepValue) {
+    if (!query) return opts
+    var q = query.toLowerCase()
+    var out = []
+    var curMacro = null
+    var macroMatches = false
+    var children = []
+    function flushMacro() {
+      if (!curMacro) return
+      if (macroMatches || children.length) {
+        out.push(curMacro)
+        for (var ci = 0; ci < children.length; ci++) out.push(children[ci])
+      }
+      curMacro = null
+      macroMatches = false
+      children = []
+    }
+    for (var i = 0; i < opts.length; i++) {
+      var o = opts[i]
+      if (!o.value) { out.push(o); continue }
+      if (o.isMacro) {
+        flushMacro()
+        curMacro = o
+        macroMatches = (o.label || '').toLowerCase().indexOf(q) !== -1
+        continue
+      }
+      if (macroMatches || o.value === keepValue || (o.label || '').toLowerCase().indexOf(q) !== -1) {
+        children.push(o)
+      }
+    }
+    flushMacro()
+    return out
+  }
+
   function readFilters() {
     var el = document.getElementById('filterName')
     var f = s.filters
@@ -830,7 +877,7 @@
                     s.fetchStateBadge = ''
                     s.showFetchOptions = false
                     s.currentPage = 1
-                    setState({ matchListData: null, sessionMatches: null, profileData: {}, batchEthnicityData: {}, batchCommunitiesData: {}, filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, regions: [{ region: '', pctMin: null, pctMax: null }] }, fetchStateBadge: '', showFetchOptions: false, fetchComplete: false, buttonLabel: null, currentPage: 1, statusMsg: '' })
+                    setState({ matchListData: null, sessionMatches: null, profileData: {}, batchEthnicityData: {}, batchCommunitiesData: {}, filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, regions: [{ region: '', pctMin: null, pctMax: null }] }, journeySearch: '', regionSearch: '', fetchStateBadge: '', showFetchOptions: false, fetchComplete: false, buttonLabel: null, currentPage: 1, statusMsg: '' })
                     document.getElementById('filterJourney').innerHTML = '<option value="">All</option>'
                   })
                 }
@@ -929,8 +976,13 @@
           m('.filter-row', [
             m('span.filter-group', [
               'Journey ',
+              m('input.filter-input', {
+                type: 'text', placeholder: 'Filter by journey', value: s.journeySearch,
+                style: { width: '110px' },
+                oninput: function (e) { s.journeySearch = e.target.value; m.redraw() }
+              }),
               m('select#filterJourney.filter-select', { value: s.filters.journey, onfocus: function () { refreshJourneyOptions(); m.redraw() }, onchange: function (e) { s.filters.journey = e.target.value; applyFilterChange(); m.redraw() } }, [
-                getJourneyOptions().map(function (o) { return m('option', { value: o.value }, o.label) })
+                filterSelectOptions(getJourneyOptions(), s.journeySearch, s.filters.journey).map(function (o) { return m('option', { value: o.value }, o.label) })
               ]),
               m('label.filter-check', [
                 m('input#filterJourneyOnly', { type: 'checkbox', onchange: function () { applyFilterChange(); m.redraw() } }),
@@ -940,6 +992,11 @@
             ]),
             m('span.filter-group', [
               'Region ',
+              m('input.filter-input', {
+                type: 'text', placeholder: 'Filter by region', value: s.regionSearch,
+                style: { width: '110px' },
+                oninput: function (e) { s.regionSearch = e.target.value; m.redraw() }
+              }),
               m('span#regionFilters', renderRegionFilterRows()),
               m('button#addRegionRow.topbar-btn', {
                 style: { fontSize: '14px', padding: '2px 10px' },
@@ -959,6 +1016,8 @@
                 _cachedJourneyOpts = null
                 readFilters()
                 s.filters.regions = [{ region: '', pctMin: null, pctMax: null }]
+                s.journeySearch = ''
+                s.regionSearch = ''
                 s.currentPage = 1
                 m.redraw()
               }
@@ -971,7 +1030,6 @@
 
   function renderRegionFilterRows() {
     var filters = s.filters.regions && s.filters.regions.length ? s.filters.regions : [{ region: '', pctMin: null, pctMax: null }]
-    var opts = getRegionOptions()
     return filters.map(function (f, idx) {
       return m('span.region-row', { key: idx, 'data-idx': idx }, [
         m('select.region-select', {
@@ -984,7 +1042,7 @@
             applyFilterChange()
             m.redraw()
           }
-        }, opts.map(function (o) { return m('option', { value: o.value }, o.label) })),
+        }, filterRegionOptions(getRegionOptions(), s.regionSearch, f.region).map(function (o) { return m('option', { value: o.value }, o.label) })),
         m('span.filter-sep', { style: { margin: '0 2px' } }, '%'),
         m('input.region-pct-min.filter-input.filter-cm', {
           type: 'number', placeholder: '0', min: 0,

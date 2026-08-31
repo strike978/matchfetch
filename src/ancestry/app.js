@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
   var s = {
     regionMap: null,
     journeyNameMap: null,
@@ -34,6 +34,7 @@
     desiredCount: '100',
     statusMsg: '',
     testsLoading: true,
+    canEdit: null,
   }
 
   function setState(o) { Object.assign(s, o); m.redraw() }
@@ -140,6 +141,24 @@
     } catch (err) {
       setState({ matchCount: { error: friendlyError(err.message) }, matchCountLoading: false })
     }
+  }
+
+  function checkcanEdit(guid) {
+    return apiFetch('https://www.ancestry.com/discoveryui-matches/cluster/api/subject/' + guid, {
+      credentials: 'include', mode: 'cors',
+      headers: { 'Accept': 'application/json' }
+    }).then(function (subject) {
+      var treeId = subject && subject.linkedTree && subject.linkedTree.treeId
+      if (!treeId) { setState({ canEdit: false }); return }
+      return apiFetch('https://www.ancestry.com/discoveryui-matches/parents/api/trees/' + treeId + '/canEdit', {
+        credentials: 'include', mode: 'cors',
+        headers: { 'Accept': 'application/json' }
+      }).then(function (canEdit) {
+        setState({ canEdit: canEdit === true || canEdit === 'true' })
+      })
+    }).catch(function () {
+      setState({ canEdit: false })
+    })
   }
 
   var FETCH_DELAY = 500
@@ -1205,7 +1224,7 @@
         m('.card-top', [
           p.photoUrl ? m('img.avatar', { src: p.photoUrl }) : m('.avatar.avatar-initials.' + gc, p.matchNameInitials || '?'),
           m('span.card-name', s.hideNames ? (p.matchNameInitials || '??') : (p.matchName || 'Unknown')),
-          m('button.star-btn' + (favorite ? '.active' : ''), {
+          s.canEdit !== false ? m('button.star-btn' + (favorite ? '.active' : ''), {
             title: favorite ? 'Remove from favorites' : 'Add to favorites',
             onclick: function (e) {
               e.stopPropagation()
@@ -1222,7 +1241,7 @@
                 setState({ statusMsg: 'Could not ' + (willFav ? 'add to' : 'remove from') + ' favorites: ' + friendlyError(err.message) })
               })
             }
-          }, m.trust('<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>'))
+          }, m.trust('<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>')) : null,
         ]),
         m('.card-details', buildRelText(r)),
         journeys && journeys.length > 0 ? m('.journey-strip', renderJourneyPills(journeys)) : null
@@ -1276,9 +1295,11 @@
     s.filters = { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, regions: [{ region: '', pctMin: null, pctMax: null }] }
     s.buttonLabel = null
     s.fetchComplete = false
+    s.canEdit = null
     m.redraw()
     if (guid) {
       fetchMatchCount(guid)
+      checkcanEdit(guid)
       ensureEthnicityVersion()
       var session = await DB.getSession(guid)
       if (typeof DB !== 'undefined') DB.setProfileName(guid, currentTestName())

@@ -66,6 +66,7 @@ body {
 .group-input:focus { border-color: #3b82f6; }
 .group-btn { padding: 8px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; border: none; cursor: pointer; font-family: inherit; background: #3b82f6; color: #fff; transition: background .2s; white-space: nowrap; }
 .group-btn:hover { background: #2563eb; }
+.group-btn-icon { padding: 7px 9px; display: inline-flex; align-items: center; justify-content: center; }
 .group-btn-danger { background: #ef4444; }
 .group-btn-danger:hover { background: #dc2626; }
 .group-btn-cancel { background: #253044; color: #94a3b8; }
@@ -128,7 +129,9 @@ svg, svg * { outline: 0; }
 .journey-toggle-empty { visibility: hidden; width: 16px; flex-shrink: 0; }
 .journey-children { margin-top: 4px; margin-bottom: 4px; }
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-.modal { background: #1a2332; border: 1px solid #253044; border-radius: 14px; padding: 28px 32px 24px; max-width: 420px; width: 90%; text-align: center; max-height: 85vh; overflow-y: auto; }
+.modal { background: #1a2332; border: 1px solid #253044; border-radius: 14px; padding: 28px 32px 24px; max-width: 420px; width: 90%; text-align: center; max-height: 85vh; overflow-y: auto; position: relative; }
+.modal-close { position: absolute; top: 12px; right: 12px; width: 28px; height: 28px; border: none; background: transparent; color: #64748b; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: color .2s, background .2s; }
+.modal-close:hover { color: #f1f5f9; background: rgba(255,255,255,.06); }
 .modal::-webkit-scrollbar { width: 8px; }
 .modal::-webkit-scrollbar-track { background: #0f1724; border-radius: 4px; }
 .modal::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }

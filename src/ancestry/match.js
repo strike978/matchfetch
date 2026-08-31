@@ -144,6 +144,9 @@
     var assignIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>'
     var plusIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'
     var listIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>'
+    var plusIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'
+    var pencilIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>'
+    var trashIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>'
     return [
       m('.group-section', [
         m('.group-section-title', [m.trust(assignIcon), ' Add this match to groups']),
@@ -158,7 +161,7 @@
           : m('.group-manager-empty', 'No groups yet. Create one below.')
       ]),
       m('.group-section', [
-        m('.group-section-title', [m.trust(plusIcon), s.editingTagId != null ? ' Rename group' : ' Create group']),
+        m('.group-section-title', [m.trust(s.editingTagId != null ? pencilIcon : plusIcon), s.editingTagId != null ? ' Rename group' : ' Create group']),
         m('.group-manager-form', [
           m('input.group-input', {
             type: 'text',
@@ -167,8 +170,8 @@
             oninput: function (e) { s.groupName = e.target.value; m.redraw() }
           }),
           s.editingTagId != null
-            ? m('button.group-btn', { onclick: function () { updateGroup(s.editingTagId) } }, 'Rename')
-            : m('button.group-btn', { onclick: function () { createGroup() } }, 'Add'),
+            ? m('button.group-btn', { title: 'Save', onclick: function () { updateGroup(s.editingTagId) } }, 'Save')
+            : m('button.group-btn.group-btn-icon', { title: 'Add', onclick: function () { createGroup() } }, m.trust(plusIcon)),
           s.editingTagId != null
             ? m('button.group-btn.group-btn-cancel', { onclick: function () { s.editingTagId = null; s.groupName = ''; m.redraw() } }, 'Cancel')
             : null
@@ -180,8 +183,8 @@
           return m('.group-manager-row', { key: t.tagId }, [
             m('span.tag-pill', t.label),
             m('.group-manager-spacer'),
-            m('button.group-btn.group-btn-small', { onclick: function () { s.editingTagId = t.tagId; s.groupName = t.label; m.redraw() } }, 'Rename'),
-            m('button.group-btn.group-btn-danger.group-btn-small', { onclick: function () {
+            m('button.group-btn.group-btn-icon', { title: 'Rename', onclick: function () { s.editingTagId = t.tagId; s.groupName = t.label; m.redraw() } }, m.trust(pencilIcon)),
+            m('button.group-btn.group-btn-icon.group-btn-danger', { title: 'Delete', onclick: function () {
               s.modal = {
                 title: 'Delete group?',
                 icon: '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>',
@@ -191,7 +194,7 @@
                 onConfirm: function () { deleteGroup(t.tagId) }
               }
               m.redraw()
-            } }, 'Delete')
+            } }, m.trust(trashIcon))
           ])
         }))
       ]) : null
@@ -472,15 +475,12 @@
             title: 'Manage groups',
             onclick: function (e) {
               e.stopPropagation()
-              var p = s.matchData && s.matchData.profile || {}
-              var titleName = hideNames ? (p.matchNameInitials || '??') : (p.matchName || 'Unknown')
               s.groupName = ''
               s.editingTagId = null
               s.modal = {
-                title: 'Groups \u2014 ' + titleName,
+                title: 'Add / edit your groups',
                 icon: '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>',
-                body: renderGroupManager,
-                cancelText: 'Close'
+                body: renderGroupManager
               }
               m.redraw()
             }
@@ -511,14 +511,15 @@
       if (!s.modal) return null
       return m('.modal-overlay', { onclick: function (e) { if (e.target === e.currentTarget) { s.modal = null; m.redraw() } } }, [
         m('.modal', [
+          m('button.modal-close', { title: 'Close', onclick: function () { s.modal = null; m.redraw() } }, m.trust('<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>')),
           s.modal.icon ? m('.modal-icon', m.trust(s.modal.icon)) : null,
           s.modal.title ? m('.modal-title', s.modal.title) : null,
           s.modal.text ? m('.modal-text', s.modal.text) : null,
           s.modal.body ? m('.modal-body', (typeof s.modal.body === 'function' ? s.modal.body() : s.modal.body)) : null,
-          m('.modal-actions', [
+          (s.modal.cancelText || s.modal.confirmText) ? m('.modal-actions', [
             s.modal.cancelText ? m('button.modal-btn.modal-cancel', { onclick: function () { s.modal = null; m.redraw() } }, s.modal.cancelText) : null,
             s.modal.confirmText ? m('button.modal-btn.modal-confirm', { onclick: function () { var cb = s.modal.onConfirm; s.modal = null; m.redraw(); if (cb) cb() } }, s.modal.confirmText) : null,
-          ])
+          ]) : null
         ])
       ])
     }

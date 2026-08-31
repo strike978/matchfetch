@@ -9,7 +9,7 @@
     batchEthnicityData: {},
     batchCommunitiesData: {},
     sessionMatches: null,
-    filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, regions: [{ region: '', pctMin: null, pctMax: null }] },
+filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, regions: [{ region: '', pctMin: null, pctMax: null }], group: '', starredOnly: false },
     journeySearch: '',
     regionSearch: '',
     currentPage: 1,
@@ -650,6 +650,12 @@
       }
       if (!found) return false
     }
+    if (f.group || f.starredOnly) {
+      var sm = s.sessionMatches && s.sessionMatches[m.sampleId]
+      var tags = sm && sm.tags
+      if (f.group && !(tags && tags[f.group] !== undefined)) return false
+      if (f.starredOnly && !(tags && tags['2'] !== undefined)) return false
+    }
     var activeRegions = s._activeRegionFilters
     if (activeRegions && activeRegions.length) {
       var sm = s.sessionMatches && s.sessionMatches[m.sampleId]
@@ -762,6 +768,15 @@
     _cachedJourneyOpts = buildJourneyOptions()
   }
 
+  function getGroupOptions() {
+    var opts = [{ value: '', label: 'All' }]
+    if (!s.customTags) return opts
+    for (var i = 0; i < s.customTags.length; i++) {
+      opts.push({ value: String(s.customTags[i].tagId), label: s.customTags[i].label })
+    }
+    return opts
+  }
+
   function filterSelectOptions(opts, query, keepValue) {
     if (!query) return opts
     var q = query.toLowerCase()
@@ -818,6 +833,9 @@
     var journeyEl = document.getElementById('filterJourney')
     f.journey = journeyEl ? journeyEl.value : ''
     f.journeyOnly = document.getElementById('filterJourneyOnly') ? document.getElementById('filterJourneyOnly').checked : false
+    var groupEl = document.getElementById('filterGroup')
+    f.group = groupEl ? groupEl.value : ''
+    f.starredOnly = document.getElementById('filterStarred') ? document.getElementById('filterStarred').checked : false
     var rows = document.querySelectorAll('#regionFilters .region-row')
     s._activeRegionFilters = []
     for (var ri = 0; ri < rows.length; ri++) {
@@ -955,7 +973,7 @@
                     s.fetchStateBadge = ''
                     s.showFetchOptions = false
                     s.currentPage = 1
-                    setState({ matchListData: null, sessionMatches: null, profileData: {}, batchEthnicityData: {}, batchCommunitiesData: {}, filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, regions: [{ region: '', pctMin: null, pctMax: null }] }, journeySearch: '', regionSearch: '', fetchStateBadge: '', showFetchOptions: false, fetchComplete: false, buttonLabel: null, currentPage: 1, statusMsg: '' })
+                    setState({ matchListData: null, sessionMatches: null, profileData: {}, batchEthnicityData: {}, batchCommunitiesData: {}, filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, regions: [{ region: '', pctMin: null, pctMax: null }], group: '', starredOnly: false }, journeySearch: '', regionSearch: '', fetchStateBadge: '', showFetchOptions: false, fetchComplete: false, buttonLabel: null, currentPage: 1, statusMsg: '' })
                     document.getElementById('filterJourney').innerHTML = '<option value="">All</option>'
                   })
                 }
@@ -1084,6 +1102,18 @@
                 }
               }, '+')
             ]),
+            s.canEdit === true ? m('span.filter-group', [
+              'Group ',
+              m('select#filterGroup.filter-select', { value: s.filters.group, onchange: function (e) { s.filters.group = e.target.value; applyFilterChange(); m.redraw() } }, [
+                getGroupOptions().map(function (o) { return m('option', { value: o.value }, o.label) })
+              ]),
+              m('label.filter-check', [
+                m('input#filterStarred', { type: 'checkbox', onchange: function () { applyFilterChange(); m.redraw() } }),
+                m('span.check-mark'),
+                m.trust('<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="#facc15" stroke="#facc15" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:-1px"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>'),
+                ' Starred matches'
+              ])
+            ]) : null,
             m('span#filterReset.filter-clear', {
               onclick: function () {
                 document.getElementById('filterName').value = ''
@@ -1091,6 +1121,8 @@
                 document.getElementById('filterCmMax').value = ''
                 document.getElementById('filterJourney').value = ''
                 document.getElementById('filterJourneyOnly').checked = false
+                document.getElementById('filterGroup').value = ''
+                document.getElementById('filterStarred').checked = false
                 _cachedJourneyOpts = null
                 readFilters()
                 s.filters.regions = [{ region: '', pctMin: null, pctMax: null }]
@@ -1176,7 +1208,7 @@
     var f = s.filters
     var rk = ''
     if (s._activeRegionFilters) for (var i = 0; i < s._activeRegionFilters.length; i++) rk += '|' + s._activeRegionFilters[i].region + '|' + (s._activeRegionFilters[i].pctMin||'') + '|' + (s._activeRegionFilters[i].pctMax||'')
-    return s.sortBy + '|' + (list ? list.length : 0) + '|' + (f.name||'') + '|' + (f.cmMin||'') + '|' + (f.cmMax||'') + '|' + (f.journey||'') + '|' + (f.journeyOnly?'1':'0') + rk + '|v' + _dataVersion
+    return s.sortBy + '|' + (list ? list.length : 0) + '|' + (f.name||'') + '|' + (f.cmMin||'') + '|' + (f.cmMax||'') + '|' + (f.journey||'') + '|' + (f.journeyOnly?'1':'0') + '|' + (f.group||'') + '|' + (f.starredOnly?'1':'0') + rk + '|v' + _dataVersion
   }
 
   var MatchList = {
@@ -1320,7 +1352,7 @@
     s.fetchStateBadge = ''
     s.statusMsg = ''
     s.currentPage = 1
-    s.filters = { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, regions: [{ region: '', pctMin: null, pctMax: null }] }
+    s.filters = { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, regions: [{ region: '', pctMin: null, pctMax: null }], group: '', starredOnly: false }
     s.buttonLabel = null
     s.fetchComplete = false
     s.canEdit = null

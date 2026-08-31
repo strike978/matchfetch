@@ -1174,6 +1174,7 @@
     view: function () {
       var list = s.matchListData && s.matchListData.matchList
       if (!list) return m('#matchListResult')
+      if (s.canEdit === null) return m('.spinner', [m('.spinner-ring'), m('.spinner-text', 'Loading...')])
       var key = computeFilterKey(list)
       if (key !== _filterCache.key || list !== _filterCache.list) {
         _filterCache.key = key

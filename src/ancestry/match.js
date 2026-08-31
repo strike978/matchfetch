@@ -3,6 +3,7 @@
   var guid = params.get('guid')
   var sampleId = params.get('sampleId')
   var hideNames = params.get('hideNames') === '1'
+  var canEdit = params.get('canEdit') === '1'
   var version = params.get('version') || '2025'
 
   if (!guid || !sampleId) {
@@ -21,9 +22,54 @@
     expandedRegionKey: null,
     expandedJourneyKey: null,
     modal: null,
+    customTags: null,
+    statusMsg: '',
   }
 
   function setState(o) { Object.assign(s, o); m.redraw() }
+
+  function apiFetch(url, options) {
+    return new Promise(function (resolve, reject) {
+      chrome.runtime.sendMessage({
+        action: 'apiFetch', url: url, options: options, domain: 'ancestry.com'
+      }, function (response) {
+        if (chrome.runtime.lastError) return reject(new Error(chrome.runtime.lastError.message))
+        if (!response || !response.success) return reject(new Error(response ? response.error : 'No response'))
+        resolve(response.data)
+      })
+    })
+  }
+
+  function friendlyError(msg) {
+    if (/Status 30[137]/.test(msg)) return 'Make sure you are logged into Ancestry.com, then try again.'
+    if (/Status 40[13]/.test(msg)) return 'Access denied. Make sure you are logged into Ancestry.com.'
+    if (/Status 403/.test(msg)) return 'Access denied. You may not have permission to view this data.'
+    if (/Status 404/.test(msg)) return 'Data not found. The test or match may no longer be available.'
+    if (/Status 429/.test(msg)) return 'Too many requests. Please wait a moment and try again.'
+    if (/Status 5\d\d/.test(msg)) return 'Ancestry server error. Please try again later.'
+    if (/Fetch failed/.test(msg)) return 'Could not reach Ancestry. Check your internet connection.'
+    return msg
+  }
+
+  function setMatchTag(guid, sampleId, tagId, add) {
+    var url = add
+      ? 'https://www.ancestry.com/discoveryui-matches/parents/list/api/tags/matches/update/' + guid + '/' + tagId
+      : 'https://www.ancestry.com/discoveryui-matches/parents/list/api/tags/' + guid + '/' + tagId
+    return apiFetch(url, {
+      method: add ? 'POST' : 'DELETE', credentials: 'include', mode: 'cors',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ matchingSampleIds: [sampleId] })
+    })
+  }
+
+  function fetchCustomTags() {
+    return apiFetch('https://www.ancestry.com/discoveryui-matches/parents/list/api/tags/custom/' + guid, {
+      credentials: 'include', mode: 'cors',
+      headers: { 'Accept': 'application/json' }
+    }).then(function (data) {
+      setState({ customTags: data })
+    }).catch(function () { })
+  }
 
   function titleize(str) {
     if (!str) return ''
@@ -258,13 +304,47 @@
       if (rel.sharedCentimorgans) relParts.push(m('span', [m('span.num', rel.sharedCentimorgans), ' cM']))
       if (rel.sharedCentimorgans && rel.numSharedSegments) relParts.push(' across ')
       if (rel.numSharedSegments) relParts.push(m('span', [m('span.num', rel.numSharedSegments), ' segments']))
+      var tags = md.tags
+      var favorite = !!(tags && tags['2'] !== undefined)
+      var tagLabels = []
+      if (tags && s.customTags) {
+        var seen = {}
+        for (var tk in tags) {
+          for (var ci = 0; ci < s.customTags.length; ci++) {
+            if (String(s.customTags[ci].tagId) === tk) {
+              var lbl = s.customTags[ci].label
+              if (lbl && !seen[lbl]) { seen[lbl] = true; tagLabels.push(lbl) }
+              break
+            }
+          }
+        }
+      }
       return m('.card.profile-card', [
         m('.match-name', [
           p.photoUrl ? m('a', { href: p.photoUrl, target: '_blank', title: 'Open photo' }, m('img.avatar', { src: p.photoUrl })) : m('.avatar.avatar-initials.' + gc, p.matchNameInitials || '?'),
           m('span', hideNames ? (p.matchNameInitials || '??') : (p.matchName || 'Unknown')),
+          tagLabels.length > 0 ? tagLabels.map(function (l) { return m('span.tag-pill', l) }) : null,
+          canEdit ? m('button.star-btn' + (favorite ? '.active' : ''), {
+            title: favorite ? 'Remove from favorites' : 'Add to favorites',
+            onclick: function (e) {
+              e.stopPropagation()
+              e.preventDefault()
+              var willFav = !(tags && tags['2'] !== undefined)
+              setMatchTag(guid, sampleId, '2', willFav).then(function () {
+                if (!md.tags) md.tags = {}
+                if (willFav) md.tags['2'] = null
+                else delete md.tags['2']
+                if (typeof DB !== 'undefined' && DB.toggleFavorite) DB.toggleFavorite(guid, sampleId)
+                m.redraw()
+              }).catch(function (err) {
+                setState({ statusMsg: /Status 403/.test(err.message) ? 'You don\u2019t have permission to ' + (willFav ? 'add' : 'remove') + ' favorites for this match.' : 'Could not ' + (willFav ? 'add to' : 'remove from') + ' favorites: ' + friendlyError(err.message) })
+              })
+            }
+          }, m.trust('<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>')) : null,
           m('a.profile-link', { href: profileUrl, target: '_blank', title: 'Open on Ancestry' }, m.trust('<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>'))
         ]),
-        relParts.length ? m('.card-details', { style: { marginTop: '12px' } }, [m('.rel-text', relParts)]) : null
+        relParts.length ? m('.card-details', { style: { marginTop: '12px' } }, [m('.rel-text', relParts)]) : null,
+        s.statusMsg ? m('.status-msg', s.statusMsg) : null
       ])
     }
   }
@@ -307,6 +387,7 @@
           return
         }
         setState({ matchData: data })
+        fetchCustomTags()
         loadRegionCoords()
         loadJourneyCoords()
         loadSubjourneyCoords()

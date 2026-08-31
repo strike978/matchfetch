@@ -1244,7 +1244,7 @@
       return m('.card.match-card', {
         'data-guid': guid,
         'data-sample': matchObj.sampleId,
-        onclick: function () { if (guid && matchObj.sampleId) window.open('match.html?guid=' + guid + '&sampleId=' + matchObj.sampleId + (s.hideNames ? '&hideNames=1' : '') + '&version=' + (sm && sm.version || '2025'), '_blank') }
+        onclick: function () { if (guid && matchObj.sampleId) window.open('match.html?guid=' + guid + '&sampleId=' + matchObj.sampleId + (s.hideNames ? '&hideNames=1' : '') + '&canEdit=' + (s.canEdit ? '1' : '0') + '&version=' + (sm && sm.version || '2025'), '_blank') }
       }, [
         m('.card-top', [
           p.photoUrl ? m('img.avatar', { src: p.photoUrl }) : m('.avatar.avatar-initials.' + gc, p.matchNameInitials || '?'),

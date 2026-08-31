@@ -159,7 +159,7 @@ var DB = (function() {
                 existing.matches[m.sampleId] = {
                     relationship: { sharedCentimorgans: r.sharedCentimorgans || null, numSharedSegments: r.numSharedSegments || null, meiosis: r.meiosis || null },
                     matchClusterCode: m.matchClusterCode || null,
-                    tags: m.tags ? Object.keys(m.tags).filter(function(k) { return m.tags[k]; }).map(function(k) { return m.tags[k]; }) : null,
+                    tags: m.tags ? m.tags : null,
                     createdDate: m.createdDate || null,
                     matchName: em.matchName || null,
                     matchNameInitials: em.matchNameInitials || null,

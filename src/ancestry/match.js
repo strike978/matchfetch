@@ -24,6 +24,8 @@
     modal: null,
     customTags: null,
     statusMsg: '',
+    groupName: '',
+    editingTagId: null,
   }
 
   function setState(o) { Object.assign(s, o); m.redraw() }
@@ -69,6 +71,131 @@
     }).then(function (data) {
       setState({ customTags: data })
     }).catch(function () { })
+  }
+
+  function createGroup() {
+    var name = (s.groupName || '').trim()
+    if (!name) return
+    apiFetch('https://www.ancestry.com/discoveryui-matches/parents/list/api/tags/create/' + guid + '/customTag', {
+      method: 'POST', credentials: 'include', mode: 'cors',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ categoryId: 32, tagName: name })
+    }).then(function () {
+      s.groupName = ''
+      setState({ statusMsg: '' })
+      fetchCustomTags()
+    }).catch(function (err) {
+      setState({ statusMsg: 'Could not create group: ' + friendlyError(err.message) })
+    })
+  }
+
+  function updateGroup(tagId) {
+    var name = (s.groupName || '').trim()
+    if (!name) return
+    var categoryId = 32
+    if (s.customTags) {
+      for (var i = 0; i < s.customTags.length; i++) {
+        if (s.customTags[i].tagId === tagId) { categoryId = s.customTags[i].categoryId || 32; break }
+      }
+    }
+    apiFetch('https://www.ancestry.com/discoveryui-matches/parents/list/api/tags/update/' + guid + '/customTag/' + tagId, {
+      method: 'PUT', credentials: 'include', mode: 'cors',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ categoryId: categoryId, tagName: name })
+    }).then(function () {
+      s.groupName = ''
+      s.editingTagId = null
+      setState({ statusMsg: '' })
+      fetchCustomTags()
+    }).catch(function (err) {
+      setState({ statusMsg: 'Could not rename group: ' + friendlyError(err.message) })
+    })
+  }
+
+  function deleteGroup(tagId) {
+    apiFetch('https://www.ancestry.com/discoveryui-matches/parents/list/api/tags/delete/' + guid + '/customTag/' + tagId, {
+      method: 'DELETE', credentials: 'include', mode: 'cors',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }
+    }).then(function () {
+      setState({ statusMsg: '' })
+      fetchCustomTags()
+    }).catch(function (err) {
+      setState({ statusMsg: 'Could not delete group: ' + friendlyError(err.message) })
+    })
+  }
+
+  function toggleMatchTag(tagId) {
+    var md = s.matchData && s.matchData.matchData
+    var add = !(md && md.tags && md.tags[tagId] !== undefined)
+    setMatchTag(guid, sampleId, tagId, add).then(function () {
+      if (!md.tags) md.tags = {}
+      if (add) md.tags[tagId] = null
+      else delete md.tags[tagId]
+      if (typeof DB !== 'undefined' && DB.setMatchTag) DB.setMatchTag(guid, sampleId, tagId, add)
+      m.redraw()
+    }).catch(function (err) {
+      setState({ statusMsg: 'Could not ' + (add ? 'add' : 'remove') + ' group: ' + friendlyError(err.message) })
+    })
+  }
+
+  function renderGroupManager() {
+    var tags = s.customTags || []
+    var mdTags = s.matchData && s.matchData.matchData && s.matchData.matchData.tags
+    var assignIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>'
+    var plusIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'
+    var listIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>'
+    return [
+      m('.group-section', [
+        m('.group-section-title', [m.trust(assignIcon), ' Add this match to groups']),
+        tags.length > 0
+          ? m('.group-assign-list', tags.map(function (t) {
+              var inMatch = !!(mdTags && mdTags[t.tagId] !== undefined)
+              return m('button.group-assign-btn' + (inMatch ? '.active' : ''), {
+                key: t.tagId,
+                onclick: function () { toggleMatchTag(t.tagId) }
+              }, t.label)
+            }))
+          : m('.group-manager-empty', 'No groups yet. Create one below.')
+      ]),
+      m('.group-section', [
+        m('.group-section-title', [m.trust(plusIcon), s.editingTagId != null ? ' Rename group' : ' Create group']),
+        m('.group-manager-form', [
+          m('input.group-input', {
+            type: 'text',
+            placeholder: s.editingTagId != null ? 'Rename group...' : 'New group name...',
+            value: s.groupName,
+            oninput: function (e) { s.groupName = e.target.value; m.redraw() }
+          }),
+          s.editingTagId != null
+            ? m('button.group-btn', { onclick: function () { updateGroup(s.editingTagId) } }, 'Rename')
+            : m('button.group-btn', { onclick: function () { createGroup() } }, 'Add'),
+          s.editingTagId != null
+            ? m('button.group-btn.group-btn-cancel', { onclick: function () { s.editingTagId = null; s.groupName = ''; m.redraw() } }, 'Cancel')
+            : null
+        ])
+      ]),
+      tags.length > 0 ? m('.group-section', [
+        m('.group-section-title', [m.trust(listIcon), ' All groups (' + tags.length + ')']),
+        m('.group-manager-list', tags.map(function (t) {
+          return m('.group-manager-row', { key: t.tagId }, [
+            m('span.tag-pill', t.label),
+            m('.group-manager-spacer'),
+            m('button.group-btn.group-btn-small', { onclick: function () { s.editingTagId = t.tagId; s.groupName = t.label; m.redraw() } }, 'Rename'),
+            m('button.group-btn.group-btn-danger.group-btn-small', { onclick: function () {
+              s.modal = {
+                title: 'Delete group?',
+                icon: '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>',
+                text: 'Delete the group "' + t.label + '"?',
+                confirmText: 'Delete',
+                cancelText: 'Cancel',
+                onConfirm: function () { deleteGroup(t.tagId) }
+              }
+              m.redraw()
+            } }, 'Delete')
+          ])
+        }))
+      ]) : null
+    ]
   }
 
   function titleize(str) {
@@ -341,6 +468,23 @@
               })
             }
           }, m.trust('<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>')) : null,
+          canEdit ? m('button.group-mgmt-btn', {
+            title: 'Manage groups',
+            onclick: function (e) {
+              e.stopPropagation()
+              var p = s.matchData && s.matchData.profile || {}
+              var titleName = hideNames ? (p.matchNameInitials || '??') : (p.matchName || 'Unknown')
+              s.groupName = ''
+              s.editingTagId = null
+              s.modal = {
+                title: 'Groups \u2014 ' + titleName,
+                icon: '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>',
+                body: renderGroupManager,
+                cancelText: 'Close'
+              }
+              m.redraw()
+            }
+          }, m.trust('<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>')) : null,
           m('a.profile-link', { href: profileUrl, target: '_blank', title: 'Open on Ancestry' }, m.trust('<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>'))
         ]),
         relParts.length ? m('.card-details', { style: { marginTop: '12px' } }, [m('.rel-text', relParts)]) : null,
@@ -370,6 +514,7 @@
           s.modal.icon ? m('.modal-icon', m.trust(s.modal.icon)) : null,
           s.modal.title ? m('.modal-title', s.modal.title) : null,
           s.modal.text ? m('.modal-text', s.modal.text) : null,
+          s.modal.body ? m('.modal-body', (typeof s.modal.body === 'function' ? s.modal.body() : s.modal.body)) : null,
           m('.modal-actions', [
             s.modal.cancelText ? m('button.modal-btn.modal-cancel', { onclick: function () { s.modal = null; m.redraw() } }, s.modal.cancelText) : null,
             s.modal.confirmText ? m('button.modal-btn.modal-confirm', { onclick: function () { var cb = s.modal.onConfirm; s.modal = null; m.redraw(); if (cb) cb() } }, s.modal.confirmText) : null,

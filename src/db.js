@@ -425,6 +425,20 @@ var DB = (function() {
             });
         },
 
+        setMatchTag: function(guid, sampleId, tagId, add, provider) {
+            var t = table(provider);
+            return db.transaction('rw', t, function() {
+                return t.get(guid).then(function(existing) {
+                    if (!existing || !existing.matches || !existing.matches[sampleId]) return;
+                    var m = existing.matches[sampleId];
+                    if (!m.tags) m.tags = {};
+                    if (add) m.tags[tagId] = null;
+                    else delete m.tags[tagId];
+                    return t.put(existing);
+                });
+            });
+        },
+
         deleteFetchState: function(guid, provider) {
             var t = table(provider);
             return db.transaction('rw', t, function() {

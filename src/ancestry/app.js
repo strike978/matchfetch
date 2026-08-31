@@ -35,6 +35,7 @@
     statusMsg: '',
     testsLoading: true,
     canEdit: null,
+    customTags: null,
   }
 
   function setState(o) { Object.assign(s, o); m.redraw() }
@@ -156,7 +157,15 @@
           headers: { 'Accept': 'application/json' }
         })
       }).then(function (canEdit) {
-        setState({ canEdit: canEdit === true || canEdit === 'true' })
+        if (canEdit !== true && canEdit !== 'true') { setState({ canEdit: false }); return }
+        return delay(FETCH_DELAY).then(function () {
+          return apiFetch('https://www.ancestry.com/discoveryui-matches/parents/list/api/tags/custom/' + guid, {
+            credentials: 'include', mode: 'cors',
+            headers: { 'Accept': 'application/json' }
+          })
+        }).then(function (customTags) {
+          setState({ canEdit: true, customTags: customTags })
+        })
       })
     }).catch(function () {
       setState({ canEdit: false })
@@ -1219,6 +1228,19 @@
       var journeys = sm && sm.journeys
       var tags = sm && sm.tags
       var favorite = !!(tags && tags['2'] !== undefined)
+      var tagLabels = []
+      if (tags && s.customTags) {
+        var seen = {}
+        for (var tk in tags) {
+          for (var ci = 0; ci < s.customTags.length; ci++) {
+            if (String(s.customTags[ci].tagId) === tk) {
+              var lbl = s.customTags[ci].label
+              if (lbl && !seen[lbl]) { seen[lbl] = true; tagLabels.push(lbl) }
+              break
+            }
+          }
+        }
+      }
       return m('.card.match-card', {
         'data-guid': guid,
         'data-sample': matchObj.sampleId,
@@ -1226,7 +1248,10 @@
       }, [
         m('.card-top', [
           p.photoUrl ? m('img.avatar', { src: p.photoUrl }) : m('.avatar.avatar-initials.' + gc, p.matchNameInitials || '?'),
-          m('span.card-name', s.hideNames ? (p.matchNameInitials || '??') : (p.matchName || 'Unknown')),
+          m('.card-name-wrap', [
+            m('span.card-name', s.hideNames ? (p.matchNameInitials || '??') : (p.matchName || 'Unknown')),
+            tagLabels.length > 0 ? tagLabels.map(function (l) { return m('span.tag-pill', l) }) : null
+          ]),
           s.canEdit !== false ? m('button.star-btn' + (favorite ? '.active' : ''), {
             title: favorite ? 'Remove from favorites' : 'Add to favorites',
             onclick: function (e) {
@@ -1299,6 +1324,7 @@
     s.buttonLabel = null
     s.fetchComplete = false
     s.canEdit = null
+    s.customTags = null
     m.redraw()
     if (guid) {
       fetchMatchCount(guid)

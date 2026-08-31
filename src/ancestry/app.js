@@ -143,16 +143,18 @@
     }
   }
 
-  function checkcanEdit(guid) {
+  function checkCanEdit(guid) {
     return apiFetch('https://www.ancestry.com/discoveryui-matches/cluster/api/subject/' + guid, {
       credentials: 'include', mode: 'cors',
       headers: { 'Accept': 'application/json' }
     }).then(function (subject) {
       var treeId = subject && subject.linkedTree && subject.linkedTree.treeId
       if (!treeId) { setState({ canEdit: false }); return }
-      return apiFetch('https://www.ancestry.com/discoveryui-matches/parents/api/trees/' + treeId + '/canEdit', {
-        credentials: 'include', mode: 'cors',
-        headers: { 'Accept': 'application/json' }
+      return delay(FETCH_DELAY).then(function () {
+        return apiFetch('https://www.ancestry.com/discoveryui-matches/parents/api/trees/' + treeId + '/canEdit', {
+          credentials: 'include', mode: 'cors',
+          headers: { 'Accept': 'application/json' }
+        })
       }).then(function (canEdit) {
         setState({ canEdit: canEdit === true || canEdit === 'true' })
       })
@@ -1299,7 +1301,7 @@
     m.redraw()
     if (guid) {
       fetchMatchCount(guid)
-      checkcanEdit(guid)
+      checkCanEdit(guid)
       ensureEthnicityVersion()
       var session = await DB.getSession(guid)
       if (typeof DB !== 'undefined') DB.setProfileName(guid, currentTestName())

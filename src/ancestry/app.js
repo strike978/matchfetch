@@ -147,6 +147,13 @@
   function storeMatchData(guid, matchList, targetSids) {
     if (!s.sessionMatches) s.sessionMatches = {}
     if (targetSids) {
+      var tagsIndex = {}
+      if (matchList) {
+        for (var ti = 0; ti < matchList.length; ti++) {
+          var tm = matchList[ti]
+          if (tm && tm.sampleId && tm.tags) tagsIndex[tm.sampleId] = tm.tags
+        }
+      }
       for (var si = 0; si < targetSids.length; si++) {
         var sid = targetSids[si]
         if (!sid) continue
@@ -157,6 +164,7 @@
           s.sessionMatches[sid].displayGender = s.profileData[sid].displayGender
           s.sessionMatches[sid].photoUrl = s.profileData[sid].photoUrl
         }
+        if (tagsIndex[sid]) s.sessionMatches[sid].tags = tagsIndex[sid]
         if (s.batchEthnicityData && s.batchEthnicityData[sid]) s.sessionMatches[sid].regions = s.batchEthnicityData[sid].regions
         if (s.batchCommunitiesData && s.batchCommunitiesData[sid]) s.sessionMatches[sid].journeys = s.batchCommunitiesData[sid].branches
         s.sessionMatches[sid].version = s.ethnicityVersion || '2025'
@@ -193,6 +201,7 @@
           }
           if (s.batchEthnicityData && s.batchEthnicityData[sid]) { s.sessionMatches[sid].regions = s.batchEthnicityData[sid].regions; s.batchEthnicityData[sid].version = s.ethnicityVersion || '2025' }
           if (s.batchCommunitiesData && s.batchCommunitiesData[sid]) s.sessionMatches[sid].journeys = s.batchCommunitiesData[sid].branches
+          if (matchList[mi].tags) s.sessionMatches[sid].tags = matchList[mi].tags
           s.sessionMatches[sid].version = s.ethnicityVersion || '2025'
         }
       }
@@ -1186,6 +1195,8 @@
       else if (p.displayGender === 'F') gc = 'gender-f'
       var sm = s.sessionMatches && s.sessionMatches[matchObj.sampleId]
       var journeys = sm && sm.journeys
+      var tags = sm && sm.tags
+      var favorite = !!(tags && tags['2'] !== undefined)
       return m('.card.match-card', {
         'data-guid': guid,
         'data-sample': matchObj.sampleId,
@@ -1193,12 +1204,41 @@
       }, [
         m('.card-top', [
           p.photoUrl ? m('img.avatar', { src: p.photoUrl }) : m('.avatar.avatar-initials.' + gc, p.matchNameInitials || '?'),
-          m('span.card-name', s.hideNames ? (p.matchNameInitials || '??') : (p.matchName || 'Unknown'))
+          m('span.card-name', s.hideNames ? (p.matchNameInitials || '??') : (p.matchName || 'Unknown')),
+          m('button.star-btn' + (favorite ? '.active' : ''), {
+            title: favorite ? 'Remove from favorites' : 'Add to favorites',
+            onclick: function (e) {
+              e.stopPropagation()
+              e.preventDefault()
+              if (!sm) return
+              var willFav = !(sm.tags && sm.tags['2'] !== undefined)
+              setMatchTag(guid, matchObj.sampleId, '2', willFav).then(function () {
+                if (!sm.tags) sm.tags = {}
+                if (willFav) sm.tags['2'] = null
+                else delete sm.tags['2']
+                if (typeof DB !== 'undefined' && DB.toggleFavorite) DB.toggleFavorite(guid, matchObj.sampleId)
+                m.redraw()
+              }).catch(function (err) {
+                setState({ statusMsg: 'Could not ' + (willFav ? 'add to' : 'remove from') + ' favorites: ' + friendlyError(err.message) })
+              })
+            }
+          }, m.trust('<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>'))
         ]),
         m('.card-details', buildRelText(r)),
         journeys && journeys.length > 0 ? m('.journey-strip', renderJourneyPills(journeys)) : null
       ])
     }
+  }
+
+  function setMatchTag(guid, sampleId, tagId, add) {
+    var url = add
+      ? 'https://www.ancestry.com/discoveryui-matches/parents/list/api/tags/matches/update/' + guid + '/' + tagId
+      : 'https://www.ancestry.com/discoveryui-matches/parents/list/api/tags/' + guid + '/' + tagId
+    return apiFetch(url, {
+      method: add ? 'POST' : 'DELETE', credentials: 'include', mode: 'cors',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ matchingSampleIds: [sampleId] })
+    })
   }
 
   function buildRelText(r) {

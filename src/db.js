@@ -159,7 +159,7 @@ var DB = (function() {
                 existing.matches[m.sampleId] = {
                     relationship: { sharedCentimorgans: r.sharedCentimorgans || null, numSharedSegments: r.numSharedSegments || null, meiosis: r.meiosis || null },
                     matchClusterCode: m.matchClusterCode || null,
-                    tags: m.tags ? m.tags : null,
+                    tags: m.tags ? m.tags : (em.tags || null),
                     createdDate: m.createdDate || null,
                     matchName: em.matchName || null,
                     matchNameInitials: em.matchNameInitials || null,
@@ -406,6 +406,20 @@ var DB = (function() {
                 return t.get(guid).then(function(existing) {
                     if (!existing) return;
                     existing.profileName = profileName;
+                    return t.put(existing);
+                });
+            });
+        },
+
+        toggleFavorite: function(guid, sampleId, provider) {
+            var t = table(provider);
+            return db.transaction('rw', t, function() {
+                return t.get(guid).then(function(existing) {
+                    if (!existing || !existing.matches || !existing.matches[sampleId]) return;
+                    var m = existing.matches[sampleId];
+                    if (!m.tags) m.tags = {};
+                    if ('2' in m.tags) delete m.tags['2'];
+                    else m.tags['2'] = null;
                     return t.put(existing);
                 });
             });

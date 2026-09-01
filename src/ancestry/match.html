@@ -91,10 +91,9 @@ body {
 .group-section:last-child { margin-bottom: 0; }
 .group-section-title { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: #cbd5e1; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 10px; }
 .group-section-title svg { color: #60a5fa; }
-.group-assign-list { display: flex; flex-wrap: wrap; gap: 6px; }
-.group-assign-btn { padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; border: 1px solid #334155; background: #1a2332; color: #cbd5e1; cursor: pointer; font-family: inherit; transition: all .15s; }
-.group-assign-btn:hover { border-color: #3b82f6; color: #fff; }
-.group-assign-btn.active { background: #3b82f6; border-color: #3b82f6; color: #fff; }
+.group-row-check { width: 22px; height: 22px; border-radius: 5px; border: 1px solid #334155; background: #0f1724; color: #fff; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all .15s; }
+.group-row-check:hover { border-color: #3b82f6; }
+.group-row-check.active { background: #3b82f6; border-color: #3b82f6; }
 .group-manager-spacer { flex: 1; }
 .avatar { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
 .avatar-initials { display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700; color: #fff; }
@@ -138,9 +137,6 @@ svg, svg * { outline: 0; }
 .journey-children { margin-top: 4px; margin-bottom: 4px; }
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center; z-index: 1000; }
 .modal { background: #1a2332; border: 1px solid #253044; border-radius: 14px; padding: 28px 32px 24px; max-width: 420px; width: 90%; text-align: center; max-height: 85vh; overflow-y: auto; position: relative; }
-.modal-wide { max-width: 720px; text-align: left; }
-.group-manager-cols { display: flex; gap: 14px; align-items: flex-start; text-align: left; }
-.group-manager-col { flex: 1; min-width: 0; background: #0f1724; border: 1px solid #253044; border-radius: 10px; padding: 14px; }
 .modal-close { position: absolute; top: 12px; right: 12px; width: 28px; height: 28px; border: none; background: transparent; color: #64748b; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: color .2s, background .2s; }
 .modal-close:hover { color: #f1f5f9; background: rgba(255,255,255,.06); }
 .modal::-webkit-scrollbar { width: 8px; }

@@ -368,18 +368,21 @@
       })
       return m('.regions-map-row', [
         m('.card', [
-          versions.length > 0 ? m('.version-tabs', versions.map(function (v) {
-            return m('button.version-tab' + (s.regionsVersion === v ? '.active' : ''), {
-              key: v,
-              onclick: function () {
-                s.regionsVersion = v
-                setState({ expandedRegionKey: null })
-                loadRegionCoords()
-                loadRegionNames()
-                m.redraw()
-              }
-            }, v)
-          })) : null,
+          versions.length > 0 ? m('.version-tabs', [
+            m('span.version-tabs-label', 'Version:'),
+            versions.map(function (v) {
+              return m('button.version-tab' + (s.regionsVersion === v ? '.active' : ''), {
+                key: v,
+                onclick: function () {
+                  s.regionsVersion = v
+                  setState({ expandedRegionKey: null })
+                  loadRegionCoords()
+                  loadRegionNames()
+                  m.redraw()
+                }
+              }, v)
+            })
+          ]) : null,
           groups
         ])
       ])

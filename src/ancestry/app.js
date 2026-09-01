@@ -144,6 +144,9 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
     }
   }
 
+  // Determine whether the selected subject can be starred/tagged. Fetches the matches page
+  // and reads the roleObject role — any role other than Guest means we have permission.
+  // If allowed, also loads the custom tag groups (labels + group filter options).
   function checkCanEdit(guid) {
     return apiFetch('https://www.ancestry.com/dna/matches/' + guid + '/list', {
       credentials: 'include', mode: 'cors', responseType: 'text',
@@ -152,7 +155,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
       var text = String(body || '')
       var match = text.match(/"roleObject"\s*:\s*\{[^}]*?"role"\s*:\s*"([^"]+)"/)
       var role = match ? match[1] : null
-      var ok = role === 'Editor' || role === 'Subject'
+      var ok = !!role && role !== 'Guest'
       setState({ canEdit: ok })
       if (ok) fetchCustomTags(guid)
     }).catch(function () {
@@ -161,6 +164,8 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
   }
 
   function fetchCustomTags(guid) {
+    // Custom tag groups: [{ categoryId, label, tagId }]. Used for tag labels on cards
+    // and the Group filter. Kept in memory only (not persisted to the DB).
     return apiFetch('https://www.ancestry.com/discoveryui-matches/parents/list/api/tags/custom/' + guid, {
       credentials: 'include', mode: 'cors',
       headers: { 'Accept': 'application/json' }

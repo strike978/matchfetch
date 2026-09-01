@@ -145,31 +145,28 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
   }
 
   function checkCanEdit(guid) {
-    return apiFetch('https://www.ancestry.com/discoveryui-matches/cluster/api/subject/' + guid, {
-      credentials: 'include', mode: 'cors',
-      headers: { 'Accept': 'application/json' }
-    }).then(function (subject) {
-      var treeId = subject && subject.linkedTree && subject.linkedTree.treeId
-      if (!treeId) { setState({ canEdit: false }); return }
-      return delay(FETCH_DELAY).then(function () {
-        return apiFetch('https://www.ancestry.com/discoveryui-matches/parents/api/trees/' + treeId + '/canEdit', {
-          credentials: 'include', mode: 'cors',
-          headers: { 'Accept': 'application/json' }
-        })
-      }).then(function (canEdit) {
-        if (canEdit !== true && canEdit !== 'true') { setState({ canEdit: false }); return }
-        return delay(FETCH_DELAY).then(function () {
-          return apiFetch('https://www.ancestry.com/discoveryui-matches/parents/list/api/tags/custom/' + guid, {
-            credentials: 'include', mode: 'cors',
-            headers: { 'Accept': 'application/json' }
-          })
-        }).then(function (customTags) {
-          setState({ canEdit: true, customTags: customTags })
-        })
-      })
+    return apiFetch('https://www.ancestry.com/dna/matches/' + guid + '/list', {
+      credentials: 'include', mode: 'cors', responseType: 'text',
+      headers: { 'Accept': 'text/html' }
+    }).then(function (body) {
+      var text = String(body || '')
+      var match = text.match(/"roleObject"\s*:\s*\{[^}]*?"role"\s*:\s*"([^"]+)"/)
+      var role = match ? match[1] : null
+      var ok = role === 'Editor' || role === 'Subject'
+      setState({ canEdit: ok })
+      if (ok) fetchCustomTags(guid)
     }).catch(function () {
       setState({ canEdit: false })
     })
+  }
+
+  function fetchCustomTags(guid) {
+    return apiFetch('https://www.ancestry.com/discoveryui-matches/parents/list/api/tags/custom/' + guid, {
+      credentials: 'include', mode: 'cors',
+      headers: { 'Accept': 'application/json' }
+    }).then(function (data) {
+      setState({ customTags: data })
+    }).catch(function () { })
   }
 
   var FETCH_DELAY = 500

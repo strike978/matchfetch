@@ -176,6 +176,35 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
 
   var FETCH_DELAY = 500
 
+  function getCurrentRegions(sm) {
+    if (!sm) return null
+    var r = sm.regions
+    if (!r) return null
+    if (Array.isArray(r)) return r
+    var keys = Object.keys(r)
+    return keys.length ? r[keys[keys.length - 1]] : null
+  }
+
+  function getCurrentVersion(sm) {
+    if (!sm || !sm.regions) return null
+    if (Array.isArray(sm.regions)) return sm.version || null
+    var keys = Object.keys(sm.regions)
+    return keys.length ? keys[keys.length - 1] : null
+  }
+
+  function setSessionRegions(sid, batchEntry) {
+    var batchRegions = batchEntry && batchEntry.regions
+    if (!batchRegions) return
+    var sm = s.sessionMatches[sid]
+    if (!sm.regions || Array.isArray(sm.regions)) {
+      var prev = Array.isArray(sm.regions) ? sm.regions : null
+      sm.regions = {}
+      if (prev && sm.version) sm.regions[String(sm.version)] = prev
+    }
+    var key = s.ethnicityVersion || '2025'
+    sm.regions[key] = batchRegions
+  }
+
   function storeMatchData(guid, matchList, targetSids) {
     if (!s.sessionMatches) s.sessionMatches = {}
     if (targetSids) {
@@ -197,9 +226,8 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
           s.sessionMatches[sid].photoUrl = s.profileData[sid].photoUrl
         }
         if (tagsIndex[sid]) s.sessionMatches[sid].tags = tagsIndex[sid]
-        if (s.batchEthnicityData && s.batchEthnicityData[sid]) s.sessionMatches[sid].regions = s.batchEthnicityData[sid].regions
+        if (s.batchEthnicityData && s.batchEthnicityData[sid]) setSessionRegions(sid, s.batchEthnicityData[sid])
         if (s.batchCommunitiesData && s.batchCommunitiesData[sid]) s.sessionMatches[sid].journeys = s.batchCommunitiesData[sid].branches
-        s.sessionMatches[sid].version = s.ethnicityVersion || '2025'
       }
       var filteredMatches = []
       if (matchList) {
@@ -231,10 +259,9 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
             s.sessionMatches[sid].displayGender = s.profileData[sid].displayGender
             s.sessionMatches[sid].photoUrl = s.profileData[sid].photoUrl
           }
-          if (s.batchEthnicityData && s.batchEthnicityData[sid]) { s.sessionMatches[sid].regions = s.batchEthnicityData[sid].regions; s.batchEthnicityData[sid].version = s.ethnicityVersion || '2025' }
+          if (s.batchEthnicityData && s.batchEthnicityData[sid]) { setSessionRegions(sid, s.batchEthnicityData[sid]); s.batchEthnicityData[sid].version = s.ethnicityVersion || '2025' }
           if (s.batchCommunitiesData && s.batchCommunitiesData[sid]) s.sessionMatches[sid].journeys = s.batchCommunitiesData[sid].branches
           if (matchList[mi].tags) s.sessionMatches[sid].tags = matchList[mi].tags
-          s.sessionMatches[sid].version = s.ethnicityVersion || '2025'
         }
       }
       _dataVersion++
@@ -336,7 +363,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
               resolveJourneyNames(s.batchCommunitiesData[sids[i]].branches)
               if (sm[sids[i]]) sm[sids[i]].journeys = s.batchCommunitiesData[sids[i]].branches
             }
-            if (m.regions) s.batchEthnicityData[sids[i]] = { regions: m.regions }
+            if (m.regions) { var curR = getCurrentRegions(m); if (curR) s.batchEthnicityData[sids[i]] = { regions: curR } }
           }
           s.matchListData = { matchList: allMatches }
           s.sessionMatches = sm
@@ -661,7 +688,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
     var activeRegions = s._activeRegionFilters
     if (activeRegions && activeRegions.length) {
       var sm = s.sessionMatches && s.sessionMatches[m.sampleId]
-      var regs = sm && sm.regions
+      var regs = getCurrentRegions(sm)
       for (var fi = 0; fi < activeRegions.length; fi++) {
         var rf = activeRegions[fi]
         if (!rf.region) continue
@@ -707,7 +734,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
     var sids = Object.keys(s.sessionMatches)
     for (var i = 0; i < sids.length; i++) {
       var sm = s.sessionMatches[sids[i]]
-      var regs = sm && sm.regions
+      var regs = getCurrentRegions(sm)
       if (regs) {
         for (var ri = 0; ri < regs.length; ri++) {
           var name = regs[ri].displayName || regs[ri].key
@@ -1278,7 +1305,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
       return m('.card.match-card', {
         'data-guid': guid,
         'data-sample': matchObj.sampleId,
-        onclick: function () { if (guid && matchObj.sampleId) window.open('match.html?guid=' + guid + '&sampleId=' + matchObj.sampleId + (s.hideNames ? '&hideNames=1' : '') + '&canEdit=' + (s.canEdit ? '1' : '0') + '&version=' + (sm && sm.version || '2025'), '_blank') }
+        onclick: function () { if (guid && matchObj.sampleId) window.open('match.html?guid=' + guid + '&sampleId=' + matchObj.sampleId + (s.hideNames ? '&hideNames=1' : '') + '&canEdit=' + (s.canEdit ? '1' : '0') + '&version=' + (getCurrentVersion(sm) || '2025'), '_blank') }
       }, [
         m('.card-top', [
           p.photoUrl ? m('img.avatar', { src: p.photoUrl }) : m('.avatar.avatar-initials.' + gc, p.matchNameInitials || '?'),
@@ -1297,7 +1324,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
                 if (!sm.tags) sm.tags = {}
                 if (willFav) sm.tags['2'] = null
                 else delete sm.tags['2']
-                if (typeof DB !== 'undefined' && DB.toggleFavorite) DB.toggleFavorite(guid, matchObj.sampleId)
+                if (typeof DB !== 'undefined' && DB.toggleFavorite) DB.toggleFavorite(guid, matchObj.sampleId, willFav)
                 m.redraw()
               }).catch(function (err) {
                 setState({ statusMsg: 'Could not ' + (willFav ? 'add to' : 'remove from') + ' favorites: ' + friendlyError(err.message) })
@@ -1386,7 +1413,8 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
               resolveJourneyNames(s.batchCommunitiesData[sampleIds[si]].branches)
               if (s.sessionMatches && s.sessionMatches[sampleIds[si]]) s.sessionMatches[sampleIds[si]].journeys = s.batchCommunitiesData[sampleIds[si]].branches
             }
-            if (m2.regions && m2.regions.length > 0) s.batchEthnicityData[sampleIds[si]] = { regions: m2.regions }
+            var curR2 = getCurrentRegions(m2)
+            if (curR2 && curR2.length > 0) s.batchEthnicityData[sampleIds[si]] = { regions: curR2 }
           }
           for (var si = 0; si < sampleIds.length; si++) {
             var m2 = session.matches[sampleIds[si]]

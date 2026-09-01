@@ -148,6 +148,14 @@ var DB = (function() {
         });
     }
 
+    function getCurrentRegions(m) {
+        var r = m && m.regions;
+        if (!r) return null;
+        if (Array.isArray(r)) return r;
+        var keys = Object.keys(r);
+        return keys.length ? r[keys[keys.length - 1]] : null;
+    }
+
     function mergeMatchData(existing, matchList, profiles, ethnicity, communities) {
         if (!existing) existing = { guid: '', matches: {} };
         if (matchList) {
@@ -166,8 +174,7 @@ var DB = (function() {
                     displayGender: em.displayGender || null,
                     photoUrl: em.photoUrl || null,
                     regions: em.regions || null,
-                    journeys: em.journeys || null,
-                    version: em.version || null
+                    journeys: em.journeys || null
                 };
             }
         }
@@ -199,8 +206,12 @@ var DB = (function() {
                         regions.push({ color: r.color, key: r.key, displayName: r.displayName || null, lowerConfidence: r.lowerConfidence, macroRegionKey: r.macroRegionKey, percentage: r.percentage, upperConfidence: r.upperConfidence });
                     }
                 }
-                em.regions = regions;
-                em.version = eth.version || em.version || null;
+                if (eth.version) {
+                    if (!em.regions || Array.isArray(em.regions)) em.regions = {};
+                    em.regions[String(eth.version)] = regions;
+                } else {
+                    em.regions = regions;
+                }
                 existing.matches[sid] = em;
             }
         }
@@ -345,6 +356,22 @@ var DB = (function() {
         });
     }
 
+    function migrateRecord(rec) {
+        if (rec && rec.matches) {
+            var sids = Object.keys(rec.matches);
+            for (var i = 0; i < sids.length; i++) {
+                var m = rec.matches[sids[i]];
+                if (m && m.regions && Array.isArray(m.regions)) {
+                    var v = String(m.version || '2025');
+                    var arr = m.regions;
+                    m.regions = {};
+                    m.regions[v] = arr;
+                }
+            }
+        }
+        return rec;
+    }
+
     return {
         saveSession: function(guid, matchList, profiles, ethnicity, communities, provider) {
             var t = table(provider);
@@ -411,15 +438,15 @@ var DB = (function() {
             });
         },
 
-        toggleFavorite: function(guid, sampleId, provider) {
+        toggleFavorite: function(guid, sampleId, add, provider) {
             var t = table(provider);
             return db.transaction('rw', t, function() {
                 return t.get(guid).then(function(existing) {
                     if (!existing || !existing.matches || !existing.matches[sampleId]) return;
                     var m = existing.matches[sampleId];
                     if (!m.tags) m.tags = {};
-                    if ('2' in m.tags) delete m.tags['2'];
-                    else m.tags['2'] = null;
+                    if (add) m.tags['2'] = null;
+                    else delete m.tags['2'];
                     return t.put(existing);
                 });
             });
@@ -462,7 +489,7 @@ var DB = (function() {
                 return {
                     profile: { matchName: m.matchName, matchNameInitials: m.matchNameInitials, displayGender: m.displayGender, photoUrl: m.photoUrl },
                     matchData: { relationship: m.relationship, matchClusterCode: m.matchClusterCode, tags: m.tags, createdDate: m.createdDate },
-                    ethnicity: m.regions ? { regions: m.regions } : null,
+                    ethnicity: m.regions ? { regions: getCurrentRegions(m), regionsByVersion: m.regions } : null,
                     communities: m.journeys ? { branches: m.journeys } : null
                 };
             });
@@ -511,6 +538,7 @@ var DB = (function() {
                         var parsed = parseRecord(section, raw);
                         if (!parsed) return;
                         delete parsed.rec.provider;
+                        migrateRecord(parsed.rec);
                         batches[parsed.target].push(parsed.rec);
                         if (batches[parsed.target].length >= BATCH) flush(parsed.target);
                     }, function(e) { reject(e); });

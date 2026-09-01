@@ -26,6 +26,7 @@
     statusMsg: '',
     groupName: '',
     editingTagId: null,
+    regionsVersion: null,
   }
 
   function setState(o) { Object.assign(s, o); m.redraw() }
@@ -217,7 +218,7 @@
   }
 
   function loadRegionCoords() {
-    fetch(chrome.runtime.getURL('data/ancestry/regions_' + version + '.json')).then(function (r) { return r.json() }).then(function (d) {
+    fetch(chrome.runtime.getURL('data/ancestry/regions_' + (s.regionsVersion || version) + '.json')).then(function (r) { return r.json() }).then(function (d) {
       setState({ regionCoords: d })
     }, function () { })
   }
@@ -235,7 +236,7 @@
   }
 
   function loadRegionNames() {
-    fetch(chrome.runtime.getURL('data/ancestry/regions_' + version + '.json')).then(function (r) { return r.json() }).then(function (d) {
+    fetch(chrome.runtime.getURL('data/ancestry/regions_' + (s.regionsVersion || version) + '.json')).then(function (r) { return r.json() }).then(function (d) {
       setState({ regionNameData: d })
     }, function () { })
   }
@@ -303,10 +304,18 @@
     view: function () {
       var d = s.matchData
       var eth = d.ethnicity
-      if (!eth || !eth.regions || !eth.regions.length) return null
+      var rbv = eth && eth.regionsByVersion
+      var versions = rbv && typeof rbv === 'object' && !Array.isArray(rbv) ? Object.keys(rbv).sort(function (a, b) { return Number(b) - Number(a) }) : []
+      var regions = eth && eth.regions
+      if (versions.length) {
+        var v = s.regionsVersion
+        if (v && rbv[String(v)]) regions = rbv[String(v)]
+        else regions = rbv[versions[0]]
+      }
+      if (!regions || !regions.length) return null
       var grouped = {}
-      for (var ri = 0; ri < eth.regions.length; ri++) {
-        var reg = eth.regions[ri]
+      for (var ri = 0; ri < regions.length; ri++) {
+        var reg = regions[ri]
         var key = reg.macroRegionKey || 'other'
         if (!grouped[key]) grouped[key] = []
         grouped[key].push(reg)
@@ -358,7 +367,21 @@
         ])
       })
       return m('.regions-map-row', [
-        m('.card', groups)
+        m('.card', [
+          versions.length > 0 ? m('.version-tabs', versions.map(function (v) {
+            return m('button.version-tab' + (s.regionsVersion === v ? '.active' : ''), {
+              key: v,
+              onclick: function () {
+                s.regionsVersion = v
+                setState({ expandedRegionKey: null })
+                loadRegionCoords()
+                loadRegionNames()
+                m.redraw()
+              }
+            }, v)
+          })) : null,
+          groups
+        ])
       ])
     }
   }
@@ -464,7 +487,7 @@
                 if (!md.tags) md.tags = {}
                 if (willFav) md.tags['2'] = null
                 else delete md.tags['2']
-                if (typeof DB !== 'undefined' && DB.toggleFavorite) DB.toggleFavorite(guid, sampleId)
+                if (typeof DB !== 'undefined' && DB.toggleFavorite) DB.toggleFavorite(guid, sampleId, willFav)
                 m.redraw()
               }).catch(function (err) {
                 setState({ statusMsg: /Status 403/.test(err.message) ? 'You don\u2019t have permission to ' + (willFav ? 'add' : 'remove') + ' favorites for this match.' : 'Could not ' + (willFav ? 'add to' : 'remove from') + ' favorites: ' + friendlyError(err.message) })
@@ -472,7 +495,8 @@
             }
           }, m.trust('<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>')) : null,
           canEdit ? m('button.group-mgmt-btn', {
-            title: 'Manage groups',
+            title: s.customTags === null ? 'Loading groups...' : 'Manage groups',
+            disabled: s.customTags === null,
             onclick: function (e) {
               e.stopPropagation()
               s.groupName = ''
@@ -533,6 +557,12 @@
           return
         }
         setState({ matchData: data })
+        var rbv = data.ethnicity && data.ethnicity.regionsByVersion
+        var rvKeys = rbv && typeof rbv === 'object' && !Array.isArray(rbv) ? Object.keys(rbv) : []
+        if (rvKeys.length) {
+          rvKeys.sort(function (a, b) { return Number(b) - Number(a) })
+          setState({ regionsVersion: rvKeys[0] })
+        }
         fetchCustomTags()
         loadRegionCoords()
         loadJourneyCoords()

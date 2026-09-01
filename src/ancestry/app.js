@@ -157,7 +157,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
       var role = match ? match[1] : null
       var ok = !!role && role !== 'Guest'
       setState({ canEdit: ok })
-      if (ok) fetchCustomTags(guid)
+      fetchCustomTags(guid)
     }).catch(function () {
       setState({ canEdit: false })
     })

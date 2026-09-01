@@ -196,7 +196,8 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
 
   function getRegionVersions() {
     var versions = {}
-    if (!s.sessionMatches) return []
+    if (s.ethnicityVersion) versions[String(s.ethnicityVersion)] = true
+    if (!s.sessionMatches) return Object.keys(versions).sort(function (a, b) { return Number(b) - Number(a) })
     var sids = Object.keys(s.sessionMatches)
     for (var i = 0; i < sids.length; i++) {
       var r = s.sessionMatches[sids[i]] && s.sessionMatches[sids[i]].regions
@@ -209,7 +210,11 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
 
   function syncRegionVersions() {
     var versions = getRegionVersions()
-    if (versions.length && versions.indexOf(s.regionsVersion) === -1) s.regionsVersion = versions[0]
+    if (s.ethnicityVersion && versions.indexOf(String(s.ethnicityVersion)) !== -1) {
+      if (s.regionsVersion !== String(s.ethnicityVersion)) s.regionsVersion = String(s.ethnicityVersion)
+    } else if (versions.length && versions.indexOf(s.regionsVersion) === -1) {
+      s.regionsVersion = versions[0]
+    }
     return versions
   }
 

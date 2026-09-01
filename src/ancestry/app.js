@@ -36,6 +36,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
     testsLoading: true,
     canEdit: null,
     customTags: null,
+    regionsVersion: null,
   }
 
   function setState(o) { Object.assign(s, o); m.redraw() }
@@ -183,6 +184,33 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
     if (Array.isArray(r)) return r
     var keys = Object.keys(r)
     return keys.length ? r[keys[keys.length - 1]] : null
+  }
+
+  function getFilterRegions(sm) {
+    if (!sm || !sm.regions) return null
+    if (Array.isArray(sm.regions)) return sm.regions
+    var v = s.regionsVersion || s.ethnicityVersion
+    if (v && sm.regions[String(v)]) return sm.regions[String(v)]
+    return null
+  }
+
+  function getRegionVersions() {
+    var versions = {}
+    if (!s.sessionMatches) return []
+    var sids = Object.keys(s.sessionMatches)
+    for (var i = 0; i < sids.length; i++) {
+      var r = s.sessionMatches[sids[i]] && s.sessionMatches[sids[i]].regions
+      if (!r || Array.isArray(r)) continue
+      var keys = Object.keys(r)
+      for (var k = 0; k < keys.length; k++) versions[keys[k]] = true
+    }
+    return Object.keys(versions).sort(function (a, b) { return Number(b) - Number(a) })
+  }
+
+  function syncRegionVersions() {
+    var versions = getRegionVersions()
+    if (versions.length && versions.indexOf(s.regionsVersion) === -1) s.regionsVersion = versions[0]
+    return versions
   }
 
   function getCurrentVersion(sm) {
@@ -688,7 +716,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
     var activeRegions = s._activeRegionFilters
     if (activeRegions && activeRegions.length) {
       var sm = s.sessionMatches && s.sessionMatches[m.sampleId]
-      var regs = getCurrentRegions(sm)
+      var regs = getFilterRegions(sm)
       for (var fi = 0; fi < activeRegions.length; fi++) {
         var rf = activeRegions[fi]
         if (!rf.region) continue
@@ -734,7 +762,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
     var sids = Object.keys(s.sessionMatches)
     for (var i = 0; i < sids.length; i++) {
       var sm = s.sessionMatches[sids[i]]
-      var regs = getCurrentRegions(sm)
+      var regs = getFilterRegions(sm)
       if (regs) {
         for (var ri = 0; ri < regs.length; ri++) {
           var name = regs[ri].displayName || regs[ri].key
@@ -1116,7 +1144,15 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
               ])
             ]),
             m('span.filter-group', [
-              'Region ',
+              'Version ',
+              m('select#filterRegionVersion.filter-select', {
+                style: { width: '88px' },
+                value: s.regionsVersion || '',
+                onchange: function (e) { s.regionsVersion = e.target.value || null; s.currentPage = 1; m.redraw() }
+              }, [
+                syncRegionVersions().map(function (v) { return m('option', { value: v }, v) })
+              ]),
+              ' Region ',
               m('input.filter-input', {
                 type: 'text', placeholder: 'Filter by region', value: s.regionSearch,
                 style: { width: '110px' },
@@ -1237,7 +1273,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
     var f = s.filters
     var rk = ''
     if (s._activeRegionFilters) for (var i = 0; i < s._activeRegionFilters.length; i++) rk += '|' + s._activeRegionFilters[i].region + '|' + (s._activeRegionFilters[i].pctMin||'') + '|' + (s._activeRegionFilters[i].pctMax||'')
-    return s.sortBy + '|' + (list ? list.length : 0) + '|' + (f.name||'') + '|' + (f.cmMin||'') + '|' + (f.cmMax||'') + '|' + (f.journey||'') + '|' + (f.journeyOnly?'1':'0') + '|' + (f.group||'') + '|' + (f.starredOnly?'1':'0') + rk + '|v' + _dataVersion
+    return s.sortBy + '|' + (list ? list.length : 0) + '|' + (f.name||'') + '|' + (f.cmMin||'') + '|' + (f.cmMax||'') + '|' + (f.journey||'') + '|' + (f.journeyOnly?'1':'0') + '|' + (f.group||'') + '|' + (f.starredOnly?'1':'0') + rk + '|v' + _dataVersion + '|' + (s.regionsVersion || '')
   }
 
   var MatchList = {
@@ -1386,6 +1422,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
     s.fetchComplete = false
     s.canEdit = null
     s.customTags = null
+    s.regionsVersion = null
     m.redraw()
     if (guid) {
       fetchMatchCount(guid)

@@ -1118,6 +1118,18 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
         ]),
         m('#filterBody', { style: { display: s.showFilterBody ? '' : 'none' } }, [
           m('.filter-row', [
+            m('span.filter-group', [
+              'Version ',
+              m('select#filterRegionVersion.filter-select', {
+                style: { width: '100px' },
+                value: s.regionsVersion || '',
+                onchange: function (e) { s.regionsVersion = e.target.value || null; s.currentPage = 1; m.redraw() }
+              }, [
+                syncRegionVersions().map(function (v) { return m('option', { value: v }, v) })
+              ])
+            ])
+          ]),
+          m('.filter-row', [
             m('label.filter-group', ['Name ',         m('input#filterName.filter-input', { type: 'text', placeholder: 'Filter by name', oninput: function () { applyFilterChange(); m.redraw() } })]),
             m('label.filter-group', [
               'cM ',
@@ -1144,15 +1156,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
               ])
             ]),
             m('span.filter-group', [
-              'Version ',
-              m('select#filterRegionVersion.filter-select', {
-                style: { width: '88px' },
-                value: s.regionsVersion || '',
-                onchange: function (e) { s.regionsVersion = e.target.value || null; s.currentPage = 1; m.redraw() }
-              }, [
-                syncRegionVersions().map(function (v) { return m('option', { value: v }, v) })
-              ]),
-              ' Region ',
+              'Region ',
               m('input.filter-input', {
                 type: 'text', placeholder: 'Filter by region', value: s.regionSearch,
                 style: { width: '110px' },

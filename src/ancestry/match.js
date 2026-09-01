@@ -368,7 +368,7 @@
       return m('.regions-map-row', [
         m('.card', [
           versions.length > 0 ? m('.version-tabs', [
-            m('span.version-tabs-label', 'Version:'),
+            m('span.version-tabs-label', 'Version'),
             versions.map(function (v) {
               return m('button.version-tab' + (s.regionsVersion === v ? '.active' : ''), {
                 key: v,

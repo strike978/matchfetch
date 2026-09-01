@@ -466,6 +466,21 @@ var DB = (function() {
             });
         },
 
+        removeTagFromAllMatches: function(guid, tagId, provider) {
+            var t = table(provider);
+            return db.transaction('rw', t, function() {
+                return t.get(guid).then(function(existing) {
+                    if (!existing || !existing.matches) return;
+                    var sids = Object.keys(existing.matches);
+                    for (var i = 0; i < sids.length; i++) {
+                        var m = existing.matches[sids[i]];
+                        if (m && m.tags) delete m.tags[tagId];
+                    }
+                    return t.put(existing);
+                });
+            });
+        },
+
         deleteFetchState: function(guid, provider) {
             var t = table(provider);
             return db.transaction('rw', t, function() {

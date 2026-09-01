@@ -82,12 +82,21 @@
       method: 'POST', credentials: 'include', mode: 'cors',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({ categoryId: 32, tagName: name })
-    }).then(function (created) {
+    }).then(function () {
       s.groupName = ''
       setState({ statusMsg: '' })
-      fetchCustomTags()
-      var newId = created && (created.tagId != null ? created.tagId : (created.id != null ? created.id : null))
-      if (newId != null) toggleMatchTag(newId)
+      apiFetch('https://www.ancestry.com/discoveryui-matches/parents/list/api/tags/custom/' + guid, {
+        credentials: 'include', mode: 'cors',
+        headers: { 'Accept': 'application/json' }
+      }).then(function (data) {
+        setState({ customTags: data })
+        var list = data || []
+        var newId = null
+        for (var i = 0; i < list.length; i++) {
+          if ((list[i].tagName === name || list[i].label === name) && list[i].tagId != null) { newId = list[i].tagId; break }
+        }
+        if (newId != null) toggleMatchTag(newId)
+      }).catch(function () { })
     }).catch(function (err) {
       setState({ statusMsg: 'Could not create group: ' + friendlyError(err.message) })
     })
@@ -123,6 +132,7 @@
     }).then(function () {
       setState({ statusMsg: '' })
       fetchCustomTags()
+      if (typeof DB !== 'undefined' && DB.removeTagFromAllMatches) DB.removeTagFromAllMatches(guid, tagId)
       return true
     }).catch(function (err) {
       setState({ statusMsg: 'Could not delete group: ' + friendlyError(err.message) })
@@ -199,7 +209,7 @@
                   title: inMatch ? 'Remove match from group' : 'Add match to group',
                   onclick: function () { toggleMatchTag(t.tagId) }
                 }, inMatch ? m.trust(checkIcon) : null),
-                m('span.tag-pill', t.label),
+                m('span.group-manager-label', t.label),
                 m('.group-manager-spacer'),
                 m('button.group-btn.group-btn-icon', { title: 'Rename', onclick: function () { s.editingTagId = t.tagId; s.renameName = t.label; m.redraw() } }, m.trust(pencilIcon)),
                 m('button.group-btn.group-btn-icon.group-btn-danger', { title: 'Delete', onclick: function () {

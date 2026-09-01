@@ -3344,7 +3344,6 @@
       "AFAM-IL-OHIN_WI2024-6.5": "Lake & McHenry Counties",
       "AFAM-IL-OHIN_UMW2024-8": "Effingham & Jasper Counties",
       "AFAM-IL-OHIN_WUS2024-2.3": "Centerville (IA) | Beardstown (IL) | Monmouth (IL)",
-      "AFAM-IL-OHIN_IL2024_Ghost_allSubCommunity": "Illinois Settlers",
       "AFAM-IL-OHIN_IL2024-15": "Mount Carmel | Flora | Sullivan",
       "AFAM-IL-OHIN_IL2024-5": "Cumberland, Clark, Edgar (IL) & Vigo (IN) Counties",
       "AFAM-IL-OHIN_WUS2024-3.1.4": "Benton | Carmi | Harrisburg",
@@ -5434,6 +5433,7 @@
     "name": "Belgium",
     "subjourneys": {
       "DE_2021_1.3.2.1.3.4": "Ghent to Bruges",
+      "FR_FR2024-5": "Leuven | Charleroi | Liege ",
       "DE_2021_1.3.2.1.3.3": "West Central Belgium",
       "DE_2021_1.3.2.1.3.2": "Western Belgium",
       "DE_2021_1.3.2.1.3.1": "Northeastern Belgium & Southern Netherlands"

@@ -499,7 +499,7 @@
           m('span', hideNames ? (p.matchNameInitials || '??') : (p.matchName || 'Unknown')),
           tagLabels.length > 0 ? tagLabels.map(function (l) { return m('span.tag-pill', l) }) : null,
           canEdit ? m('button.star-btn' + (favorite ? '.active' : ''), {
-            title: favorite ? 'Remove from favorites' : 'Add to favorites',
+            title: favorite ? 'Remove from starred matches' : 'Add to starred matches',
             onclick: function (e) {
               e.stopPropagation()
               e.preventDefault()

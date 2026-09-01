@@ -1359,7 +1359,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
             tagLabels.length > 0 ? tagLabels.map(function (l) { return m('span.tag-pill', l) }) : null
           ]),
           s.canEdit !== false ? m('button.star-btn' + (favorite ? '.active' : ''), {
-            title: favorite ? 'Remove from favorites' : 'Add to favorites',
+            title: favorite ? 'Remove from starred matches' : 'Add to starred matches',
             onclick: function (e) {
               e.stopPropagation()
               e.preventDefault()

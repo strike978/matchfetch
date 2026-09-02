@@ -505,10 +505,11 @@
         overview ? m('.journey-exp-overview', overview) : null,
         m(InlineMap, { itemKey: n.id, type: depth === 0 ? 'journey' : 'subjourney' })
       ]) : null
+      var toggle = m('span.journey-toggle' + (isExpanded ? '.open' : ''), '\u25BC')
       if (depth === 0) {
         return m('.journey-node', { key: n.id }, [
           m('.journey-header', { 'data-key': n.id, onclick: function () { zoomToJourney(n.id) } }, [
-            m('span.journey-toggle' + (hasChildren ? '' : '.journey-toggle-empty'), hasChildren ? '\u25BC' : ''),
+            toggle,
             m('span.journey-name', n.displayName || n.id || ''),
             strength
           ]),
@@ -519,7 +520,7 @@
       if (hasChildren) {
         return m('.journey-sub-node', { key: n.id }, [
           m('.journey-header', { 'data-key': n.id, style: { paddingLeft: depth * 20 + 'px' }, onclick: function () { zoomToJourney(n.id) } }, [
-            m('span.journey-toggle', '\u25BC'),
+            toggle,
             m('span.journey-name', n.displayName || n.id || ''),
             strength
           ]),
@@ -529,6 +530,7 @@
       }
       return m('.journey-sub-node', { key: n.id }, [
         m('.journey-item', { 'data-key': n.id, style: { paddingLeft: (depth * 20 + 20) + 'px' }, onclick: function () { zoomToJourney(n.id) } }, [
+          toggle,
           m('span.journey-name', n.displayName || n.id || ''),
           strength
         ]),
@@ -745,6 +747,29 @@
     })
   }
 
+  function currentRegions() {
+    var d = s.matchData
+    if (!d || !d.ethnicity) return null
+    var eth = d.ethnicity
+    var rbv = eth.regionsByVersion
+    if (rbv && typeof rbv === 'object' && !Array.isArray(rbv)) {
+      var keys = Object.keys(rbv).sort(function (a, b) { return Number(b) - Number(a) })
+      if (!keys.length) return null
+      var v = s.regionsVersion
+      if (v && rbv[String(v)]) return rbv[String(v)]
+      return rbv[keys[0]]
+    }
+    return eth.regions || null
+  }
+
+  function isLimitedData() {
+    var regs = currentRegions()
+    if (!regs || !regs.length) return false
+    var total = 0
+    for (var i = 0; i < regs.length; i++) total += regs[i].percentage || 0
+    return total < 100
+  }
+
   var MatchDetail = {
     oninit: function () {
       DB.getMatchData(guid, sampleId).then(function (data) {
@@ -767,9 +792,17 @@
     },
     view: function () {
       if (!s.matchData) return m('.spinner', [m('.spinner-ring'), m('div', 'Loading...')])
+      var limited = isLimitedData()
       return [
         m(Modal),
         m(ProfileCard),
+        limited ? m('.limited-note', [
+          m('span.limited-note-icon', m.trust('<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>')),
+          m('.limited-note-text', [
+            m('.limited-note-title', 'Limited data'),
+            m('.limited-note-detail', 'This match only shares the ancestral regions and journeys you have in common, so we can\u2019t see their full results.')
+          ])
+        ]) : null,
         m(Tabs),
         m('.tab-content#tab-regions', { style: { display: s.activeTab === 'regions' ? '' : 'none' } },
           s.matchData && s.matchData.ethnicity && s.matchData.ethnicity.regions && s.matchData.ethnicity.regions.length ? m(RegionsPanel) : null),

@@ -13,12 +13,13 @@
 
   var s = {
     matchData: null,
+    journeys: null,
+    journeysLoading: false,
     activeTab: 'regions',
     regionCoords: null,
-    journeyCoords: null,
-    subjourneyCoords: null,
     regionNameData: null,
     journeyNameData: null,
+    journeyNameMap: null,
     expandedRegionKey: null,
     expandedJourneyKey: null,
     modal: null,
@@ -245,34 +246,66 @@
     return '#3b82f6'
   }
 
-  function loadRegionCoords() {
+  function loadRegionData() {
     fetch(chrome.runtime.getURL('data/ancestry/regions_' + (s.regionsVersion || version) + '.json')).then(function (r) { return r.json() }).then(function (d) {
-      setState({ regionCoords: d })
+      setState({ regionCoords: d, regionNameData: d })
     }, function () { })
   }
 
-  function loadJourneyCoords() {
-    fetch(chrome.runtime.getURL('data/ancestry/journey_coordinates.json')).then(function (r) { return r.json() }).then(function (d) {
-      setState({ journeyCoords: d })
-    }, function () { })
+  var COMMUNITY_ASSETS_HASH = '69e822bce1f93b7b430d4d681bf56938fc88c583'
+
+  var journeyParents = {}
+
+  function buildJourneyParents() {
+    journeyParents = {}
+    var branches = s.journeys || []
+    function walk(nodes, parentId) {
+      for (var i = 0; i < nodes.length; i++) {
+        var n = nodes[i]
+        if (parentId && n.id) journeyParents[n.id] = parentId
+        if (n.communities && n.communities.length) walk(n.communities, n.id)
+      }
+    }
+    walk(branches, null)
   }
 
-  function loadSubjourneyCoords() {
-    fetch(chrome.runtime.getURL('data/ancestry/subjourney_coordinates.json')).then(function (r) { return r.json() }).then(function (d) {
-      setState({ subjourneyCoords: d })
-    }, function () { })
+  var polygonCache = {}
+
+  function fetchCommunityPolygon(ghost, sub) {
+    var url = 'https://www.ancestrycdn.com/dna/communities-assets/' + COMMUNITY_ASSETS_HASH + '/' + ghost + (sub ? '/' + sub : '') + '/polygon.json'
+    if (polygonCache[url]) return Promise.resolve(polygonCache[url])
+    return fetch(url).then(function (r) {
+      if (!r.ok) return null
+      return r.json()
+    }).then(function (feature) {
+      var geom = feature && feature.geometry ? feature.geometry : feature
+      if (geom) polygonCache[url] = geom
+      return geom || null
+    }).catch(function () { return null })
   }
 
-  function loadRegionNames() {
-    fetch(chrome.runtime.getURL('data/ancestry/regions_' + (s.regionsVersion || version) + '.json')).then(function (r) { return r.json() }).then(function (d) {
-      setState({ regionNameData: d })
-    }, function () { })
+  function loadJourneyPolygon(itemKey) {
+    return fetchCommunityPolygon(itemKey, null).then(function (geom) {
+      if (geom) return geom
+      var ghost = journeyParents[itemKey]
+      if (ghost) return fetchCommunityPolygon(ghost, itemKey)
+      return null
+    }).catch(function () { return null })
   }
 
-  function loadJourneyNames() {
-    fetch(chrome.runtime.getURL('data/ancestry/ancestry_journey_names.json')).then(function (r) { return r.json() }).then(function (d) {
-      setState({ journeyNameData: d })
-    }, function () { })
+  function loadSubjourneyPolygon(itemKey) {
+    var ghost = journeyParents[itemKey]
+    if (!ghost) return Promise.resolve(null)
+    return fetchCommunityPolygon(ghost, itemKey)
+  }
+
+  function resolveJourneyNames(nodes) {
+    if (!s.journeyNameMap) return
+    for (var i = 0; i < nodes.length; i++) {
+      var n = nodes[i]
+      n.displayName = s.journeyNameMap[n.id] || n.displayName || n.id
+      if (n.communities && n.communities.length > 0) resolveJourneyNames(n.communities)
+    }
   }
 
   var _inlineRegionMap = null
@@ -292,6 +325,37 @@
     return Array.isArray(third) ? coords : [coords]
   }
 
+  function journeyColor(itemKey) {
+    if (!s.matchData) return '#3b82f6'
+    var color = '#3b82f6'
+    ;(function findCol(nodes) {
+      for (var fi = 0; fi < nodes.length; fi++) {
+        if (nodes[fi].id === itemKey) { color = strengthColor(nodes[fi].connection); return }
+        if (nodes[fi].communities) findCol(nodes[fi].communities)
+      }
+    })(s.journeys || [])
+    return color
+  }
+
+  function renderInlineMap(el, gj, color, type) {
+    if (!gj || !gj.coordinates || !gj.coordinates.length) return
+    try {
+      var map = L.map(el, { zoomControl: true, attributionControl: false })
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 }).addTo(map)
+      var layer = L.geoJSON(gj, { style: { color: color, weight: 1.5, fillColor: color, fillOpacity: 0.2 } })
+      layer.addTo(map)
+      map.fitBounds(layer.getBounds().pad(0.1))
+      if (type === 'region') { if (_inlineRegionMap) _inlineRegionMap.remove(); _inlineRegionMap = map }
+      else { if (_inlineJourneyMap) _inlineJourneyMap.remove(); _inlineJourneyMap = map }
+    } catch (e) { console.log('Inline map error:', e) }
+  }
+
+  function mapLoadingHtml() {
+    return '<div style="height:100%;display:flex;align-items:center;justify-content:center;gap:10px;color:#64748b;font-size:12px;">'
+      + '<div class="spinner-ring" style="width:18px;height:18px;border-width:2px;display:inline-block;vertical-align:middle;"></div>'
+      + '<span>Loading map\u2026</span></div>'
+  }
+
   var InlineMap = {
     oncreate: function (vnode) {
       var itemKey = vnode.attrs.itemKey
@@ -299,28 +363,24 @@
       setTimeout(function () {
         var el = vnode.dom
         if (!el) return
-        var entry = type === 'region' ? (s.regionCoords || {})[itemKey] : (s.journeyCoords || {})[itemKey] || (s.subjourneyCoords || {})[itemKey]
-        if (!entry) return
-        var gj = entry.type ? entry : { type: 'MultiPolygon', coordinates: toMultiPolygon(entry.coordinates) }
-        if (!gj.coordinates || !gj.coordinates.length) return
-        try {
-          var map = L.map(el, { zoomControl: true, attributionControl: false })
-          L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 }).addTo(map)
-          var color = vnode.attrs.color || '#3b82f6'
-          if (!vnode.attrs.color && type === 'journey' && s.matchData) {
-            ;(function findCol(nodes) {
-              for (var fi = 0; fi < nodes.length; fi++) {
-                if (nodes[fi].id === itemKey) { color = strengthColor(nodes[fi].connection); return }
-                if (nodes[fi].communities) findCol(nodes[fi].communities)
-              }
-            })((s.matchData.communities || {}).branches || [])
-          }
-          var layer = L.geoJSON(gj, { style: { color: color, weight: 1.5, fillColor: color, fillOpacity: 0.2 } })
-          layer.addTo(map)
-          map.fitBounds(layer.getBounds().pad(0.1))
-          if (type === 'region') { if (_inlineRegionMap) _inlineRegionMap.remove(); _inlineRegionMap = map }
-          else { if (_inlineJourneyMap) _inlineJourneyMap.remove(); _inlineJourneyMap = map }
-        } catch (e) { console.log('Inline map error:', e) }
+        if (type === 'region') {
+          var entry = (s.regionCoords || {})[itemKey]
+          if (!entry) return
+          var gj = entry.type ? entry : { type: 'MultiPolygon', coordinates: toMultiPolygon(entry.coordinates) }
+          renderInlineMap(el, gj, vnode.attrs.color || '#3b82f6', type)
+        } else {
+          el.innerHTML = mapLoadingHtml()
+          var loadFn = type === 'subjourney' ? loadSubjourneyPolygon : loadJourneyPolygon
+          loadFn(itemKey).then(function (gj) {
+            if (!el.isConnected) return
+            el.innerHTML = ''
+            if (!gj) {
+              el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:#64748b;font-size:12px;">No map data</div>'
+              return
+            }
+            renderInlineMap(el, gj, journeyColor(itemKey), type)
+          })
+        }
       }, 100)
     },
     view: function () {
@@ -404,8 +464,7 @@
                 onclick: function () {
                   s.regionsVersion = v
                   setState({ expandedRegionKey: null })
-                  loadRegionCoords()
-                  loadRegionNames()
+                  loadRegionData()
                   m.redraw()
                 }
               }, v)
@@ -419,10 +478,15 @@
 
   var JourneysPanel = {
     view: function () {
-      var com = s.matchData && s.matchData.communities
-      if (!com || !com.branches || !com.branches.length) return null
+      if (s.journeysLoading) {
+        return m('.regions-map-row', [
+          m('.card', [m('.spinner', [m('.spinner-ring'), m('div', 'Loading journeys\u2026')])])
+        ])
+      }
+      var com = s.journeys
+      if (!com || !com.length) return null
       return m('.regions-map-row', [
-        m('.card', [m('.journey-tree', renderJourneyTree(com.branches, 0))])
+        m('.card', [m('.journey-tree', renderJourneyTree(com, 0))])
       ])
     }
   }
@@ -439,7 +503,7 @@
       var overview = ownOverview || fallbackOverview
       var expContent = isExpanded ? m('.journey-expanded', [
         overview ? m('.journey-exp-overview', overview) : null,
-        m(InlineMap, { itemKey: n.id, type: 'journey' })
+        m(InlineMap, { itemKey: n.id, type: depth === 0 ? 'journey' : 'subjourney' })
       ]) : null
       if (depth === 0) {
         return m('.journey-node', { key: n.id }, [
@@ -573,6 +637,114 @@
     }
   }
 
+  function refreshMatchJourneys() {
+    setState({ journeysLoading: true })
+    function findBranches(data) {
+        if (!data) return null
+        if (data[sampleId] && data[sampleId].branches) return data[sampleId].branches
+        if (data.branches) return data.branches
+        for (var k in data) {
+            if (data[k] && data[k].branches) return data[k].branches
+        }
+        return null
+    }
+    function doFetch() {
+      return apiFetch('https://www.ancestry.com/dna/origins/secure/compare/' + guid + '/batchCommunities', {
+        method: 'POST', credentials: 'include', mode: 'cors',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify([sampleId])
+      })
+    }
+    function fetchNames(ghostIds) {
+      return apiFetch('https://www.ancestry.com/dna/origins/communities/names', {
+        method: 'POST', credentials: 'include', mode: 'cors',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(ghostIds)
+      }).catch(function () { return null })
+    }
+    function fetchOverview(ghostId) {
+      return apiFetch('https://www.ancestry.com/dna/origins/public/branches/' + encodeURIComponent(ghostId) + '/cms?filterHtml=false&locale=en-US', {
+        credentials: 'include', mode: 'cors', headers: { 'Accept': 'application/json' }
+      }).then(function (data) {
+        return data && data.overview ? { overview: data.overview, name: data.displayName || null } : null
+      }).catch(function () { return null })
+    }
+    function saveJourneys(branches) {
+      if (typeof DB !== 'undefined' && DB.setJourneys) {
+        return DB.setJourneys(guid, sampleId, branches).then(function () {
+          return DB.getMatchData(guid, sampleId).then(function (after) {
+            var stored = after && after.communities ? after.communities.branches.map(function (b) { return b.id }).join(', ') : '(none)'
+            console.log('[MatchFetch] STORED journeys in DB: ' + stored)
+          })
+        })
+      }
+      return Promise.resolve()
+    }
+    function apply(branches) {
+      var oldIds = (s.journeys || []).map(function (b) { return b.id }).join(', ')
+      s.matchData.communities = { branches: branches }
+      buildJourneyParents()
+      setState({ matchData: s.matchData, journeys: branches })
+      console.log('[MatchFetch] OLD journeys (before refresh): ' + oldIds)
+      console.log('[MatchFetch] NEW journeys (from server): ' + branches.map(function (b) { return b.id }).join(', '))
+      return saveJourneys(branches).then(function () {
+        var ghostIds = branches.map(function (b) { return b.id })
+        if (!ghostIds.length) return
+        return fetchNames(ghostIds).then(function (nameData) {
+          if (!nameData) return
+          var jNames = {}
+          var sNames = {}
+          for (var ghostId in nameData) {
+            var subDict = nameData[ghostId]
+            if (!subDict || typeof subDict !== 'object') continue
+            for (var subId in subDict) {
+              if (subId === ghostId) jNames[ghostId] = subDict[subId]
+              else sNames[subId] = subDict[subId]
+            }
+          }
+          return Promise.all(ghostIds.map(fetchOverview)).then(function (ovs) {
+            var merged = {}
+            for (var i = 0; i < ghostIds.length; i++) {
+              var gid = ghostIds[i]
+              merged[gid] = {
+                name: jNames[gid] || null,
+                overview: ovs[i] ? ovs[i].overview : null,
+                subjourneys: sNames
+              }
+            }
+            var flat = {}
+            for (var id in merged) {
+              if (merged[id] && merged[id].name) flat[id] = merged[id].name
+              if (merged[id] && merged[id].subjourneys) { for (var sid in merged[id].subjourneys) flat[sid] = merged[id].subjourneys[sid] }
+            }
+            for (var id2 in sNames) flat[id2] = sNames[id2]
+            s.journeyNameMap = flat
+            resolveJourneyNames(branches)
+            setState({ journeyNameData: merged, journeyNameMap: flat, journeys: branches })
+            return saveJourneys(branches)
+          })
+        })
+      })
+    }
+    function attempt() {
+      return doFetch().then(function (data) {
+        var branches = findBranches(data)
+        if (!branches) {
+          console.log('[MatchFetch] refresh journeys: no branches in response', data)
+          return
+        }
+        return apply(branches)
+      })
+    }
+    return attempt().catch(function (err) {
+      var msg = err && err.message || String(err)
+      console.error('[MatchFetch] refresh journeys failed:', msg)
+      setState({ statusMsg: 'Could not refresh journeys: ' + friendlyError(msg) })
+    }).then(function () {
+      setState({ journeysLoading: false })
+    })
+  }
+
   var MatchDetail = {
     oninit: function () {
       DB.getMatchData(guid, sampleId).then(function (data) {
@@ -580,7 +752,7 @@
           document.getElementById('content').innerHTML = '<div class="error">No data found for this match</div>'
           return
         }
-        setState({ matchData: data })
+        setState({ matchData: data, journeys: data.communities ? data.communities.branches : null })
         var rbv = data.ethnicity && data.ethnicity.regionsByVersion
         var rvKeys = rbv && typeof rbv === 'object' && !Array.isArray(rbv) ? Object.keys(rbv) : []
         if (rvKeys.length) {
@@ -588,11 +760,9 @@
           setState({ regionsVersion: rvKeys[0] })
         }
         fetchCustomTags()
-        loadRegionCoords()
-        loadJourneyCoords()
-        loadSubjourneyCoords()
-        loadRegionNames()
-        loadJourneyNames()
+        loadRegionData()
+        buildJourneyParents()
+        refreshMatchJourneys()
       })
     },
     view: function () {
@@ -604,7 +774,7 @@
         m('.tab-content#tab-regions', { style: { display: s.activeTab === 'regions' ? '' : 'none' } },
           s.matchData && s.matchData.ethnicity && s.matchData.ethnicity.regions && s.matchData.ethnicity.regions.length ? m(RegionsPanel) : null),
         m('.tab-content#tab-journeys', { style: { display: s.activeTab === 'journeys' ? '' : 'none' } },
-          s.matchData && s.matchData.communities && s.matchData.communities.branches && s.matchData.communities.branches.length ? m(JourneysPanel) : null)
+          s.journeys && s.journeys.length ? m(JourneysPanel) : null)
       ]
     }
   }

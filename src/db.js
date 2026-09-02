@@ -156,6 +156,25 @@ var DB = (function() {
         return keys.length ? r[keys[keys.length - 1]] : null;
     }
 
+    function normalizeJourneys(branches) {
+        var out = [];
+        if (!branches || !branches.length) return out;
+        for (var bi = 0; bi < branches.length; bi++) {
+            var b = branches[bi];
+            if (!b || !b.id) continue;
+            var comms = [];
+            if (b.communities && b.communities.length) {
+                for (var ci = 0; ci < b.communities.length; ci++) {
+                    var c = b.communities[ci];
+                    if (!c || !c.id) continue;
+                    comms.push({ id: c.id, displayName: c.displayName || null, connection: c.connection || null, connectionPercent: c.connectionPercent != null ? c.connectionPercent : null });
+                }
+            }
+            out.push({ id: b.id, displayName: b.displayName || null, connection: b.connection || null, connectionPercent: b.connectionPercent != null ? b.connectionPercent : null, communities: comms });
+        }
+        return out;
+    }
+
     function mergeMatchData(existing, matchList, profiles, ethnicity, communities) {
         if (!existing) existing = { guid: '', matches: {} };
         if (matchList) {
@@ -447,6 +466,20 @@ var DB = (function() {
                     if (!m.tags) m.tags = {};
                     if (add) m.tags['2'] = null;
                     else delete m.tags['2'];
+                    return t.put(existing);
+                });
+            });
+        },
+
+        setJourneys: function(guid, sampleId, branches, provider) {
+            var t = table(provider);
+            return db.transaction('rw', t, function() {
+                return t.get(guid).then(function(existing) {
+                    if (!existing) return;
+                    if (!existing.matches) existing.matches = {};
+                    var m = existing.matches[sampleId] || {};
+                    m.journeys = normalizeJourneys(branches);
+                    existing.matches[sampleId] = m;
                     return t.put(existing);
                 });
             });

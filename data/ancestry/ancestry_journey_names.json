@@ -50,50 +50,6 @@
     },
     "overview": "<p>First- and second-generation immigrants from England, Germany, and Ireland endured violence, disease, and social conflicts to build a new life in Georgia and northern Florida. After setting up a society that relied heavily on enslaved Black labor and cotton production, they saw its bloody collapse during the Civil War. The jobs and money that came with World War II brought new economic life to the region, and decades of sharecropping, recovery, and segregation finally began to give way to cities, suburban life, and civil rights for Black residents.</p>\n"
   },
-  "NE-NJ-NY_NY2024_CentralUpstate_Ghost": {
-    "name": "Central & Upstate New York & Western Vermont Settlers",
-    "subjourneys": {
-      "NE-NJ-NY_NY2024-1": "Central & Northeastern New York & Canadian Border",
-      "NE-NJ-NY_NY2024-5": "Eastern New York & Western Vermont",
-      "NE-NJ-NY_NY2024-1.10": "Western St. Lawrence, Jefferson, Lewis & Southern Herkimer Counties",
-      "NE-NJ-NY_NY2024-1.3.4": "Southern Herkimer, Montgomery & Southern Fulton Counties",
-      "NE-NJ-NY_NY2024-5.6": "Saratoga, Washington, Warren, Essex & Surrounding Counties",
-      "NE-NJ-NY_NY2024-1.2.4": "Oswego, Oneida, Onondaga & Madison Counties",
-      "NE-NJ-NY_NY2024-1.3.3": "Otsego, Oneida & Southern Herkimer Counties",
-      "NE-NJ-NY_NY2024-5.7": "Addison, Rutland (VT), Washington (NY) & Surrounding Counties",
-      "NE-NJ-NY_NY2024-1.1.4": "Jefferson, Lewis  & St. Lawrence Counties",
-      "NE-NJ-NY_NY2024-1.2.3": "Oswego & Northern Onondaga Counties",
-      "NE-NJ-NY_NY2024-1.3.2": "Southern Herkimer County & Surrounding Area",
-      "NE-NJ-NY_NY2024-1.4.1": "Chenango, Madison, Oswego & Oneida Counties",
-      "NE-NJ-NY_NY2024-5.8": "Clinton, Essex, Warren, Washington & Surrounding Counties",
-      "NE-NJ-NY_NY2024-1.1.3": "Oneida, Lewis, St. Lawrence & Jefferson Counties",
-      "NE-NJ-NY_NY2024-1.2.2": "Jefferson & Oswego Counties & Surrounding Area",
-      "NE-NJ-NY_NY2024-1.3.1": "Southern Herkimer, Montgomery & Fulton Counties Area",
-      "NE-NJ-NY_NY2024-1.6": "Madison, Onondaga, Oswego & Oneida Counties",
-      "NE-NJ-NY_NY2024-5.2": "Berkshire (MA), Rensselaer (NY), Bennington (VT) & Surrounding Counties",
-      "NE-NJ-NY_NY2024-1.7": "Oneida & Lewis Counties Area",
-      "NE-NJ-NY_NY2024-5.3": "Vermont & New York Border",
-      "NE-NJ-NY_NY2024-1.3.6": "Southern Herkimer, Otsego & Montgomery Counties",
-      "NE-NJ-NY_NY2024-1.8": "Cayuga & Onondaga Counties Area",
-      "NE-NJ-NY_NY2024-5.4": "Essex, Warren, Saratoga, Washington & Surrounding Counties",
-      "NE-NJ-NY_NY2024-1.3.5": "Oneida, Lewis & Southern Herkimer Counties",
-      "NE-NJ-NY_NY2024-1.9": "Jefferson, Lewis & Oneida Counties",
-      "NE-NJ-NY_NY2024-5.5": "Fulton, Montgomery, Schenectady, Saratoga & Surrounding Counties",
-      "NE-NJ-NY_NY2024-1.2": "Oswego, Cayuga, Onondaga, Oneida & Surrounding Counties",
-      "NE-NJ-NY_NY2024-5.2.1": "Rensselaer (NY) & Bennington (VT) Counties Area",
-      "NE-NJ-NY_NY2024-1.3": "Central New York  ",
-      "NE-NJ-NY_NY2024-1.4": "South Central New York",
-      "NE-NJ-NY_NY2024-1.1.2": "Jefferson, Surrounding Counties & Southeastern Ontario",
-      "NE-NJ-NY_NY2024-1.2.1": "Oswego, Northern Onondaga & Northern Cayuga Counties",
-      "NE-NJ-NY_NY2024-5.4.2": "Warren, Saratoga & Surrounding Counties",
-      "NE-NJ-NY_NY2024-5.2.3": "Rensselaer County",
-      "NE-NJ-NY_NY2024-5.4.1": "Warren, Saratoga & Washington Counties & Surrounding Area",
-      "NE-NJ-NY_NY2024-1.1": "Northeastern New York & Eastern Ontario",
-      "NE-NJ-NY_NY2024-5.2.2": "Rensselaer, Northern Columbia (NY) & Berkshire (MA) Counties",
-      "NE-NJ-NY_NY2024-5.3.1": "Bennington & Surrounding Counties"
-    },
-    "overview": "<p>Years of war, crop failures, and religious or economic persecution pushed many Europeans to migrate to North America. Settlers cleared land, built farms and towns, and sometimes exchanged knowledge with Indigenous nations. After the American Revolution, families moved west into the Midwest, while treaties and wars forced Indigenous peoples from their homelands. Growing cities became centers of trade and industry, linked by canals and railroads. New waves of immigrants and African Americans continued to reshape work, culture, and daily life in a rapidly changing nation.</p>\n"
-  },
   "AFAM182021_1.1.3_1.1.4_Ghost": {
     "name": "Early Louisiana Creoles & African Americans",
     "subjourneys": {
@@ -185,10 +141,32 @@
     },
     "overview": "Over a century and a half of settlement, the Acadians established a prosperous and dynamic society in what became Canada’s Maritime Provinces, but it was shattered when England and France went to war. The Acadians were forcibly removed from their homeland by the British and scattered along the Atlantic Seaboard. Some returned to find their old farmland taken over by Anglo settlers, while others established Acadian enclaves in New England. In both places, they worked to preserve their language and culture even in the face of persecution."
   },
-  "SouthAfrica_top.2": {
-    "name": "South Africa, European Settlers",
+  "FR_FR2024-4": {
+    "name": "Mascarene Islands",
     "subjourneys": {},
-    "overview": "The English took over the Dutch colony of Cape Town in the early 19th century and spent the next 160 years trying to establish dominance in the region. English soldiers, farmers, government officials, and unmarried women moved to the colony seeking new opportunities and to strengthen the British Empire. The 8,000 mile separation from England often fostered a fierce devotion to the British crown in English South Africans, and the importance of what it meant to be English took on increased significance."
+    "overview": "<p>Mauritius and Réunion (now a French department) are volcanic islands in the Indian Ocean known as the Mascarene Islands. First permanently settled by Europeans, they were ruled at different times by the Dutch, French, and British. Sugar culture was introduced in the 17th century and plantations depended first on enslaved Africans and later indentured workers from India, shaping the islands' diverse populations. Labor movements and demands for greater political rights helped build the multicultural societies of the Mascarene Islands, and today, people of African, Indian, European, Chinese, and Creole heritage contribute to rich traditions of language, food, music, and festivals. Ports along major Indian Ocean trade routes also connected the islands to Africa and Asia.</p>\n"
+  },
+  "SAF_SAF2024-SouthAfrica_Ghost": {
+    "name": "South Africa, European Settlers",
+    "subjourneys": {
+      "SAF_SAF2024-2.4": "Johannesburg | Cape Town | Durban",
+      "SAF_SAF2024-2.3": "Modimolle | Cape Town | Durban",
+      "SAF_SAF2024-1.3": "Northam | Pietermaritzburg | Cape Town",
+      "SAF_SAF2024-2.2": "Pretoria | Springbok | Durban",
+      "SAF_SAF2024-1.2": "Johannesburg | Cape Town | KuGompo City",
+      "SAF_SAF2024-2.1": "Rustenburg | Cape Town | Durban",
+      "SAF_SAF2024-4": "Southern South Africa",
+      "SAF_SAF2024-1.1": "Mbombela | Calvina | KuGompo City",
+      "SAF_SAF2024-2": "Makgaung | Springbok | Durban",
+      "SAF_SAF2024-3": "Louis Trichardt | Cape Town | Durban",
+      "SAF_SAF2024-1": "Zeerust | Piketberg | Durham",
+      "SAF_SAF2024-3.1": "Mbombela | Clanwilliam | Durham",
+      "SAF_SAF2024-3.2": "Mbombela",
+      "SAF_SAF2024-4.1": "Southern Western Cape",
+      "SAF_SAF2024-3.3": "Pretoria | Cape Town | Durban",
+      "SAF_SAF2024-4.2": "Eastern Cape, Southern Free State & Southern KwaZulu Natal"
+    },
+    "overview": "<p>The Dutch East India Company established a way station on ancestral Khoekhoe land that became Cape Town in the 17th century. Descendants of these Dutch colonists became Afrikaners, with their own language and culture. The British took over the colony in the early 19th century and spent the next 160 years trying to establish dominance in the region. The displacement of Indigenous African nations through military conquest and the seizing of land, the lasting effects of colonization, and the discovery of gold and diamonds all shaped life in the land they came to call home.</p>\n"
   },
   "MENA2019_1.6.4": {
     "name": "Eastern Africa",
@@ -281,6 +259,50 @@
       "US_NSCW_18th_2021_2.3.4.1": "Madison to Mitchell County, North Carolina Settlers"
     },
     "overview": "<p>Colonists who settled along the Chesapeake Bay generally worked on tobacco plantations. Those from England were often poor, funding their Atlantic crossing by working as indentured servants. Those from what is now Germany frequently came to escape war and religious oppression. Around the Revolutionary War, these settlers moved southwest through the Great Appalachian Valley, putting down roots in the mountains of western North Carolina and eastern Tennessee by forcing Indigenous peoples from their homelands and seizing the land. They worked subsistence farms for generations. In the early 1900s, many people lost their farms and took work in cities and mill towns. World War II improved job access and prompted some people to move to Northern industrial cities.</p>\n"
+  },
+  "NE-NJ-NY_NY2024_CentralUpstate_Ghost": {
+    "name": "Central & Upstate New York & Western Vermont Settlers",
+    "subjourneys": {
+      "NE-NJ-NY_NY2024-1": "Central & Northeastern New York & Canadian Border",
+      "NE-NJ-NY_NY2024-5": "Eastern New York & Western Vermont",
+      "NE-NJ-NY_NY2024-1.10": "Western St. Lawrence, Jefferson, Lewis & Southern Herkimer Counties",
+      "NE-NJ-NY_NY2024-1.3.4": "Southern Herkimer, Montgomery & Southern Fulton Counties",
+      "NE-NJ-NY_NY2024-5.6": "Saratoga, Washington, Warren, Essex & Surrounding Counties",
+      "NE-NJ-NY_NY2024-1.2.4": "Oswego, Oneida, Onondaga & Madison Counties",
+      "NE-NJ-NY_NY2024-1.3.3": "Otsego, Oneida & Southern Herkimer Counties",
+      "NE-NJ-NY_NY2024-5.7": "Addison, Rutland (VT), Washington (NY) & Surrounding Counties",
+      "NE-NJ-NY_NY2024-1.1.4": "Jefferson, Lewis  & St. Lawrence Counties",
+      "NE-NJ-NY_NY2024-1.2.3": "Oswego & Northern Onondaga Counties",
+      "NE-NJ-NY_NY2024-1.3.2": "Southern Herkimer County & Surrounding Area",
+      "NE-NJ-NY_NY2024-1.4.1": "Chenango, Madison, Oswego & Oneida Counties",
+      "NE-NJ-NY_NY2024-5.8": "Clinton, Essex, Warren, Washington & Surrounding Counties",
+      "NE-NJ-NY_NY2024-1.1.3": "Oneida, Lewis, St. Lawrence & Jefferson Counties",
+      "NE-NJ-NY_NY2024-1.2.2": "Jefferson & Oswego Counties & Surrounding Area",
+      "NE-NJ-NY_NY2024-1.3.1": "Southern Herkimer, Montgomery & Fulton Counties Area",
+      "NE-NJ-NY_NY2024-1.6": "Madison, Onondaga, Oswego & Oneida Counties",
+      "NE-NJ-NY_NY2024-5.2": "Berkshire (MA), Rensselaer (NY), Bennington (VT) & Surrounding Counties",
+      "NE-NJ-NY_NY2024-1.7": "Oneida & Lewis Counties Area",
+      "NE-NJ-NY_NY2024-5.3": "Vermont & New York Border",
+      "NE-NJ-NY_NY2024-1.3.6": "Southern Herkimer, Otsego & Montgomery Counties",
+      "NE-NJ-NY_NY2024-1.8": "Cayuga & Onondaga Counties Area",
+      "NE-NJ-NY_NY2024-5.4": "Essex, Warren, Saratoga, Washington & Surrounding Counties",
+      "NE-NJ-NY_NY2024-1.3.5": "Oneida, Lewis & Southern Herkimer Counties",
+      "NE-NJ-NY_NY2024-1.9": "Jefferson, Lewis & Oneida Counties",
+      "NE-NJ-NY_NY2024-5.5": "Fulton, Montgomery, Schenectady, Saratoga & Surrounding Counties",
+      "NE-NJ-NY_NY2024-1.2": "Oswego, Cayuga, Onondaga, Oneida & Surrounding Counties",
+      "NE-NJ-NY_NY2024-5.2.1": "Rensselaer (NY) & Bennington (VT) Counties Area",
+      "NE-NJ-NY_NY2024-1.3": "Central New York  ",
+      "NE-NJ-NY_NY2024-1.4": "South Central New York",
+      "NE-NJ-NY_NY2024-1.1.2": "Jefferson, Surrounding Counties & Southeastern Ontario",
+      "NE-NJ-NY_NY2024-1.2.1": "Oswego, Northern Onondaga & Northern Cayuga Counties",
+      "NE-NJ-NY_NY2024-5.4.2": "Warren, Saratoga & Surrounding Counties",
+      "NE-NJ-NY_NY2024-5.2.3": "Rensselaer County",
+      "NE-NJ-NY_NY2024-5.4.1": "Warren, Saratoga & Washington Counties & Surrounding Area",
+      "NE-NJ-NY_NY2024-1.1": "Northeastern New York & Eastern Ontario",
+      "NE-NJ-NY_NY2024-5.2.2": "Rensselaer, Northern Columbia (NY) & Berkshire (MA) Counties",
+      "NE-NJ-NY_NY2024-5.3.1": "Bennington & Surrounding Counties"
+    },
+    "overview": "<p>Years of war, crop failures, and religious or economic persecution pushed many Europeans to migrate to North America. Settlers cleared land, built farms and towns, and sometimes exchanged knowledge with Indigenous nations. After the American Revolution, families moved west into the Midwest, while treaties and wars forced Indigenous peoples from their homelands. Growing cities became centers of trade and industry, linked by canals and railroads. New waves of immigrants and African Americans continued to reshape work, culture, and daily life in a rapidly changing nation.</p>\n"
   },
   "US_NSCW_19th_2021_1.1.4": {
     "name": "Western Gulf States Settlers",
@@ -551,11 +573,6 @@
     },
     "overview": "<p>Panama’s population is a combination of Indigenous peoples and those of European and African heritage. This mix of cultures has been referred to as<i> sancocho</i>, also the name of a popular local stew with many ingredients that each retain their original flavor. Connecting North and South America, the Isthmus of Panama includes mountains, savannas, and thick jungle. The Panama Canal, which opened in 1914, changed the course of the global economy and life for Panamanians then and since.</p>\n"
   },
-  "LA2023_2.2.7": {
-    "name": "Uruguay",
-    "subjourneys": {},
-    "overview": "<p>Beginning in the 1500s, European powers battled for control of trade along the Río de la Plata, an important waterway for shipping livestock products overseas. The nearby Pampas grasslands, with their mild climate, were ideal for cattle ranching, which gave rise to a <i>gaucho </i>(cowboy) culture on both sides of the river. After independence, Uruguay attracted many European immigrants, most of whom settled in Montevideo. The diverse population transformed the capital into a cosmopolitan city that blended European influences with regional traditions.</p>\n"
-  },
   "US_NSC_19th_2019_1.2.7": {
     "name": "Southern Pennsylvania, Northern Ohio, Indiana & Illinois Settlers",
     "subjourneys": {},
@@ -668,58 +685,6 @@
       "AFAM192021_1.10.3": "Central Wilcox & Northern Monroe County African Americans"
     },
     "overview": "<p>Southwestern Alabama’s Black communities grew alongside the cotton industry starting in the early 1800s. Enslaved workers usually lived on small farms, but a few large plantations relied on dozens or even hundreds of workers. Although the Civil War broke the bonds of slavery, it didn’t end injustice or hard work. Black farm laborers worked in perpetual debt and poverty under dangerous and unjust conditions. A move to nearby cities solved some problems but created others that ultimately sparked the 20th-century civil rights movement.</p>\n"
-  },
-  "Mexico_2021_NorthMex_Ghost": {
-    "name": "Chihuahua, West Texas & Southern New Mexico",
-    "subjourneys": {
-      "Mexico_2021_1.2.3": "Chihuahua, West Texas & Southeastern New Mexico",
-      "Mexico_2021_1.2.2": "Northern Durango, Chihuahua, Southwestern New Mexico & Southeastern Arizona",
-      "Mexico_2021_1.2.1": "Chihuahua & Northern Durango",
-      "Mexico_2021_1.2.1.2": "Central & Southern Chihuahua",
-      "Mexico_2021_1.2.2.1": "Chihuahua, Mexico",
-      "Mexico_2021_1.2.2.2": "Northwestern Durango to Southwestern New Mexico & Southeastern Arizona",
-      "Mexico_2021_1.2.3.1": "Eastern Chihuahua to Carlsbad, New Mexico & Odessa, Texas",
-      "Mexico_2021_1.2.2.3": "Central & Western Chihuahua",
-      "Mexico_2021_1.2.2.4": "Northwest Central Chihuahua",
-      "Mexico_2021_1.2.5": "Northern Chihuahua, Southwestern New Mexico & Southeastern Arizona",
-      "Mexico_2021_1.2.5.1": "Ciudad Juárez, Chihuahua to Silver City, New Mexico",
-      "Mexico_2021_1.2.2.3.3": "Chihuahua & Cuauhtémoc, Chihuahua ",
-      "Mexico_2021_1.2.2.5": "Southwestern Chihuahua",
-      "Mexico_2021_1.2.3.4": "Northeastern Chihuahua & Western Texas",
-      "Mexico_2021_1.2.5.2": "El Porvenir, Chihuahua to Safford, Arizona",
-      "Mexico_2021_1.2.1.7": "Central & Northern Durango & Southern Chihuahua",
-      "Mexico_2021_1.2.2.2.3": "Central Western Chihuahua",
-      "Mexico_2021_1.2.2.3.2": "Chihuahua, Chihuahua",
-      "Mexico_2021_1.2.5.3": "El Porvenir, Chihuahua to Hatch, New Mexico",
-      "Mexico_2021_1.2.2.1.3": "Southern Chihuahua",
-      "Mexico_2021_1.2.2.3.1": "Central Chihuahua",
-      "Mexico_2021_1.2.5.4": "Ciudad Juárez, Chihuahua to Las Cruces, New Mexico—North",
-      "Mexico_2021_1.2.2.2.2": "Central Western Chihuahua",
-      "Mexico_2021_1.2.2.1.2": "West Central Chihuahua",
-      "Mexico_2021_1.2.2.2.1": "Central & Western Chihuahua & Sonora Border",
-      "Mexico_2021_1.2.5.5": "Ciudad Juárez, Chihuahua to Las Cruces, New Mexico",
-      "Mexico_2021_1.2.3.8": "Camargo & Chihuahua, Chihuahua & Trans-Pecos Mountains ",
-      "Mexico_2021_1.2.5.6": "Ahumada, Chihuahua to Safford, Arizona",
-      "Mexico_2021_1.2.2.3.4": "Vicente Guerrero to Delicias, Chihuahua",
-      "Mexico_2021_1.2.1.1.11": "Hidalgo del Parral, Camargo & Jiménez, Chihuahua",
-      "Mexico_2021_1.2.1.1.12": "Southeastern Chihuahua",
-      "Mexico_2021_1.2.3.1.2": "Camargo & Chihuahua, Chihuahua to Monahans, Texas ",
-      "Mexico_2021_1.2.3.2.1": "Western Texas & Chihuahua Border",
-      "Mexico_2021_1.2.3.1.1": "Hidalgo del Parral, Chihuahua to Monahans, Texas",
-      "Mexico_2021_1.2.3.1.4": "Ojinaga, Chihuahua to Pecos, Texas",
-      "Mexico_2021_1.2.3.2.3": "Ojinaga, Chihuahua to Fort Davis, Texas",
-      "Mexico_2021_1.2.3.1.3": "Chihuahua to Camargo, Chihuahua",
-      "Mexico_2021_1.2.3.2.2": "Camargo, Chihuahua to Monahans, Texas",
-      "Mexico_2021_1.2.3.2.5": "Chihuahua, Mexico & Trans-Pecos Mountains. Texas",
-      "Mexico_2021_1.2.3.2.4": "Ojinaga, Chihuahua to Fort Stockton, Texas",
-      "Mexico_2021_1.2.3.2.6": "Ojinaga & Manuel Benavides, Chihuahua to Fort Davis, Texas",
-      "Mexico_2021_1.2.1.1.2": "Southeastern Chihuahua & Northern Durango",
-      "Mexico_2021_1.2.1.2.1": "Southwestern Chihuahua & Northern Durango",
-      "Mexico_2021_1.2.1.2.3": "Central Southern Chihuahua",
-      "Mexico_2021_1.2.1.2.2": "Hidalgo del Parral to Nonoava to Morelos, Chihuahua",
-      "Mexico_2021_1.2.1.2.4": "Southwestern Chihuahua & Northwestern Durango"
-    },
-    "overview": "<p>The people of Chihuahua, the largest state in Mexico, are descendants of Spanish settlers, Indigenous peoples, and individuals of African descent. They lived in tight-knit communities anchored by the Catholic Church. People in the region saw Mexican independence, conflict with Indigenous people, Texan rebellion, political division and revolution, and U.S. racism. Chihuahuans were the ultimate frontier people—some venturing north into Texas and New Mexico in search of economic opportunity and political sanctuary.</p>\n"
   },
   "LA2023_BrazilNorth_Ghost": {
     "name": "Portuguese in Northeast Brazil",
@@ -837,6 +802,11 @@
     "name": "Southern Midwestern Settlers",
     "subjourneys": {},
     "overview": "<p>Some of the Immigrants whose families first settled in Virginia in the 18th&nbsp;century did not stay long on the East Coast. Many came from Germany, England, and Scotland, with later groups arriving from Ireland seeking land, independence, and a better future for their descendants. These immigrant groups settled in different parts of the American South, where their experience was shaped by challenging landscapes and conflicts among groups vying for control over land and labor. The 19th&nbsp;and 20th&nbsp;centuries brought wars, an oil boom, and cultural shifts throughout the region.</p>\n"
+  },
+  "LA2023_2.2.7": {
+    "name": "Uruguay",
+    "subjourneys": {},
+    "overview": "<p>Beginning in the 1500s, European powers battled for control of trade along the Río de la Plata, an important waterway for shipping livestock products overseas. The nearby Pampas grasslands, with their mild climate, were ideal for cattle ranching, which gave rise to a <i>gaucho </i>(cowboy) culture on both sides of the river. After independence, Uruguay attracted many European immigrants, most of whom settled in Montevideo. The diverse population transformed the capital into a cosmopolitan city that blended European influences with regional traditions.</p>\n"
   },
   "US_NSCW_18th_2021_2.2.2": {
     "name": "Early Georgia Coastal Plain & Northern Florida Settlers",
@@ -1237,19 +1207,6 @@
     "subjourneys": {},
     "overview": "<p>Economic hard times and political unrest prompted many residents of Alsace and Württemberg to leave Europe and try their luck in North America. On and around the Ontario Peninsula, they found farmland and communities established by Mennonites, so they already had a strong German influence. The newcomers brought trades, know-how, and traditions from their homelands, all of which helped their culture to survive and reemerge after the surges of anti-German sentiment that&nbsp; emerged during two world wars.</p>\n"
   },
-  "Mexico_2021_1.2.4": {
-    "name": "Durango",
-    "subjourneys": {
-      "Mexico_2021_1.2.4.1.4": "Nuevo Ideal, Coneto de Comonfort, Canatlán, San Dimas, Otáez & Surrounding Area",
-      "Mexico_2021_1.2.4.1.3": "Western & Central Santiago Papasquiaro, Canelas & Surrounding Area",
-      "Mexico_2021_1.2.4.1.2": "Northwestern Central Durango",
-      "Mexico_2021_1.2.4.1": "North Central Durango",
-      "Mexico_2021_1.2.4.1.1": "East Central Durango",
-      "Mexico_2021_1.2.4.2": "Northern Central & Eastern Durango",
-      "Mexico_2021_1.2.4.3": "Northwestern Durango"
-    },
-    "overview": "<p>Durango has long been home to diverse Indigenous populations, including the Tepehuanes, Acaxees, Xiximes, and Tarahumaras (Rarámuri). When the Spanish arrived in the 1500s, they quickly recognized the region’s value because of its abundant silver. In the centuries that followed, people dealt with independence, revolution, social upheaval, and the growth of industry, but the population remained sparse. Many residents migrated south to Mexico City or north to the United States. Those who stayed contributed to northern Mexico’s distinctive culture, shaped by cattle ranching and the blend of European, African, and Indigenous cultures.</p>\n"
-  },
   "AFAM-IL-OHIN_OHIN2024_Ghost": {
     "name": "Ohio & Indiana Settlers",
     "subjourneys": {
@@ -1418,6 +1375,58 @@
       "AFAM-IL-OHIN_OHIN2024-1.3.5.4": "Ross & Surrounding Counties"
     },
     "overview": "<p>In the late 1700s, German and English settlers crossed the Appalachian Mountains and worked hard to clear land for farms and towns in the Midwest. These immigrants brought new languages and customs to the area. Later, the region saw growth and decline in industries like coal mining, whiskey making, and transporting goods by trains and riverboats. Over time, people started using cars more and moved from farms to growing cities. Changes like industrialization, the Great Depression, and wars often changed jobs and communities. Women played important roles both at home and by working outside the house.</p>\n"
+  },
+  "Mexico_2021_NorthMex_Ghost": {
+    "name": "Chihuahua, West Texas & Southern New Mexico",
+    "subjourneys": {
+      "Mexico_2021_1.2.3": "Chihuahua, West Texas & Southeastern New Mexico",
+      "Mexico_2021_1.2.2": "Northern Durango, Chihuahua, Southwestern New Mexico & Southeastern Arizona",
+      "Mexico_2021_1.2.1": "Chihuahua & Northern Durango",
+      "Mexico_2021_1.2.1.2": "Central & Southern Chihuahua",
+      "Mexico_2021_1.2.2.1": "Chihuahua, Mexico",
+      "Mexico_2021_1.2.2.2": "Northwestern Durango to Southwestern New Mexico & Southeastern Arizona",
+      "Mexico_2021_1.2.3.1": "Eastern Chihuahua to Carlsbad, New Mexico & Odessa, Texas",
+      "Mexico_2021_1.2.2.3": "Central & Western Chihuahua",
+      "Mexico_2021_1.2.2.4": "Northwest Central Chihuahua",
+      "Mexico_2021_1.2.5": "Northern Chihuahua, Southwestern New Mexico & Southeastern Arizona",
+      "Mexico_2021_1.2.5.1": "Ciudad Juárez, Chihuahua to Silver City, New Mexico",
+      "Mexico_2021_1.2.2.3.3": "Chihuahua & Cuauhtémoc, Chihuahua ",
+      "Mexico_2021_1.2.2.5": "Southwestern Chihuahua",
+      "Mexico_2021_1.2.3.4": "Northeastern Chihuahua & Western Texas",
+      "Mexico_2021_1.2.5.2": "El Porvenir, Chihuahua to Safford, Arizona",
+      "Mexico_2021_1.2.1.7": "Central & Northern Durango & Southern Chihuahua",
+      "Mexico_2021_1.2.2.2.3": "Central Western Chihuahua",
+      "Mexico_2021_1.2.2.3.2": "Chihuahua, Chihuahua",
+      "Mexico_2021_1.2.5.3": "El Porvenir, Chihuahua to Hatch, New Mexico",
+      "Mexico_2021_1.2.2.1.3": "Southern Chihuahua",
+      "Mexico_2021_1.2.2.3.1": "Central Chihuahua",
+      "Mexico_2021_1.2.5.4": "Ciudad Juárez, Chihuahua to Las Cruces, New Mexico—North",
+      "Mexico_2021_1.2.2.2.2": "Central Western Chihuahua",
+      "Mexico_2021_1.2.2.1.2": "West Central Chihuahua",
+      "Mexico_2021_1.2.2.2.1": "Central & Western Chihuahua & Sonora Border",
+      "Mexico_2021_1.2.5.5": "Ciudad Juárez, Chihuahua to Las Cruces, New Mexico",
+      "Mexico_2021_1.2.3.8": "Camargo & Chihuahua, Chihuahua & Trans-Pecos Mountains ",
+      "Mexico_2021_1.2.5.6": "Ahumada, Chihuahua to Safford, Arizona",
+      "Mexico_2021_1.2.2.3.4": "Vicente Guerrero to Delicias, Chihuahua",
+      "Mexico_2021_1.2.1.1.11": "Hidalgo del Parral, Camargo & Jiménez, Chihuahua",
+      "Mexico_2021_1.2.1.1.12": "Southeastern Chihuahua",
+      "Mexico_2021_1.2.3.1.2": "Camargo & Chihuahua, Chihuahua to Monahans, Texas ",
+      "Mexico_2021_1.2.3.2.1": "Western Texas & Chihuahua Border",
+      "Mexico_2021_1.2.3.1.1": "Hidalgo del Parral, Chihuahua to Monahans, Texas",
+      "Mexico_2021_1.2.3.1.4": "Ojinaga, Chihuahua to Pecos, Texas",
+      "Mexico_2021_1.2.3.2.3": "Ojinaga, Chihuahua to Fort Davis, Texas",
+      "Mexico_2021_1.2.3.1.3": "Chihuahua to Camargo, Chihuahua",
+      "Mexico_2021_1.2.3.2.2": "Camargo, Chihuahua to Monahans, Texas",
+      "Mexico_2021_1.2.3.2.5": "Chihuahua, Mexico & Trans-Pecos Mountains. Texas",
+      "Mexico_2021_1.2.3.2.4": "Ojinaga, Chihuahua to Fort Stockton, Texas",
+      "Mexico_2021_1.2.3.2.6": "Ojinaga & Manuel Benavides, Chihuahua to Fort Davis, Texas",
+      "Mexico_2021_1.2.1.1.2": "Southeastern Chihuahua & Northern Durango",
+      "Mexico_2021_1.2.1.2.1": "Southwestern Chihuahua & Northern Durango",
+      "Mexico_2021_1.2.1.2.3": "Central Southern Chihuahua",
+      "Mexico_2021_1.2.1.2.2": "Hidalgo del Parral to Nonoava to Morelos, Chihuahua",
+      "Mexico_2021_1.2.1.2.4": "Southwestern Chihuahua & Northwestern Durango"
+    },
+    "overview": "<p>The people of Chihuahua, the largest state in Mexico, are descendants of Spanish settlers, Indigenous peoples, and individuals of African descent. They lived in tight-knit communities anchored by the Catholic Church. People in the region saw Mexican independence, conflict with Indigenous people, Texan rebellion, political division and revolution, and U.S. racism. Chihuahuans were the ultimate frontier people—some venturing north into Texas and New Mexico in search of economic opportunity and political sanctuary.</p>\n"
   },
   "US_NSCW_19th_2021_Ghost_AL": {
     "name": "Alabama Settlers",
@@ -1703,6 +1712,19 @@
     },
     "overview": "<p>Starting in the mid-1700s, colonists of English and German descent left a crowded Virginia colony and pushed westward. Violent conflicts over land followed as new settlers removed Native Americans, including the Cherokee, from their lands. As more settlers moved into the new state of Kentucky after the Revolutionary War, farming and industries like coal mining emerged to define a Kentuckian way of life. For leisure, residents looked to horse racing, basketball, and barbeque, carving out a balance of work and play.</p>\n"
   },
+  "Mexico_2021_1.2.4": {
+    "name": "Durango",
+    "subjourneys": {
+      "Mexico_2021_1.2.4.1.4": "Nuevo Ideal, Coneto de Comonfort, Canatlán, San Dimas, Otáez & Surrounding Area",
+      "Mexico_2021_1.2.4.1.3": "Western & Central Santiago Papasquiaro, Canelas & Surrounding Area",
+      "Mexico_2021_1.2.4.1.2": "Northwestern Central Durango",
+      "Mexico_2021_1.2.4.1": "North Central Durango",
+      "Mexico_2021_1.2.4.1.1": "East Central Durango",
+      "Mexico_2021_1.2.4.2": "Northern Central & Eastern Durango",
+      "Mexico_2021_1.2.4.3": "Northwestern Durango"
+    },
+    "overview": "<p>Durango has long been home to diverse Indigenous populations, including the Tepehuanes, Acaxees, Xiximes, and Tarahumaras (Rarámuri). When the Spanish arrived in the 1500s, they quickly recognized the region’s value because of its abundant silver. In the centuries that followed, people dealt with independence, revolution, social upheaval, and the growth of industry, but the population remained sparse. Many residents migrated south to Mexico City or north to the United States. Those who stayed contributed to northern Mexico’s distinctive culture, shaped by cattle ranching and the blend of European, African, and Indigenous cultures.</p>\n"
+  },
   "Mexico_2021_1.3.3_1.7.3_Ghost": {
     "name": "Baja California Peninsula & the California Coast",
     "subjourneys": {
@@ -1903,25 +1925,6 @@
       "US_NSC_18th_2019_1.2.1.2": "Early Industrial Midwest Settlers"
     },
     "overview": "The Chesapeake Bay and Delaware River valleys were popular destinations for colonial migrants from England, Scotland, and German-speaking territories. Searching for a good place to farm, many descendants of these people followed the Great Wagon Road south into Virginia’s backcountry. The drive for economic opportunity also fueled westward migration to the Midwest and ended in California in the 20th century. These Americans usually migrated in family and community groups and established new settlements across the country."
-  },
-  "LA2023_9": {
-    "name": "Dominican Republic",
-    "subjourneys": {
-      "LA2023_9.1": "Cibao",
-      "LA2023_9.3.3": "Janico | Jaraboca | Moca",
-      "LA2023_9.2": "Southern & Central Domnican Republic",
-      "LA2023_9.3": "Northwestern Cibao",
-      "LA2023_9.1.2": "Santiago & La Vega",
-      "LA2023_9.2.1": "Southwestern & Central Dominican Republic",
-      "LA2023_9.1.1": "East Central Cibao",
-      "LA2023_9.1.4": "Santiago | Jarabacoa | San Francisco de Macoris",
-      "LA2023_9.2.3": "Eastern Dominican Republic",
-      "LA2023_9.3.2": "Central Cibao",
-      "LA2023_9.1.3": "North Central Cibao",
-      "LA2023_9.2.2": "Central & South Central Dominican Republic",
-      "LA2023_9.3.1": "Dajabón | Puerto Plata | La Vega"
-    },
-    "overview": "<p>The Dominican people represent a blend of Taíno, West African, and European heritage. Spain took control of eastern Hispaniola in the late 1400s, while France ruled the west. Colonization devastated the Taíno through disease, forced labor, and loss of land, yet their influence survived in language, farming techniques, food, and place names. Colonial life centered on small farms and crops like sugar, tobacco, coffee, and cacao, which tied the colony to Caribbean and Atlantic trade. Over time, through resistance, alliances, and work, Dominicans shaped a distinct identity reflected in their food, love of baseball, and strong traditions of public and community life.</p>\n"
   },
   "Mexico_2021_1.4": {
     "name": "Jalisco, Colima & Michoacán",
@@ -2277,44 +2280,6 @@
     "subjourneys": {},
     "overview": "<p>Paraguay’s culture blends Spanish and Indigenous Guaraní elements. A landlocked country in the heart of South America, Paraguay is bilingual, with both Spanish and Guaraní as official languages. This mix is also seen in food, crafts, music, and dance. Folk dances and songs are performed at national holidays, religious festivals, and community gatherings. One of the most important events is the annual pilgrimage to Caacupé, where thousands honor the Virgin of Caacupé, Paraguay’s patron saint.</p>\n"
   },
-  "NE-NJ-NY_NY2024_Downstate_Ghost": {
-    "name": "Southeastern New York & Border Settlers",
-    "subjourneys": {
-      "NE-NJ-NY_NY2024-2": "Southeastern New York",
-      "NE-NJ-NY_NY2024-2.1.1": "Northwestern Hudson Valley & Southern Central New York",
-      "NE-NJ-NY_NY2024-2.1.3": "Sullivan & Western Delaware County",
-      "NE-NJ-NY_NY2024-2.2.2": "Schoharie & Surrounding Counties",
-      "NE-NJ-NY_NY2024-2.3.1": "Ulster, Eastern Sullivan Counties & Surrounding Area",
-      "NE-NJ-NY_NY2024-2.1.2": "Sullivan, Delaware, Broom New York & Pennsylvania Border Counties",
-      "NE-NJ-NY_NY2024-2.2.1": "Albany, Schenectady & Surrounding Counties",
-      "NE-NJ-NY_NY2024-2.1.5": "Broome (NY), Susquehana & Northern Wayne (PA) Counties Area",
-      "NE-NJ-NY_NY2024-2.2.4": "Oswego, Montgomery, Schoarie, Delaware & Surrounding Counties",
-      "NE-NJ-NY_NY2024-2.3.3": "Sullivan, Orange & Southern Ulster Counties",
-      "NE-NJ-NY_NY2024-2.4.2": "Poughkeepsie | Newburgh | Yonkers",
-      "NE-NJ-NY_NY2024-2.5.1": "Berkshire & Northern Litchfield Counties & New York Border",
-      "NE-NJ-NY_NY2024-2.1.4": "Eastern Southern Tier & Pennsylvania Border",
-      "NE-NJ-NY_NY2024-2.2.3": "Schenectady | Otsego | Kingston",
-      "NE-NJ-NY_NY2024-2.3.2": "Ulster County & Surrounding Area",
-      "NE-NJ-NY_NY2024-2.4.1": "Mid & Lower Hudson Valley & Southwestern Connecticut",
-      "NE-NJ-NY_NY2024-2.3.5": "Greene, Ulster & Sullivan Counties",
-      "NE-NJ-NY_NY2024-2.4.4": "Dutchess, Putnam, Northern Westchester (NY) & Fairfiled (CT) Counties",
-      "NE-NJ-NY_NY2024-2.5.3": "Columbia & Northern Dutchess Counties",
-      "NE-NJ-NY_NY2024-2.1.6": "Chenango, Broome (NY) & Susquehanna (PA) Counties Area ",
-      "NE-NJ-NY_NY2024-2.3.4": "Eastern Ulster, Northern Ulster, Dutchess & Putnam Counties",
-      "NE-NJ-NY_NY2024-2.4.3": "Dutchess, Putnam, Eastern Orange & Southern Ulster Counties",
-      "NE-NJ-NY_NY2024-2.5.2": "Columbia & Dutchess Counties",
-      "NE-NJ-NY_NY2024-2.3.6": "Ulster & Southern Greene Counties",
-      "NE-NJ-NY_NY2024-2.5": "Greene, Columbia & Dutchess Counties & Surrounding Area",
-      "NE-NJ-NY_NY2024-2.6": "Greene & Ulster Counties",
-      "NE-NJ-NY_NJ2024-2.5": "Western Long Island",
-      "NE-NJ-NY_NJ2024-5.7": "Long Island",
-      "NE-NJ-NY_NY2024-2.1": "South Central New York & the Pennsylvania Border",
-      "NE-NJ-NY_NY2024-2.2": "Otsego, Schoharie & Albany Counties Region",
-      "NE-NJ-NY_NY2024-2.3": "Greene, Ulster, Sullivan, Orange, Putnam & Dutchess Counties",
-      "NE-NJ-NY_NY2024-2.4": "Mid & Lower Hudson Valley & Western Connecticut"
-    },
-    "overview": "<p>In the early 1600s, Dutch traders established contact with the Delaware, Mohawk, and Mahican peoples along the Hudson River Valley. A century later, colonists across downstate New York and Pennsylvania began removing indigenous peoples from the land to make room for immigrants from England, Scotland, Ireland, Germany, and Italy. These new arrivals looked to the United States as a haven from war, famine, and persecution. From the roughest tenements of the Five Points to the glitz of Times Square, New Yorkers shaped the region into an economic powerhouse and a cultural delight.</p>\n"
-  },
   "Mexico_2021_1.5": {
     "name": "Aguascalientes & Eastern Jalisco",
     "subjourneys": {
@@ -2425,6 +2390,25 @@
       "US_NSC_18th_2019_1.2.2.4": "Early Settlers of North-Central Pennsylvania"
     },
     "overview": "English Quakers founded Pennsylvania as a bastion of religious freedom and tolerance. Thousands of German and Swiss Mennonites, Anabaptists, Anglicans, and Scottish Presbyterians followed, drawn by the promise of religious freedom and acres of rich farmland. Their industry and success raised Pennsylvania to prominence among the American colonies. Their soldiers helped ensure a Union victory in the Civil War, and they went on to leave their stamp on the settling and culture of the American Midwest."
+  },
+  "LA2023_9": {
+    "name": "Dominican Republic",
+    "subjourneys": {
+      "LA2023_9.1": "Cibao",
+      "LA2023_9.3.3": "Janico | Jaraboca | Moca",
+      "LA2023_9.2": "Southern & Central Domnican Republic",
+      "LA2023_9.3": "Northwestern Cibao",
+      "LA2023_9.1.2": "Santiago & La Vega",
+      "LA2023_9.2.1": "Southwestern & Central Dominican Republic",
+      "LA2023_9.1.1": "East Central Cibao",
+      "LA2023_9.1.4": "Santiago | Jarabacoa | San Francisco de Macoris",
+      "LA2023_9.2.3": "Eastern Dominican Republic",
+      "LA2023_9.3.2": "Central Cibao",
+      "LA2023_9.1.3": "North Central Cibao",
+      "LA2023_9.2.2": "Central & South Central Dominican Republic",
+      "LA2023_9.3.1": "Dajabón | Puerto Plata | La Vega"
+    },
+    "overview": "<p>The Dominican people represent a blend of Taíno, West African, and European heritage. Spain took control of eastern Hispaniola in the late 1400s, while France ruled the west. Colonization devastated the Taíno through disease, forced labor, and loss of land, yet their influence survived in language, farming techniques, food, and place names. Colonial life centered on small farms and crops like sugar, tobacco, coffee, and cacao, which tied the colony to Caribbean and Atlantic trade. Over time, through resistance, alliances, and work, Dominicans shaped a distinct identity reflected in their food, love of baseball, and strong traditions of public and community life.</p>\n"
   },
   "US_NSCW_18th_2021_2.2.1": {
     "name": "Early Alabama, Mississippi, Louisiana & East Texas Settlers",
@@ -2726,6 +2710,44 @@
     },
     "overview": "<p>Spain colonized Cuba for nearly four centuries, devastating the Indigenous Taíno population, though Taíno heritage endured. Centuries of the transatlantic slave trade also made Cuba a center of African culture, profoundly shaping its music, religion, and society. The island’s economy was defined by small tobacco farms and vast sugar plantations, where the labor of enslaved people generated immense wealth. The long struggle for independence forged a unique national identity from these influences. Cuba is a cultural crossroads, known for its vibrant music, dance, and cuisine—some of the nation’s greatest exports.</p>\n"
   },
+  "NE-NJ-NY_NY2024_Downstate_Ghost": {
+    "name": "Southeastern New York & Border Settlers",
+    "subjourneys": {
+      "NE-NJ-NY_NY2024-2": "Southeastern New York",
+      "NE-NJ-NY_NY2024-2.1.1": "Northwestern Hudson Valley & Southern Central New York",
+      "NE-NJ-NY_NY2024-2.1.3": "Sullivan & Western Delaware County",
+      "NE-NJ-NY_NY2024-2.2.2": "Schoharie & Surrounding Counties",
+      "NE-NJ-NY_NY2024-2.3.1": "Ulster, Eastern Sullivan Counties & Surrounding Area",
+      "NE-NJ-NY_NY2024-2.1.2": "Sullivan, Delaware, Broom New York & Pennsylvania Border Counties",
+      "NE-NJ-NY_NY2024-2.2.1": "Albany, Schenectady & Surrounding Counties",
+      "NE-NJ-NY_NY2024-2.1.5": "Broome (NY), Susquehana & Northern Wayne (PA) Counties Area",
+      "NE-NJ-NY_NY2024-2.2.4": "Oswego, Montgomery, Schoarie, Delaware & Surrounding Counties",
+      "NE-NJ-NY_NY2024-2.3.3": "Sullivan, Orange & Southern Ulster Counties",
+      "NE-NJ-NY_NY2024-2.4.2": "Poughkeepsie | Newburgh | Yonkers",
+      "NE-NJ-NY_NY2024-2.5.1": "Berkshire & Northern Litchfield Counties & New York Border",
+      "NE-NJ-NY_NY2024-2.1.4": "Eastern Southern Tier & Pennsylvania Border",
+      "NE-NJ-NY_NY2024-2.2.3": "Schenectady | Otsego | Kingston",
+      "NE-NJ-NY_NY2024-2.3.2": "Ulster County & Surrounding Area",
+      "NE-NJ-NY_NY2024-2.4.1": "Mid & Lower Hudson Valley & Southwestern Connecticut",
+      "NE-NJ-NY_NY2024-2.3.5": "Greene, Ulster & Sullivan Counties",
+      "NE-NJ-NY_NY2024-2.4.4": "Dutchess, Putnam, Northern Westchester (NY) & Fairfiled (CT) Counties",
+      "NE-NJ-NY_NY2024-2.5.3": "Columbia & Northern Dutchess Counties",
+      "NE-NJ-NY_NY2024-2.1.6": "Chenango, Broome (NY) & Susquehanna (PA) Counties Area ",
+      "NE-NJ-NY_NY2024-2.3.4": "Eastern Ulster, Northern Ulster, Dutchess & Putnam Counties",
+      "NE-NJ-NY_NY2024-2.4.3": "Dutchess, Putnam, Eastern Orange & Southern Ulster Counties",
+      "NE-NJ-NY_NY2024-2.5.2": "Columbia & Dutchess Counties",
+      "NE-NJ-NY_NY2024-2.3.6": "Ulster & Southern Greene Counties",
+      "NE-NJ-NY_NY2024-2.5": "Greene, Columbia & Dutchess Counties & Surrounding Area",
+      "NE-NJ-NY_NY2024-2.6": "Greene & Ulster Counties",
+      "NE-NJ-NY_NJ2024-2.5": "Western Long Island",
+      "NE-NJ-NY_NJ2024-5.7": "Long Island",
+      "NE-NJ-NY_NY2024-2.1": "South Central New York & the Pennsylvania Border",
+      "NE-NJ-NY_NY2024-2.2": "Otsego, Schoharie & Albany Counties Region",
+      "NE-NJ-NY_NY2024-2.3": "Greene, Ulster, Sullivan, Orange, Putnam & Dutchess Counties",
+      "NE-NJ-NY_NY2024-2.4": "Mid & Lower Hudson Valley & Western Connecticut"
+    },
+    "overview": "<p>In the early 1600s, Dutch traders established contact with the Delaware, Mohawk, and Mahican peoples along the Hudson River Valley. A century later, colonists across downstate New York and Pennsylvania began removing indigenous peoples from the land to make room for immigrants from England, Scotland, Ireland, Germany, and Italy. These new arrivals looked to the United States as a haven from war, famine, and persecution. From the roughest tenements of the Five Points to the glitz of Times Square, New Yorkers shaped the region into an economic powerhouse and a cultural delight.</p>\n"
+  },
   "LA2023_Argentina_Ghost": {
     "name": "Argentina",
     "subjourneys": {
@@ -2884,128 +2906,6 @@
     "name": "Cardston, Alberta Mormon Pioneers",
     "subjourneys": {},
     "overview": "<p>In the 1850s, converts to The Church of Jesus Christ of Latter-day Saints (also known as the Mormons) joined a growing religious community in the American West. After their prophet, Joseph Smith, was murdered in 1844, the Saints followed Brigham Young to the Salt Lake Valley and colonized the surrounding region. As the territory’s irrigable farmland became scarce and LDS polygamists came under pressure from the U.S. government to cease practicing plural marriage, many Saints moved to southern Alberta, Canada in search of economic success and religious freedom.</p>\n"
-  },
-  "KS-TX-UMW-WUS_TX2024_Ghost": {
-    "name": "Texas, Arkansas & Oklahoma Settlers",
-    "subjourneys": {
-      "KS-TX-UMW-WUS_WUS2024-2.37": "Lower Midwest",
-      "KS-TX-UMW-WUS_TX2024-8": "Central & Eastern Texas & Lower Upland South",
-      "KS-TX-UMW-WUS_TX2024-6": "Western Arkansas & Texas Border",
-      "KS-TX-UMW-WUS_TX2024-1.19": "Dallas County (TX) Area",
-      "KS-TX-UMW-WUS_TX2024-4": "Central & Southern Arkansas & Texas Border",
-      "KS-TX-UMW-WUS_TX2024-3": "Central & Eastern Texas",
-      "KS-TX-UMW-WUS_TX2024-1.17": "Collin County (TX)",
-      "KS-TX-UMW-WUS_TX2024-2": "Oklahoma & Arkansas",
-      "KS-TX-UMW-WUS_TX2024-1.18": "Granbury | Groesbeck | Canton (TX)",
-      "KS-TX-UMW-WUS_TX2024-1": "Western & Central Deep South",
-      "KS-TX-UMW-WUS_TX2024-3.9": "Abeline | Temple | San Antonio (TX)",
-      "KS-TX-UMW-WUS_TX2024-3.8": "Victoria | Caldwell | Brady (TX)",
-      "KS-TX-UMW-WUS_TX2024-3.5": "Del Rio | Victoria | Sherman (TX)",
-      "KS-TX-UMW-WUS_TX2024-1.11": "Sherman (TX) |Fort Smith (AR) | Branson (MO)",
-      "KS-TX-UMW-WUS_TX2024-1.12": "Cherokee (TX) & Surrounding Counties",
-      "KS-TX-UMW-WUS_TX2024-3.4": "Lampasas, Burnet (TX) & Surrounding Counties",
-      "KS-TX-UMW-WUS_TX2024-3.7": "Hallettsville | San Saba | Caldwell (TX)",
-      "KS-TX-UMW-WUS_TX2024-1.10": "Dallas (TX) | Kilgore (TX) | Clarksville (OK)",
-      "KS-TX-UMW-WUS_TX2024-3.6": "San Antonio | San Angelo | Waco (TX)",
-      "KS-TX-UMW-WUS_TX2024-1.15": "Lamar & Red River (TX) Counties",
-      "KS-TX-UMW-WUS_TX2024-3.1": "Waco | San Antonio | Corpus Christi | Houston (TX)",
-      "KS-TX-UMW-WUS_TX2024-1.16": "Clarksville (TX) | Mount Pleasant (TX) | El Dorado (AR)",
-      "KS-TX-UMW-WUS_TX2024-1.13": "Hopkins, Wood, Smith (TX) & Surrounding Counties",
-      "KS-TX-UMW-WUS_TX2024-3.3": "San Antonio | Austin | Waco (TX)",
-      "KS-TX-UMW-WUS_TX2024-1.14": "College Station | Mineral Wells | Paris (TX)",
-      "KS-TX-UMW-WUS_TX2024-3.2": "South-Central Texas",
-      "KS-TX-UMW-WUS_TX2024-20": "North-Central Texas & Oklahoma Border",
-      "KS-TX-UMW-WUS_TX2024-23": "Central & Northern Texas & Southwestern Oklahoma",
-      "KS-TX-UMW-WUS_TX2024-21": "Central & Northern Gulf Coast Plains & Southern Oklahoma",
-      "KS-TX-UMW-WUS_TX2024-22": "Logan & Yell Counties, Arkansas",
-      "KS-TX-UMW-WUS_WUS2024-3.1.9": "Madison, Carroll (AR) & Barry (MO) Counties Area",
-      "KS-TX-UMW-WUS_TX2024-1.29": "Hill (TX) & Surrounding Counties",
-      "KS-TX-UMW-WUS_TX2024-1.23": "Eastern Bowie County (TX)",
-      "KS-TX-UMW-WUS_TX2024-1.20": "Northern Prairies & Lakes Region",
-      "KS-TX-UMW-WUS_TX2024-1.21": "Decatur | Mount Pleasant | Tyler (TX)",
-      "KS-TX-UMW-WUS_TX2024-1.26": "De Leon | Decatur | Allen (TX)",
-      "KS-TX-UMW-WUS_TX2024-4.12": "Glenwood (AR) & Surrounding Area",
-      "KS-TX-UMW-WUS_TX2024-1.27": "Central & Northeastern Texas",
-      "KS-TX-UMW-WUS_TX2024-4.13": "Idabel (OK) | Ashdown (AR) | Nashville (AR)",
-      "KS-TX-UMW-WUS_TX2024-27": "Texas Plains & Southwestern Oklahoma",
-      "KS-TX-UMW-WUS_TX2024-28": "Dallas (TX) | Oklahoma City (OK) | Fayetteville (AR)",
-      "KS-TX-UMW-WUS_TX2024-25": "East-Central Texas, Eastern Oklahoma, Northern Arkansas & Western Tennessee",
-      "KS-TX-UMW-WUS_TX2024-4.10": "Southwestern Arkansas",
-      "KS-TX-UMW-WUS_TX2024-26": "Dallas-Fort Worth & South-Central Oklahoma",
-      "KS-TX-UMW-WUS_TX2024-4.11": "Southern Ouachita Mountains Region (AR)",
-      "KS-TX-UMW-WUS_TX2024-29": "Central & Eastern Texas, Oklahoma & Western Arkansas",
-      "KS-TX-UMW-WUS_TX2024-2.1.4": "Izard, Sharp, Lawrence (AR) & Surrounding Counties",
-      "KS-TX-UMW-WUS_TX2024-2.1.2": "Izard (AR) & Surrounding Counties",
-      "KS-TX-UMW-WUS_TX2024-13": "Newton, Searcy, Stone (AR) & Surrounding  Counties",
-      "KS-TX-UMW-WUS_TX2024-11": "Izard, Independence, Stone (AR) & Surrounding Counties",
-      "KS-TX-UMW-WUS_TX2024-3.19": "Northern Brown County",
-      "KS-TX-UMW-WUS_TX2024-4.8": "Montgomery, Garland, Saline & Hot Spring (AR) Counties Area",
-      "KS-TX-UMW-WUS_TX2024-4.7": "Saline, Hot Spring, Grant & Dallas (AR) Counties Area",
-      "KS-TX-UMW-WUS_TX2024-4.9": "McCurtain (OK), Sevier, Polk & Scott (AR) Counties Area",
-      "KS-TX-UMW-WUS_TX2024-3.14": "Bandara | Lampasas | Gonzales (TX)",
-      "KS-TX-UMW-WUS_TX2024-4.4": "Hempstead, Nevada (AR) & Surrounding Counties",
-      "KS-TX-UMW-WUS_TX2024-3.13": "New Braunfels | College Station | Brekenridge (TX)",
-      "KS-TX-UMW-WUS_TX2024-4.3": "Central & Southeastern Arkansas",
-      "KS-TX-UMW-WUS_TX2024-3.12": "Rocksprings | Le Grange | Comanche (TX)",
-      "KS-TX-UMW-WUS_TX2024-4.6": "Polk, Montgomery, Pike & Howard (AR) Counties Area",
-      "KS-TX-UMW-WUS_TX2024-3.11": "Post | San Angelo | Temple (TX)",
-      "KS-TX-UMW-WUS_TX2024-4.5": "Dallas, Ouachita, Calhoun (AR) & Surrounding Counties",
-      "KS-TX-UMW-WUS_TX2024-3.18": "San Angelo | Waco | New Braunfels (TX)",
-      "KS-TX-UMW-WUS_TX2024-3.17": "Gatesville | Bastrop | Fredericksburg (TX)",
-      "KS-TX-UMW-WUS_TX2024-3.16": "Abeline | Waco | San Antonio (TX)",
-      "KS-TX-UMW-WUS_TX2024-4.2": "Sevier, Howard, Pike (AR) & Surrounding Counties",
-      "KS-TX-UMW-WUS_TX2024-3.15": "Coleman | Temple | Caldwell (TX)",
-      "KS-TX-UMW-WUS_TX2024-4.1": "Garland, Hot Spring, Clark & Surrounding Counties (AR)",
-      "KS-TX-UMW-WUS_TX2024-16": "Dallas-Fort Worth (TX) | Oklahoma City (OK) | Wichita (KS)",
-      "KS-TX-UMW-WUS_TX2024-17": "North-Central Texas, Oklahoma & Western Arkansas",
-      "KS-TX-UMW-WUS_TX2024-14": "Temple (TX) | Fort Smith (AR) | St. Louis (MO)",
-      "KS-TX-UMW-WUS_TX2024-15": "Central & Eastern Texas & Southern Oklahoma",
-      "KS-TX-UMW-WUS_TX2024-3.10": "Hill Country & Northern South Texas",
-      "KS-TX-UMW-WUS_TX2024-2.1.9": "Salem | Walnut Ridge | Paragould (AR)",
-      "KS-TX-UMW-WUS_TX2024-18": "Central & Eastern Texas, Oklahoma, Arkansas & Mississippi",
-      "KS-TX-UMW-WUS_TX2024-2.1.7": "Ripley (MO), Randolph (AR) & Lawrence (AR) Counties",
-      "KS-TX-UMW-WUS_TX2024-19": "Anderson, Cherokee & Houston (TX) Conties",
-      "KS-TX-UMW-WUS_TX2024-2.1.6": "Claremore (OK) | Fort Smith (AR) | Prairie  Grove (AR)",
-      "KS-TX-UMW-WUS_TX2024-3.25": "Bandera | Corpus Christi | Mount Belvieu (TX)",
-      "KS-TX-UMW-WUS_TX2024-3.23": "Mason | Fredericksburg | New Braunfels (TX)",
-      "KS-TX-UMW-WUS_TX2024-3.22": "San Angelo | Round Rock | Pleasanton (TX)",
-      "KS-TX-UMW-WUS_TX2024-3.21": "Round Rock | Lampasas | Abeline (TX)",
-      "KS-TX-UMW-WUS_TX2024-2.1.22": "Lawrence, Independence & White (AR) Counties",
-      "KS-TX-UMW-WUS_TX2024-1.7": "Northern, Central & Eastern Texas & Oklahoma Border",
-      "KS-TX-UMW-WUS_TX2024-1.6": "Wood, Camp, Upshur (TX) & Surrounding Counties",
-      "KS-TX-UMW-WUS_TX2024-1.9": "Fort Worth | College Station | Lufkin (TX)",
-      "KS-TX-UMW-WUS_TX2024-1.8": "Northern & Central Texas & Southern Oklahoma",
-      "KS-TX-UMW-WUS_TX2024-1.3": "Morris, Cass, Bowie (TX) & Miller (AR) Counties",
-      "KS-TX-UMW-WUS_TX2024-1.2": "Big Spring (TX) | Dallas (TX) | Birmingham (AL)",
-      "KS-TX-UMW-WUS_TX2024-1.5": "Conroe | Madisonville | Corsicana (TX)",
-      "KS-TX-UMW-WUS_TX2024-1.4": "Rusk & Panola (TX) Counties",
-      "KS-TX-UMW-WUS_TX2024-2.9": "South-Central Oklahoma & Northwestern Arkansas",
-      "KS-TX-UMW-WUS_TX2024-2.6": "Stigler (TX) | Fort Smith (AR) | Clarksville (AR)",
-      "KS-TX-UMW-WUS_TX2024-3.1.2": "Brenham | Austin | Clifton (TX)",
-      "KS-TX-UMW-WUS_TX2024-6.2": "Polk & Montgomery (AR) Counties Area",
-      "KS-TX-UMW-WUS_TX2024-2.5": "West-Central Arkansas & East-Central Oklahoma",
-      "KS-TX-UMW-WUS_TX2024-6.1": "West-Central Arkansas",
-      "KS-TX-UMW-WUS_TX2024-2.8": "Northwestern Arkansas",
-      "KS-TX-UMW-WUS_TX2024-3.1.4": "Round Rock | Giddings | The Woodlands (TX)",
-      "KS-TX-UMW-WUS_TX2024-6.4": "Mena | Waldron | Mount Ida (AR)",
-      "KS-TX-UMW-WUS_TX2024-2.7": "Marion, Searcy, Van Buren (AR) & Surrounding Counties",
-      "KS-TX-UMW-WUS_TX2024-3.1.3": "Greater San Antonio & Victoria (TX)",
-      "KS-TX-UMW-WUS_TX2024-6.3": "Montgomery (AR) & Surrounding Counties",
-      "KS-TX-UMW-WUS_TX2024-2.2": "Pope, Conway, Van Buren (AR) & Surrounding Counties",
-      "KS-TX-UMW-WUS_TX2024-2.1": "Eastern Oklahoma & Northwestern Arkansas",
-      "KS-TX-UMW-WUS_TX2024-1.35": "College Station | Corsicana | Greenville (TX)",
-      "KS-TX-UMW-WUS_TX2024-2.4": "North-Central Arkansas",
-      "KS-TX-UMW-WUS_TX2024-2.3": "Johnson, Newton (AR) & Surrounding Counties",
-      "KS-TX-UMW-WUS_TX2024-1.30": "North-Central Texas",
-      "KS-TX-UMW-WUS_TX2024-2.13": "Madison County (AR)",
-      "KS-TX-UMW-WUS_TX2024-2.12": "Southeastern Oklahoma & Northwestern Arkansas",
-      "KS-TX-UMW-WUS_TX2024-2.11": "Central & Eastern Oklahoma & Arkansas Border",
-      "KS-TX-UMW-WUS_TX2024-2.10": "Sequoyah (OK), Crawford (AR) & Surrounding Counties",
-      "KS-TX-UMW-WUS_TX2024-1.46": "Milam County (TX)",
-      "KS-TX-UMW-WUS_TX2024-2.14": "Stilwell (TX) | Eureka Springs (AR) | Harrison (AR)",
-      "KS-TX-UMW-WUS_TX2024-1.41": "Fort Worth (TX) | Kilgore (TX) | Durant (OK)"
-    },
-    "overview": "<p>Many of the settlers of 19th-century Texas, Arkansas, and Oklahoma can trace their roots to English, German, and Irish immigrants who arrived in the Chesapeake and Carolinas from the 1600s onward. As planters and indentured servants, they helped create a tobacco economy before moving southward and westward in search of new lands and opportunities, a pattern that future generations would follow as well. Strains of fundamentalist religion, frontier influences, and Southern cotton culture all helped shape the region as we know it today.</p>\n"
   },
   "LA2023_RhodeIsland_Ghost": {
     "name": "Portuguese Islanders in the Eastern United States",
@@ -3311,11 +3211,6 @@
     "subjourneys": {},
     "overview": "<p>The Portugese-Indian community, rooted in Goa but with a presence across India and later the world, developed a unique culture that blended Portuguese Catholic and coastal Indian elements. Throughout several centuries of imperial conquest and resistance, the Goan mestiço (“mixed”) community bridged cultures in religious and cultural life, even as Goans’ desires for cultural and political independence grew. In the 20th century, many in the Goan community moved to other places within India, to Portugal, to East Africa, and to England.</p>\n"
   },
-  "ASIA2023_1.4.2": {
-    "name": "Thailand",
-    "subjourneys": {},
-    "overview": "<p>Thailand is home to diverse ethnic groups that extend beyond the boundaries of the modern nation. Beginning in the late 1800s, the government introduced reforms to assimilate the land’s diverse peoples into a single, recognizable Thai culture, promoting its language, cuisine, and Buddhist values. By the mid-20th century, rice production, international trade, and manufacturing were well-established industries when tourism and service sectors gained prominence. These developments, among others, contributed to Bangkok becoming one of the most populous cities in the region.</p>\n"
-  },
   "ASIA2023_1.1.3": {
     "name": "Okinawa",
     "subjourneys": {
@@ -3381,6 +3276,128 @@
       "US_NSCW_18th_2021_2.1.3.5": "Greenville & Laurens Counties, South Carolina Settlers"
     },
     "overview": "<p>Originating in the British Isles and Germany, these colonists took part in some of the largest human migrations in U.S. history. They had a gnawing appetite for land and were willing to face great risks to get it. Arriving from Europe, they settled in what was then the Southern Backcountry, east of the Blue Ridge Mountains. After the Revolutionary War, they settled throughout Tennessee and Kentucky before moving on to Oklahoma and Texas.</p>\n"
+  },
+  "KS-TX-UMW-WUS_TX2024_Ghost": {
+    "name": "Texas, Arkansas & Oklahoma Settlers",
+    "subjourneys": {
+      "KS-TX-UMW-WUS_WUS2024-2.37": "Lower Midwest",
+      "KS-TX-UMW-WUS_TX2024-8": "Central & Eastern Texas & Lower Upland South",
+      "KS-TX-UMW-WUS_TX2024-6": "Western Arkansas & Texas Border",
+      "KS-TX-UMW-WUS_TX2024-1.19": "Dallas County (TX) Area",
+      "KS-TX-UMW-WUS_TX2024-4": "Central & Southern Arkansas & Texas Border",
+      "KS-TX-UMW-WUS_TX2024-3": "Central & Eastern Texas",
+      "KS-TX-UMW-WUS_TX2024-1.17": "Collin County (TX)",
+      "KS-TX-UMW-WUS_TX2024-2": "Oklahoma & Arkansas",
+      "KS-TX-UMW-WUS_TX2024-1.18": "Granbury | Groesbeck | Canton (TX)",
+      "KS-TX-UMW-WUS_TX2024-1": "Western & Central Deep South",
+      "KS-TX-UMW-WUS_TX2024-3.9": "Abeline | Temple | San Antonio (TX)",
+      "KS-TX-UMW-WUS_TX2024-3.8": "Victoria | Caldwell | Brady (TX)",
+      "KS-TX-UMW-WUS_TX2024-3.5": "Del Rio | Victoria | Sherman (TX)",
+      "KS-TX-UMW-WUS_TX2024-1.11": "Sherman (TX) |Fort Smith (AR) | Branson (MO)",
+      "KS-TX-UMW-WUS_TX2024-1.12": "Cherokee (TX) & Surrounding Counties",
+      "KS-TX-UMW-WUS_TX2024-3.4": "Lampasas, Burnet (TX) & Surrounding Counties",
+      "KS-TX-UMW-WUS_TX2024-3.7": "Hallettsville | San Saba | Caldwell (TX)",
+      "KS-TX-UMW-WUS_TX2024-1.10": "Dallas (TX) | Kilgore (TX) | Clarksville (OK)",
+      "KS-TX-UMW-WUS_TX2024-3.6": "San Antonio | San Angelo | Waco (TX)",
+      "KS-TX-UMW-WUS_TX2024-1.15": "Lamar & Red River (TX) Counties",
+      "KS-TX-UMW-WUS_TX2024-3.1": "Waco | San Antonio | Corpus Christi | Houston (TX)",
+      "KS-TX-UMW-WUS_TX2024-1.16": "Clarksville (TX) | Mount Pleasant (TX) | El Dorado (AR)",
+      "KS-TX-UMW-WUS_TX2024-1.13": "Hopkins, Wood, Smith (TX) & Surrounding Counties",
+      "KS-TX-UMW-WUS_TX2024-3.3": "San Antonio | Austin | Waco (TX)",
+      "KS-TX-UMW-WUS_TX2024-1.14": "College Station | Mineral Wells | Paris (TX)",
+      "KS-TX-UMW-WUS_TX2024-3.2": "South-Central Texas",
+      "KS-TX-UMW-WUS_TX2024-20": "North-Central Texas & Oklahoma Border",
+      "KS-TX-UMW-WUS_TX2024-23": "Central & Northern Texas & Southwestern Oklahoma",
+      "KS-TX-UMW-WUS_TX2024-21": "Central & Northern Gulf Coast Plains & Southern Oklahoma",
+      "KS-TX-UMW-WUS_TX2024-22": "Logan & Yell Counties, Arkansas",
+      "KS-TX-UMW-WUS_WUS2024-3.1.9": "Madison, Carroll (AR) & Barry (MO) Counties Area",
+      "KS-TX-UMW-WUS_TX2024-1.29": "Hill (TX) & Surrounding Counties",
+      "KS-TX-UMW-WUS_TX2024-1.23": "Eastern Bowie County (TX)",
+      "KS-TX-UMW-WUS_TX2024-1.20": "Northern Prairies & Lakes Region",
+      "KS-TX-UMW-WUS_TX2024-1.21": "Decatur | Mount Pleasant | Tyler (TX)",
+      "KS-TX-UMW-WUS_TX2024-1.26": "De Leon | Decatur | Allen (TX)",
+      "KS-TX-UMW-WUS_TX2024-4.12": "Glenwood (AR) & Surrounding Area",
+      "KS-TX-UMW-WUS_TX2024-1.27": "Central & Northeastern Texas",
+      "KS-TX-UMW-WUS_TX2024-4.13": "Idabel (OK) | Ashdown (AR) | Nashville (AR)",
+      "KS-TX-UMW-WUS_TX2024-27": "Texas Plains & Southwestern Oklahoma",
+      "KS-TX-UMW-WUS_TX2024-28": "Dallas (TX) | Oklahoma City (OK) | Fayetteville (AR)",
+      "KS-TX-UMW-WUS_TX2024-25": "East-Central Texas, Eastern Oklahoma, Northern Arkansas & Western Tennessee",
+      "KS-TX-UMW-WUS_TX2024-4.10": "Southwestern Arkansas",
+      "KS-TX-UMW-WUS_TX2024-26": "Dallas-Fort Worth & South-Central Oklahoma",
+      "KS-TX-UMW-WUS_TX2024-4.11": "Southern Ouachita Mountains Region (AR)",
+      "KS-TX-UMW-WUS_TX2024-29": "Central & Eastern Texas, Oklahoma & Western Arkansas",
+      "KS-TX-UMW-WUS_TX2024-2.1.4": "Izard, Sharp, Lawrence (AR) & Surrounding Counties",
+      "KS-TX-UMW-WUS_TX2024-2.1.2": "Izard (AR) & Surrounding Counties",
+      "KS-TX-UMW-WUS_TX2024-13": "Newton, Searcy, Stone (AR) & Surrounding  Counties",
+      "KS-TX-UMW-WUS_TX2024-11": "Izard, Independence, Stone (AR) & Surrounding Counties",
+      "KS-TX-UMW-WUS_TX2024-3.19": "Northern Brown County",
+      "KS-TX-UMW-WUS_TX2024-4.8": "Montgomery, Garland, Saline & Hot Spring (AR) Counties Area",
+      "KS-TX-UMW-WUS_TX2024-4.7": "Saline, Hot Spring, Grant & Dallas (AR) Counties Area",
+      "KS-TX-UMW-WUS_TX2024-4.9": "McCurtain (OK), Sevier, Polk & Scott (AR) Counties Area",
+      "KS-TX-UMW-WUS_TX2024-3.14": "Bandara | Lampasas | Gonzales (TX)",
+      "KS-TX-UMW-WUS_TX2024-4.4": "Hempstead, Nevada (AR) & Surrounding Counties",
+      "KS-TX-UMW-WUS_TX2024-3.13": "New Braunfels | College Station | Brekenridge (TX)",
+      "KS-TX-UMW-WUS_TX2024-4.3": "Central & Southeastern Arkansas",
+      "KS-TX-UMW-WUS_TX2024-3.12": "Rocksprings | Le Grange | Comanche (TX)",
+      "KS-TX-UMW-WUS_TX2024-4.6": "Polk, Montgomery, Pike & Howard (AR) Counties Area",
+      "KS-TX-UMW-WUS_TX2024-3.11": "Post | San Angelo | Temple (TX)",
+      "KS-TX-UMW-WUS_TX2024-4.5": "Dallas, Ouachita, Calhoun (AR) & Surrounding Counties",
+      "KS-TX-UMW-WUS_TX2024-3.18": "San Angelo | Waco | New Braunfels (TX)",
+      "KS-TX-UMW-WUS_TX2024-3.17": "Gatesville | Bastrop | Fredericksburg (TX)",
+      "KS-TX-UMW-WUS_TX2024-3.16": "Abeline | Waco | San Antonio (TX)",
+      "KS-TX-UMW-WUS_TX2024-4.2": "Sevier, Howard, Pike (AR) & Surrounding Counties",
+      "KS-TX-UMW-WUS_TX2024-3.15": "Coleman | Temple | Caldwell (TX)",
+      "KS-TX-UMW-WUS_TX2024-4.1": "Garland, Hot Spring, Clark & Surrounding Counties (AR)",
+      "KS-TX-UMW-WUS_TX2024-16": "Dallas-Fort Worth (TX) | Oklahoma City (OK) | Wichita (KS)",
+      "KS-TX-UMW-WUS_TX2024-17": "North-Central Texas, Oklahoma & Western Arkansas",
+      "KS-TX-UMW-WUS_TX2024-14": "Temple (TX) | Fort Smith (AR) | St. Louis (MO)",
+      "KS-TX-UMW-WUS_TX2024-15": "Central & Eastern Texas & Southern Oklahoma",
+      "KS-TX-UMW-WUS_TX2024-3.10": "Hill Country & Northern South Texas",
+      "KS-TX-UMW-WUS_TX2024-2.1.9": "Salem | Walnut Ridge | Paragould (AR)",
+      "KS-TX-UMW-WUS_TX2024-18": "Central & Eastern Texas, Oklahoma, Arkansas & Mississippi",
+      "KS-TX-UMW-WUS_TX2024-2.1.7": "Ripley (MO), Randolph (AR) & Lawrence (AR) Counties",
+      "KS-TX-UMW-WUS_TX2024-19": "Anderson, Cherokee & Houston (TX) Conties",
+      "KS-TX-UMW-WUS_TX2024-2.1.6": "Claremore (OK) | Fort Smith (AR) | Prairie  Grove (AR)",
+      "KS-TX-UMW-WUS_TX2024-3.25": "Bandera | Corpus Christi | Mount Belvieu (TX)",
+      "KS-TX-UMW-WUS_TX2024-3.23": "Mason | Fredericksburg | New Braunfels (TX)",
+      "KS-TX-UMW-WUS_TX2024-3.22": "San Angelo | Round Rock | Pleasanton (TX)",
+      "KS-TX-UMW-WUS_TX2024-3.21": "Round Rock | Lampasas | Abeline (TX)",
+      "KS-TX-UMW-WUS_TX2024-2.1.22": "Lawrence, Independence & White (AR) Counties",
+      "KS-TX-UMW-WUS_TX2024-1.7": "Northern, Central & Eastern Texas & Oklahoma Border",
+      "KS-TX-UMW-WUS_TX2024-1.6": "Wood, Camp, Upshur (TX) & Surrounding Counties",
+      "KS-TX-UMW-WUS_TX2024-1.9": "Fort Worth | College Station | Lufkin (TX)",
+      "KS-TX-UMW-WUS_TX2024-1.8": "Northern & Central Texas & Southern Oklahoma",
+      "KS-TX-UMW-WUS_TX2024-1.3": "Morris, Cass, Bowie (TX) & Miller (AR) Counties",
+      "KS-TX-UMW-WUS_TX2024-1.2": "Big Spring (TX) | Dallas (TX) | Birmingham (AL)",
+      "KS-TX-UMW-WUS_TX2024-1.5": "Conroe | Madisonville | Corsicana (TX)",
+      "KS-TX-UMW-WUS_TX2024-1.4": "Rusk & Panola (TX) Counties",
+      "KS-TX-UMW-WUS_TX2024-2.9": "South-Central Oklahoma & Northwestern Arkansas",
+      "KS-TX-UMW-WUS_TX2024-2.6": "Stigler (TX) | Fort Smith (AR) | Clarksville (AR)",
+      "KS-TX-UMW-WUS_TX2024-3.1.2": "Brenham | Austin | Clifton (TX)",
+      "KS-TX-UMW-WUS_TX2024-6.2": "Polk & Montgomery (AR) Counties Area",
+      "KS-TX-UMW-WUS_TX2024-2.5": "West-Central Arkansas & East-Central Oklahoma",
+      "KS-TX-UMW-WUS_TX2024-6.1": "West-Central Arkansas",
+      "KS-TX-UMW-WUS_TX2024-2.8": "Northwestern Arkansas",
+      "KS-TX-UMW-WUS_TX2024-3.1.4": "Round Rock | Giddings | The Woodlands (TX)",
+      "KS-TX-UMW-WUS_TX2024-6.4": "Mena | Waldron | Mount Ida (AR)",
+      "KS-TX-UMW-WUS_TX2024-2.7": "Marion, Searcy, Van Buren (AR) & Surrounding Counties",
+      "KS-TX-UMW-WUS_TX2024-3.1.3": "Greater San Antonio & Victoria (TX)",
+      "KS-TX-UMW-WUS_TX2024-6.3": "Montgomery (AR) & Surrounding Counties",
+      "KS-TX-UMW-WUS_TX2024-2.2": "Pope, Conway, Van Buren (AR) & Surrounding Counties",
+      "KS-TX-UMW-WUS_TX2024-2.1": "Eastern Oklahoma & Northwestern Arkansas",
+      "KS-TX-UMW-WUS_TX2024-1.35": "College Station | Corsicana | Greenville (TX)",
+      "KS-TX-UMW-WUS_TX2024-2.4": "North-Central Arkansas",
+      "KS-TX-UMW-WUS_TX2024-2.3": "Johnson, Newton (AR) & Surrounding Counties",
+      "KS-TX-UMW-WUS_TX2024-1.30": "North-Central Texas",
+      "KS-TX-UMW-WUS_TX2024-2.13": "Madison County (AR)",
+      "KS-TX-UMW-WUS_TX2024-2.12": "Southeastern Oklahoma & Northwestern Arkansas",
+      "KS-TX-UMW-WUS_TX2024-2.11": "Central & Eastern Oklahoma & Arkansas Border",
+      "KS-TX-UMW-WUS_TX2024-2.10": "Sequoyah (OK), Crawford (AR) & Surrounding Counties",
+      "KS-TX-UMW-WUS_TX2024-1.46": "Milam County (TX)",
+      "KS-TX-UMW-WUS_TX2024-2.14": "Stilwell (TX) | Eureka Springs (AR) | Harrison (AR)",
+      "KS-TX-UMW-WUS_TX2024-1.41": "Fort Worth (TX) | Kilgore (TX) | Durant (OK)"
+    },
+    "overview": "<p>Many of the settlers of 19th-century Texas, Arkansas, and Oklahoma can trace their roots to English, German, and Irish immigrants who arrived in the Chesapeake and Carolinas from the 1600s onward. As planters and indentured servants, they helped create a tobacco economy before moving southward and westward in search of new lands and opportunities, a pattern that future generations would follow as well. Strains of fundamentalist religion, frontier influences, and Southern cotton culture all helped shape the region as we know it today.</p>\n"
   },
   "MENA2023_1.1": {
     "name": "Eastern Anatolia & Armenia",
@@ -3490,6 +3507,11 @@
     },
     "overview": "<p>The Assyrian Empire was at its height over three millennia ago, but members of this community trace their roots back to the people of that time. Traditionally a tightly-knit community, they have been known variously as Nestorians, Jacobites, Chaldeans, Syriacs, Arameans, or Assyrians. Each of these names refers to people of the same overall ethnic group who adhered to different Christian denominations. Upheaval in their original homelands in northern Iran and Iraq and eastern Turkey created a diaspora whose geographic spread has not diluted their sense of pride and continuity.</p>\n"
   },
+  "ASIA2023_1.4.2": {
+    "name": "Thailand",
+    "subjourneys": {},
+    "overview": "<p>Thailand is home to diverse ethnic groups that extend beyond the boundaries of the modern nation. Beginning in the late 1800s, the government introduced reforms to assimilate the land’s diverse peoples into a single, recognizable Thai culture, promoting its language, cuisine, and Buddhist values. By the mid-20th century, rice production, international trade, and manufacturing were well-established industries when tourism and service sectors gained prominence. These developments, among others, contributed to Bangkok becoming one of the most populous cities in the region.</p>\n"
+  },
   "ASIA2023_1.3.1.4": {
     "name": "Parsis in India",
     "subjourneys": {
@@ -3594,18 +3616,6 @@
     "name": "Iraq",
     "subjourneys": {},
     "overview": "<p>Iraq’s rich history encompasses the territory of ancient Mesopotamia, located between the Tigris and Euphrates rivers. It is known as the “cradle of civilization” because people of the region developed some of the world’s earliest writing, literature, sciences, mathematics, laws, and religions. Over the centuries, the inhabitants were influenced by many civilizations and empires. Iraq has always been an ethnically diverse country, with Arabs, Kurds, Assyrians, and Turkmen representing the largest ethnic groups. Many religions, including Islam, Christianity, Judaism, and Mandaeism, have adherents there.</p>\n"
-  },
-  "ASIA2023_1.1.1.4_1.1.1.3_Ghost": {
-    "name": "Japan",
-    "subjourneys": {
-      "ASIA2023_1.1.1.3": "Southern Honshu & Northern Kyūshū",
-      "ASIA2023_1.1.1.4.1": "Northern Honshu & Southern Hokkaidō",
-      "ASIA2023_1.1.1.4.2": "Northern Kyūshū",
-      "ASIA2023_1.1.1.4.3": "Hiroshima | Kanagawa",
-      "ASIA2023_1.1.1.4.5": "Kansai | Chūgoku | Shikoku",
-      "ASIA2023_1.1.1.4.6": "Kagoshima Prefecture"
-    },
-    "overview": "<p>In the last two hundred years, the Japanese people have experienced their share of tragedies, from the Great Tenpo Famine of the 19th century to the devastation inflicted by bombing during World War II. But they also thrived during periods of excitement, creativity, and community strength: villagers banding together in the face of samurai abuse, intellectuals debating modernity over coffee, enterprising chefs combining Western techniques and local ingredients to make iconic new dishes, and employees, businesses, and government uniting to create Japan’s “economic miracle.”</p>\n"
   },
   "MENA2023_2.1.5": {
     "name": "Central Asia—South ",
@@ -3737,41 +3747,17 @@
     "subjourneys": {},
     "overview": "<p>For most of its history, regional tribes controlled the Arabian Peninsula. In the early 1500s, the Ottoman Empire began to oversee the Hijaz region and pilgrimage routes to Mecca and Medina. But despite Ottoman influence and widespread adherence to Islam, Arab communities along the Red Sea maintained some distinct beliefs and cultural practices. Distinctions began to fade as the Al Saud dynasty and Wahhabi Islam gained prominence, uniting Arabia’s tribes into a kingdom. The early 20th century's discovery of oil brought wealth, modernization, and social complexities to the Kingdom of Saudi Arabia.</p>\n"
   },
-  "LA2023_Azores_Ghost": {
-    "name": "Azores",
+  "ASIA2023_1.1.1.4_1.1.1.3_Ghost": {
+    "name": "Japan",
     "subjourneys": {
-      "LA2023_1.3.3": "Azores, Northern & Central California & Southeastern Brazil",
-      "LA2023_1.2.4": "Rhode Island & South Coast, Massachusetts",
-      "LA2023_1.3.4": "Azores, Southeastern Massachusetts & Eastern Rhode Island",
-      "LA2023_1.6": "Azores & Sacramento | San Jose | Santa Maria, CA",
-      "LA2023_1.7": "Azores Islands",
-      "LA2023_1.2.1.1": "Hawaii & Fall River, Massachusetts Area",
-      "LA2023_1.2.2.1": "Fall River | Falmouth | Martha's Vineyard",
-      "LA2023_1.2.1.2": "Fall River, MA | Bristol, RI | Little Compton, RI",
-      "LA2023_1.2.3.1": "Hawaii Island, Rhode Island & Southeastern Massachusetts",
-      "LA2023_1.2.2.2": "Eastern Rhode Island, Southern Massachusetts & Martha's Vineyard",
-      "LA2023_1.2.1.3": "Rehoboth, MA | Fall River, MA | Newport, RI",
-      "LA2023_1.2.4.1": "Taunton, MA | New Bedford, MA | Newport, RI",
-      "LA2023_1.2.3.2": "Taunton | Fall River | New Bedford, MA & Hawaii",
-      "LA2023_1.2.2.3": "Fall River, MA | Falmouth, MA | Little Compton, RI",
-      "LA2023_1.2.1.4": "Somerset, MA | New Bedford, MA | Portsmouth, RI",
-      "LA2023_1.2.4.2": "Fall River, MA | Taunton, MA | Johnston, RI",
-      "LA2023_1.2.3.3": "Southeastern Massachusetts & Hawaii",
-      "LA2023_1.2.2.4": "Southern Massachusetts & Martha's Vineyard",
-      "LA2023_1.2.3.4": "Providence, RI | Bridgewater, MA | New Bedford, MA",
-      "LA2023_1.2.1": "Hawaii, Eastern Rhode Island & Southwestern Massachusetts",
-      "LA2023_1.3.1": "California, Southeastern Massachusetts & Eastern Rhode Island",
-      "LA2023_1.2.2": "Southeastern Massachusetts & Eastern Rhode Island",
-      "LA2023_1.2.3": "Rhode Island, Southeastern Massachusetts & Hawaii",
-      "LA2023_1.3.2.3": "Yuba City | Petaluma | Hanford",
-      "LA2023_1.3.2.4": "San Francisco | San Jose | Salinas, CA & Azores",
-      "LA2023_1.3.1.2": "Central California & Southeastern Massachusetts",
-      "LA2023_1.3.2.2": "San Francisco | San Jose | Hanford",
-      "LA2023_1.3.2.1.2": "Sacramento | San Francisco | Salinas",
-      "LA2023_1.3.1.3": "San Francisco | Modesto | Salinas",
-      "LA2023_1.3.1.1": "Yuba City | Hanford | Santa Maria"
+      "ASIA2023_1.1.1.3": "Southern Honshu & Northern Kyūshū",
+      "ASIA2023_1.1.1.4.1": "Northern Honshu & Southern Hokkaidō",
+      "ASIA2023_1.1.1.4.2": "Northern Kyūshū",
+      "ASIA2023_1.1.1.4.3": "Hiroshima | Kanagawa",
+      "ASIA2023_1.1.1.4.5": "Kansai | Chūgoku | Shikoku",
+      "ASIA2023_1.1.1.4.6": "Kagoshima Prefecture"
     },
-    "overview": "<p>The Azores are a group of nine volcanic islands in the North Atlantic Ocean that were settled mostly by people from mainland Portugal. The islands played an important role in Portuguese exploration. By the early 1800s, many Azoreans began leaving the islands because of economic struggles, crowded living conditions, and limited farmland. Some went to California, where they used their farming and dairy skills, while others moved to Hawaii or the East Coast of the United States. In their new homes, Azoreans worked to keep their traditions alive by celebrating Holy Spirit festivals, cooking traditional foods, and decorating with volcanic rock and colorful religious tiles.</p>\n"
+    "overview": "<p>In the last two hundred years, the Japanese people have experienced their share of tragedies, from the Great Tenpo Famine of the 19th century to the devastation inflicted by bombing during World War II. But they also thrived during periods of excitement, creativity, and community strength: villagers banding together in the face of samurai abuse, intellectuals debating modernity over coffee, enterprising chefs combining Western techniques and local ingredients to make iconic new dishes, and employees, businesses, and government uniting to create Japan’s “economic miracle.”</p>\n"
   },
   "MENA2023_Cyprus_Ghost": {
     "name": "Cyprus",
@@ -4119,10 +4105,41 @@
     "subjourneys": {},
     "overview": "<p>A collection of feudal territories in the Rhine River valley, the Rhineland-Palatinate (in present-day southwestern Germany) was, for part of its history, a buffer region between warring powers. Those powers frequently tested the strength of the region’s fortifications and destroyed its fields and vineyards. Peasants fled by the thousands, securing opportunities in other lands, including Lower Austria and Austrian Galicia. There they lived quiet lives in agriculture for most of the 19th century, until political changes severely restricted their opportunities. Near the beginning of the 20th century, thousands were uprooted again, this time bound for the prairies of Canada.</p>\n"
   },
-  "SCAND2018_4.2": {
-    "name": "Iceland",
-    "subjourneys": {},
-    "overview": "After seafaring Norse settlers migrated to Iceland in the 9th century, they struggled against diseases, volcanic eruptions, and a poor climate while eking out their existence. Farms dotted the little arable land, producing enough hay to feed the livestock that provided milk and cheese. Fishermen ventured out in winter and spring to catch herring and cod. In the 19th century, with a growing population and little available land, many young Icelanders had little choice but to leave. They formed successful and close-knit communities in places like Canada and Minnesota."
+  "LA2023_Azores_Ghost": {
+    "name": "Azores",
+    "subjourneys": {
+      "LA2023_1.3.3": "Azores, Northern & Central California & Southeastern Brazil",
+      "LA2023_1.2.4": "Rhode Island & South Coast, Massachusetts",
+      "LA2023_1.3.4": "Azores, Southeastern Massachusetts & Eastern Rhode Island",
+      "LA2023_1.6": "Azores & Sacramento | San Jose | Santa Maria, CA",
+      "LA2023_1.7": "Azores Islands",
+      "LA2023_1.2.1.1": "Hawaii & Fall River, Massachusetts Area",
+      "LA2023_1.2.2.1": "Fall River | Falmouth | Martha's Vineyard",
+      "LA2023_1.2.1.2": "Fall River, MA | Bristol, RI | Little Compton, RI",
+      "LA2023_1.2.3.1": "Hawaii Island, Rhode Island & Southeastern Massachusetts",
+      "LA2023_1.2.2.2": "Eastern Rhode Island, Southern Massachusetts & Martha's Vineyard",
+      "LA2023_1.2.1.3": "Rehoboth, MA | Fall River, MA | Newport, RI",
+      "LA2023_1.2.4.1": "Taunton, MA | New Bedford, MA | Newport, RI",
+      "LA2023_1.2.3.2": "Taunton | Fall River | New Bedford, MA & Hawaii",
+      "LA2023_1.2.2.3": "Fall River, MA | Falmouth, MA | Little Compton, RI",
+      "LA2023_1.2.1.4": "Somerset, MA | New Bedford, MA | Portsmouth, RI",
+      "LA2023_1.2.4.2": "Fall River, MA | Taunton, MA | Johnston, RI",
+      "LA2023_1.2.3.3": "Southeastern Massachusetts & Hawaii",
+      "LA2023_1.2.2.4": "Southern Massachusetts & Martha's Vineyard",
+      "LA2023_1.2.3.4": "Providence, RI | Bridgewater, MA | New Bedford, MA",
+      "LA2023_1.2.1": "Hawaii, Eastern Rhode Island & Southwestern Massachusetts",
+      "LA2023_1.3.1": "California, Southeastern Massachusetts & Eastern Rhode Island",
+      "LA2023_1.2.2": "Southeastern Massachusetts & Eastern Rhode Island",
+      "LA2023_1.2.3": "Rhode Island, Southeastern Massachusetts & Hawaii",
+      "LA2023_1.3.2.3": "Yuba City | Petaluma | Hanford",
+      "LA2023_1.3.2.4": "San Francisco | San Jose | Salinas, CA & Azores",
+      "LA2023_1.3.1.2": "Central California & Southeastern Massachusetts",
+      "LA2023_1.3.2.2": "San Francisco | San Jose | Hanford",
+      "LA2023_1.3.2.1.2": "Sacramento | San Francisco | Salinas",
+      "LA2023_1.3.1.3": "San Francisco | Modesto | Salinas",
+      "LA2023_1.3.1.1": "Yuba City | Hanford | Santa Maria"
+    },
+    "overview": "<p>The Azores are a group of nine volcanic islands in the North Atlantic Ocean that were settled mostly by people from mainland Portugal. The islands played an important role in Portuguese exploration. By the early 1800s, many Azoreans began leaving the islands because of economic struggles, crowded living conditions, and limited farmland. Some went to California, where they used their farming and dairy skills, while others moved to Hawaii or the East Coast of the United States. In their new homes, Azoreans worked to keep their traditions alive by celebrating Holy Spirit festivals, cooking traditional foods, and decorating with volcanic rock and colorful religious tiles.</p>\n"
   },
   "GreatBritain_2021_2.5": {
     "name": "North England & Scotland Border",
@@ -4406,22 +4423,6 @@
     },
     "overview": "<p>Located on the southern portion of the Jutland peninsula, Schleswig-Holstein includes coastal marshlands, sandy plains, and fertile clay soils. Starting in the 1700s, small farms and large estates developed to create flax and dairy products for market. Residents of the area have historically identified with either or both Danish and German culture, resulting in numerous upheavals. These conflicts, along with slow modernization, led many to emigrate and settle in the American Midwest from the 1840s onward, where they created tight-knit communities.</p>\n"
   },
-  "LA2023_Portugual_Ghost": {
-    "name": "Portugal",
-    "subjourneys": {
-      "LA2023_1.1.2.3": "Central & Northern Portugal",
-      "LA2023_1.1.2.4": "Alcobaça | Torres Vedras | Lisbon",
-      "LA2023_1.1.2.1": "Northern Centro & Norte",
-      "LA2023_1.1.2.2": "Southern Portugal",
-      "LA2023_1.1.2": "Northern, Eastern & Southern Portugal",
-      "LA2023_1.1.2.5": "Central Leiria",
-      "LA2023_1.1.4": "Northern Portugal",
-      "LA2023_1.1.5": "Porto | Viseu | Coimbra",
-      "LA2023_1.1.6": "Valença | Braga | Porto",
-      "LA2023_1.1.8": "Porto | São João da Madeira | Aveiro"
-    },
-    "overview": "<p>The Portuguese have a long history as a seafaring people who built a global empire through colonization in Latin America, Asia, and Africa. Along Portugal’s rugged coastline, many worked as fishermen, whalers, sailors, and traders, while most inland inhabitants focused on agriculture. Predominantly Catholic, many Portuguese value family time and celebrating traditional holidays. The nation is known for its ornate architecture and distinctive <i>azulejos</i>—vibrant, hand-painted ceramic tiles that adorn buildings and public spaces. Portuguese heritage also shines through in soulful fado music, rich folklore, and a culinary tradition featuring hearty soups, the iconic dried and salted cod known as <i>bacalhau</i>, and world-renowned wines.</p>\n"
-  },
   "SEUR2019_2.5": {
     "name": "Central Eastern Italy",
     "subjourneys": {
@@ -4463,6 +4464,45 @@
       "SCAND2018_6.4.2": "Southern & Eastern Karelia"
     },
     "overview": "Life in central and eastern Finland differed from life in the western and southern parts of the country. The population was sparser, and residents contended with a harsher landscape as they made their living from the forests and lakes. Russia also had a stronger influence on the culture. The 19th century brought both severe famines and new jobs in Finland’s developing forest economy. It also saw population growth and dissatisfaction with Russian rule spur thousands of eastern Finns to emigrate to the United States and Canada."
+  },
+  "DEN-ICE_DEN2024-Denmark_Ghost": {
+    "name": "Denmark",
+    "subjourneys": {
+      "DEN-ICE_DEN2024-1.3": "Eastern Central Denmark",
+      "DEN-ICE_DEN2024-2.2": "Hjørring | Brønderslev | Frederikshavn",
+      "DEN-ICE_DEN2024-3.1": "Southwestern North Denmark",
+      "DEN-ICE_DEN2024-1.4": "Thy, Mors & Salling Area",
+      "DEN-ICE_DEN2024-2.3": "Northern North Denmark",
+      "DEN-ICE_DEN2024-3.2": "Aalborg | Hadsund | Hobro",
+      "DEN-ICE_DEN2024-1.1": "Fyn, Zealand, Lolland, Falster & Møn",
+      "DEN-ICE_DEN2024-1.2": "Central & Southern Denmark & Northern Schleswig-Holstein",
+      "DEN-ICE_DEN2024-2.1": "Hjørring | Sæby | Støvring",
+      "DEN-ICE_DEN2024-1": "Denmark & Northern Schleswig-Holstein",
+      "DEN-ICE_DEN2024-1.5": "Møn & Southern Zealand",
+      "DEN-ICE_DEN2024-2.4": "Hjørring & Brønderslev ",
+      "DEN-ICE_DEN2024-3": "Northern & North-Central Denmark",
+      "DEN-ICE_DEN2024-3.3": "Western Himmerland",
+      "DEN-ICE_DEN2024-2": "Eastern North Denmark & Northeastern Central Denmark",
+      "DEN-ICE_DEN2024-1.4.4": "Thy & Mors",
+      "DEN-ICE_DEN2024-1.3.4": "Aarhus Municipality",
+      "DEN-ICE_DEN2024-1.4.3": "Mors",
+      "DEN-ICE_DEN2024-1.1.1": "Fyn",
+      "DEN-ICE_DEN2024-1.1.3": "Langeland & Western Lolland",
+      "DEN-ICE_DEN2024-1.2.2": "Southwestern Denmark",
+      "DEN-ICE_DEN2024-1.3.1": "Horsens | Hedensted | Vejle",
+      "DEN-ICE_DEN2024-1.1.2": "Zealand",
+      "DEN-ICE_DEN2024-1.2.1": "Southern Denmark & German Border",
+      "DEN-ICE_DEN2024-1.2.4": "Western Central Denmark",
+      "DEN-ICE_DEN2024-1.3.3": "Northeastern Central Denmark",
+      "DEN-ICE_DEN2024-1.4.2": "Eastern Thy",
+      "DEN-ICE_DEN2024-1.1.4": "Als, Ærø & Tåsinge",
+      "DEN-ICE_DEN2024-1.3.2": "Djursland & Surrounding Area",
+      "DEN-ICE_DEN2024-1.4.1": "Lemvig | Holstebro | Skive",
+      "DEN-ICE_DEN2024-2.3.1": "Hirtshals | Brønderslev | Aalborg",
+      "DEN-ICE_DEN2024-2.1.2": "Hjørring | Brønderslev | Aalborg",
+      "DEN-ICE_DEN2024-2.1.1": "Eastern North Denmark"
+    },
+    "overview": "<p>In the 18th and 19th centuries, most Danes lived in small rural villages, where life revolved around farming. Families raised grain, beans, and livestock, fished to supplement their diets, and relied on close-knit communities for support. Some worked as artisans, merchants, or craftsmen in towns and cities. Many peasants had limited freedoms and were tied to the estates where they worked. As Denmark modernized during the 1800s, farmers, laborers, and religious converts sought new opportunities abroad. Drawn by the promise of land, higher wages, and greater freedom, thousands emigrated to Utah and the American Midwest, where they established new communities and built new lives.</p>\n"
   },
   "EEU2023_Slovakia_Ghost": {
     "name": "Slovakia",
@@ -4795,6 +4835,22 @@
     },
     "overview": "<p>The city of Naples, in the southern Italian region of Campania, gets its name from the Greek word <i>Neapolis</i> (Νεάπολις), meaning “New Town.” A cultural hub since the Roman Empire, it’s famed not only because it’s one of the oldest continuously inhabited urban areas in the world but also because of its volcanic activity. Mount Vesuvius is only six miles from the city center. In the 19th and early 20th centuries, overcrowding and poverty spurred <i>la grande migrazione</i>, an enormous immigration from Italy to the United States, where Italian Americans forged a new life and made a permanent impact on American culture.</p>\n"
   },
+  "LA2023_Portugual_Ghost": {
+    "name": "Portugal",
+    "subjourneys": {
+      "LA2023_1.1.2.3": "Central & Northern Portugal",
+      "LA2023_1.1.2.4": "Alcobaça | Torres Vedras | Lisbon",
+      "LA2023_1.1.2.1": "Northern Centro & Norte",
+      "LA2023_1.1.2.2": "Southern Portugal",
+      "LA2023_1.1.2": "Northern, Eastern & Southern Portugal",
+      "LA2023_1.1.2.5": "Central Leiria",
+      "LA2023_1.1.4": "Northern Portugal",
+      "LA2023_1.1.5": "Porto | Viseu | Coimbra",
+      "LA2023_1.1.6": "Valença | Braga | Porto",
+      "LA2023_1.1.8": "Porto | São João da Madeira | Aveiro"
+    },
+    "overview": "<p>The Portuguese have a long history as a seafaring people who built a global empire through colonization in Latin America, Asia, and Africa. Along Portugal’s rugged coastline, many worked as fishermen, whalers, sailors, and traders, while most inland inhabitants focused on agriculture. Predominantly Catholic, many Portuguese value family time and celebrating traditional holidays. The nation is known for its ornate architecture and distinctive <i>azulejos</i>—vibrant, hand-painted ceramic tiles that adorn buildings and public spaces. Portuguese heritage also shines through in soulful fado music, rich folklore, and a culinary tradition featuring hearty soups, the iconic dried and salted cod known as <i>bacalhau</i>, and world-renowned wines.</p>\n"
+  },
   "SEUR2019_1.5.5": {
     "name": "Northeast Italy",
     "subjourneys": {},
@@ -4837,6 +4893,15 @@
     },
     "overview": "<p>While the western and eastern edges of modern-day Slovenia were historically and culturally aligned with Italy and Hungary, central Slovenia was aligned with Austria and Croatia. Slovenia was one of the longest-held Habsburg provinces, but it was also one of the most rural and agricultural. Cities were sparsely populated, and most people relied on the land. Numerous foreign influences enriched Slovenian urban culture, while the shared peasant experience gave locals a deep appreciation for their country’s natural beauty and folk traditions.</p>\n"
   },
+  "DEN-ICE_ICE2024-Iceland_Ghost": {
+    "name": "Iceland",
+    "subjourneys": {
+      "DEN-ICE_ICE2024-3": "Eastern Coast",
+      "DEN-ICE_ICE2024-2": "Northern Iceland",
+      "DEN-ICE_ICE2024-1": "Central & Western Iceland"
+    },
+    "overview": "<p>After seafaring Norse settlers migrated to Iceland in the 9th century, they encountered disease, volcanic eruptions, and a harsh climate on the island’s isolated landscape . Farms were scattered across the limited arable land, where families and neighbors worked together to produce enough hay to sustain the livestock that supplied milk and cheese. Fishermen braved the dangerous winter and spring seas in search of herring and cod. By the 19th century, a growing population and scarce land left many young Icelanders with few opportunities at home. Many emigrated, creating close-knit communities on the traditional territories of Indigenous nations in places like Canada and Minnesota while maintaining strong cultural ties to one another and Iceland.</p>\n"
+  },
   "IRL2018_1.2.6": {
     "name": "Leinster",
     "subjourneys": {
@@ -4863,15 +4928,6 @@
       "IRL2021_L_3.3": "South East Laois"
     },
     "overview": "<p>The varied landscape of south Leinster—from the Wicklow Mountains to the fertile farmland of Carlow and Kilkenny—has impacted the lives of those who lived there. Long-standing ties to Newfoundland fisheries led some to travel to North America in the 18th and early 19th centuries. South Leinster saw less death and misery during the Great Famine than other parts of Ireland because of the region’s productive farmland, but some residents still immigrated to England, Australia, or American states along the Eastern Seaboard such as New York and Pennsylvania.</p>\n"
-  },
-  "SEUR2019_2.1": {
-    "name": "Southeastern Sicily",
-    "subjourneys": {
-      "SEUR2019_2.1.3": "Catania Province",
-      "SEUR2019_2.1.1": "Agrigento Province",
-      "SEUR2019_2.1.2": "Southeast Sicily Region"
-    },
-    "overview": "<p>Commanding a strategic position in the Mediterranean Sea, Sicily has been a crossroads of civilizations since antiquity. As a result, the Sicilian language includes elements from Latin, Greek, Spanish, Arabic, Norman, German, and other languages. Eastern Sicily is separated from southern Italy by the Strait of Messina. Not far from the strait is Mount Etna, the tallest active volcano in Europe. Taking advantage of volcanic soils, eastern Sicilians farmed some of the most fertile land on the island. Important crops included wheat and citrus fruit. Sulfur became a key export in the Industrial Revolution.</p>\n"
   },
   "EEU2023_Russia_Ghost": {
     "name": "Russia",
@@ -4908,22 +4964,6 @@
       "SCAND2018_1.4.1": "Norra Värmland"
     },
     "overview": "<p>Swedes in the 18th century dealt with famine and war. In the century that followed, industrialization and reforms such as mass education altered life fundamentally. As better medicine and foods were developed, the population grew. Eventually, the scarcity of land and the desire for greater opportunity led many to seek the vast frontier of America where Swedes from the Värmland and Dalarna regions made up some of the largest migrant populations. Swedish-Americans took up a prominent place in American society in the Upper Middle West as farmers, politicians, and urban workers.</p>\n"
-  },
-  "SCAND2018_5.3.5": {
-    "name": "Denmark",
-    "subjourneys": {
-      "SCAND2018_5.3.5.2.1": "East Jutland",
-      "SCAND2018_5.3.5.1.2": "Hjorring",
-      "SCAND2018_5.3.5.1.3": "West Hjorring",
-      "SCAND2018_5.3.5.2.2": "Funen, Lolland & Falster",
-      "SCAND2018_5.3.5.1.5": "Aalborg",
-      "SCAND2018_5.3.5.2.4": "West & South Jutland",
-      "SCAND2018_5.3.5.2.5": "Lolland, Falster & Møn",
-      "SCAND2018_5.3.5.4": "Viborg & Hjorring",
-      "SCAND2018_5.3.5.2": "Jutland, Zealand, Funen, Lolland & Falster",
-      "SCAND2018_5.3.5.1": "North Jutland"
-    },
-    "overview": "<p>Most Danes in the 18th and 19th centuries lived as poor farmers in small villages, growing grains and beans, rearing cattle, and sometimes fishing. A small class of artisans and traders worked in the cities and villages. Danish farmers had few rights and were required by law to stay in their village and work for the local landowners. Beginning in the mid-19th century, many Danish farmers and laborers sought religious freedom, land, and higher wages in America. They went to Utah, Minnesota, Wisconsin, Illinois, Iowa, and Nebraska, and they integrated quickly into American life.</p>\n"
   },
   "SCAND2018_6.1": {
     "name": "Western Finland",
@@ -5013,11 +5053,6 @@
       "DE_2021_1.3.1.1.3.1": "Bremerhaven to Stade to Marne"
     },
     "overview": "<p>Northwest Germany’s landscape includes coastal marshlands and rolling farmland. The cities of Emden, Bremen, and Hamburg long dominated Germany’s trade with Europe, while further inland, cattle and flax provided people in the mostly rural region with a stable livelihood. Slower to industrialize, this region saw rapid population growth, prompting many to emigrate to the United States in the 19th century. These German immigrants settled in the rural Midwest in cities like St. Louis and Cincinnati, bringing their brewing culture and strong Lutheran faith along with them.</p>\n"
-  },
-  "France2021_1.1.5.2": {
-    "name": "France",
-    "subjourneys": {},
-    "overview": "<p>Early modern France was shaped by agriculture. Farmers far outnumbered any other profession, but the work was grueling and subject to temperamental weather and exploitative landlords. With the end of the 18th century, the working classes grew increasingly dissatisfied with their economic position, leading to the French Revolution and France’s first constitution. In the two centuries that followed, French citizenry withstood five republics, two empires, and four years of occupation by Nazi Germany. Throughout this time, Paris attracted people from every region of France, which transformed it into the beacon of art, culture, and cuisine it is today.</p>\n"
   },
   "GreatBritain_2021_2.3.1_2.3.2_2.3.3_Ghost": {
     "name": "Scottish Highlands & the Hebrides",
@@ -5161,6 +5196,19 @@
     },
     "overview": "<p>Nestled in the Alps, Switzerland’s population has been shaped by its rugged terrain as well as by the countries that border it, particularly Germany, France, and Italy. Over the centuries, Switzerland struggled to create a single nation, separated not only by geographic barriers but also by language, religion, and values. With the establishment of its first constitution in 1848, a modern, unified Switzerland was born. Despite its famed principle of neutrality, Switzerland was shaken by both World Wars, but its resilience made it an innovative country whose residents enjoy a high standard of living.</p>\n"
   },
+  "FR_FR2024-France_Ghost": {
+    "name": "France",
+    "subjourneys": {
+      "FR_FR2024-1": "l'Hexagone",
+      "FR_FR2024-1.2": "Brittany",
+      "FR_FR2024-1.1": "Southwestern France",
+      "FR_FR2024-3": "Eastern Grand Est",
+      "FR_FR2024-1.4": "East-Central France",
+      "FR_FR2024-2.3": "Northern Hauts-de-France & West Flanders",
+      "FR_FR2024-1.3": "Southeastern France"
+    },
+    "overview": "<p>Alsace, Lorraine, and Franche-Comté are regions of eastern France near the German border. Their history has been shaped by changing borders, war, industrial growth, and economic change. Many people spoke German dialects as well as French and followed traditions influenced by both cultures. In the early 1700s, some families from the region were recruited to settle in Louisiana. During the 1800s, others moved to Ohio in search of farmland and jobs or to escape military service and political unrest. Still others moved to Paris for work. In each new home, these migrants adapted while helping shape local communities and traditions.</p>\n"
+  },
   "GreatBritain_2021_2.1.2_2.1.3_Ghost": {
     "name": "Northern Ireland & Southwest Scotland",
     "subjourneys": {
@@ -5182,6 +5230,15 @@
       "GreatBritain_2021_2.1.2.1": "Antrim & Eastern Londonderry/Derry"
     },
     "overview": "<p>Just twelve miles apart at their nearest point, northeast Ireland and southwest Scotland have close cultural and historical ties. The first Scottish Protestants moved to the province of Ulster in the 17th century. Since then, the Ulster Scots have experienced ongoing political conflict with the native Irish Catholics. Over the centuries, millions of emigrants from both groups have left Ireland, often seeking an escape from famine or hardship. Large numbers of Ulster Scots ended up in southwest Scotland, England, Australia, and North America.</p>\n"
+  },
+  "SEUR2019_2.1": {
+    "name": "Southeastern Sicily",
+    "subjourneys": {
+      "SEUR2019_2.1.3": "Catania Province",
+      "SEUR2019_2.1.1": "Agrigento Province",
+      "SEUR2019_2.1.2": "Southeast Sicily Region"
+    },
+    "overview": "<p>Commanding a strategic position in the Mediterranean Sea, Sicily has been a crossroads of civilizations since antiquity. As a result, the Sicilian language includes elements from Latin, Greek, Spanish, Arabic, Norman, German, and other languages. Eastern Sicily is separated from southern Italy by the Strait of Messina. Not far from the strait is Mount Etna, the tallest active volcano in Europe. Taking advantage of volcanic soils, eastern Sicilians farmed some of the most fertile land on the island. Important crops included wheat and citrus fruit. Sulfur became a key export in the Industrial Revolution.</p>\n"
   },
   "EEU2023_CzechBohemia_Ghost": {
     "name": "Central & Western Czechia",
@@ -5226,44 +5283,6 @@
       "EEU2023_1.1.2.1.2": "Southeastern South Bohemia & Austria Border"
     },
     "overview": "<p>Bohemia is the western side of today’s Czechia. Central Bohemia is rich and fertile, while its northern and western edges are rocky and mountainous. German speakers dominated many of these areas until the end of the 19th century, when Czech speakers started running major industries and began a Czech national revival in politics and culture. Still, the region’s cuisine, fashion, and fine arts retained many German influences. Although modern history has been dominated by warfare and industrialization, Bohemian artists managed to leave a mark on Europe before, during, and after the communist era.</p>\n"
-  },
-  "EEU2023_UkraineWest_Ghost": {
-    "name": "Western Ukraine",
-    "subjourneys": {
-      "EEU2023_2.3.2.1.1": "Perechyn | Uzhhorod | Serednie",
-      "EEU2023_2.1.3.3.1": "Husiatyn | Borshchiv | Sniatyn",
-      "EEU2023_2.1.3.2.2": "Central Chernivtsi Oblast",
-      "EEU2023_2.1.3.1.3": "Eastern Ivano-Frankivsk & Southern Ternopil Oblasts",
-      "EEU2023_2.3.2.1": " Uzhhorod & Slovakia & Hungary Borders",
-      "EEU2023_2.1.3.2.1": "Central Chernivtsi Oblast & Romania Border",
-      "EEU2023_2.1.3.1.2": "Central Ivano-Frankivsk & Southernwestern Ternopil Oblasts",
-      "EEU2023_2.1.3.3.3": "Borshchiv | Zalishchyky | Kitsman",
-      "EEU2023_2.1.3.2.4": "East Central Ivano-Frankivsk & Northwestern Chernivtsi Oblasts",
-      "EEU2023_2.1.3.3.2": "Borshchiv | Zalishchyky | Chernivtsi",
-      "EEU2023_2.1.3.2.3": "Zalishchyky | Zabolotiv | Chernivtsi",
-      "EEU2023_2.1.3.1.7": "Southeastern Lviv, Northern Ivano-Frankivsk & Southern Ternopil Oblasts",
-      "EEU2023_2.1.3.3.4": "Eastern Ternopil Oblast",
-      "EEU2023_2.1.3.2.5": "Horodenka | Zastavna | Chernivtsi",
-      "EEU2023_2.1.3.1.6": "Eastern Zakarpattia, Central Ivano-Frankivsk & Southern Ternopil Oblasts",
-      "EEU2023_2.1.2.1.2": "Perechyn | Serednie | Mukachevo",
-      "EEU2023_2.1.1.2.2": "Northwestern Lviv Oblast & Poland Border",
-      "EEU2023_2.1.1.1.3": "Central & Southern Ternopil Oblast & Surrounding Area",
-      "EEU2023_2.1.1.2.1": "Northeastern Lviv & Central Ternopil",
-      "EEU2023_2.1.1.2.4": "Lviv, Ivano-Frankivsk, Ternopil & Chernivtsi Oblasts",
-      "EEU2023_2.1.1.1.5": "Central & Southern Ternopil Oblast & Ivano-Frankivsk Chernivtsi Borders",
-      "EEU2023_2.1.1.2.3": "Central Ternopil Oblast",
-      "EEU2023_2.1.1.1.4": "Eastern Ivano-Frankivsk, Southern Ternopil & Northern Chernivtsi Oblasts",
-      "EEU2023_2.1.1.1.1": "Central Lviv, Northern Ivano-Frankivsk, & Central Ternopil Oblasts",
-      "EEU2023_2.1.1.1": "Lviv, Ivano-Frankivsk, Ternopil & Chernivtsi Oblasts & Surrounding Area",
-      "EEU2023_2.1.1.2": "Southwestern Ukraine & Poland Border",
-      "EEU2023_2.1.3.1": "Central Ivano-Frankivsk & Southern Ternopil Oblasts",
-      "EEU2023_2.1.3.2": "Southwestern Ukraine",
-      "EEU2023_2.1.3.3": "Western Ukraine & Poland Border",
-      "EEU2023_2.1.1.1.7": "Eastern Lviv, Northern Ivano-Frankivsk & Western Ternopil Oblasts",
-      "EEU2023_2.1.3.4": "Skalat | Ivano-Frankivsk | Chernivtsi",
-      "EEU2023_2.1.1.2.5": "Lviv, Ivano-Frankivsk, Ternopil & Chernivtsi Oblasts & Poland Border"
-    },
-    "overview": "<p>The western region of present-day Ukraine is mostly wooded, mountainous, and marked by centuries of rule by central European states such as Poland and the Austro-Hungarian Empire. Its population—referred to in the 19th century as ‘Ruthenians,’ ‘Galicians,’ or ‘Rusyns’—was more likely to speak Ukrainian and belong to the Greek Catholic Orthodox religion than elsewhere in Ukraine. The inhabitants were traditionally poorer, had less land, worse infrastructure, and lower literacy rates than peasants elsewhere in Europe. Beginning in the latter 19th century, hundreds of thousands of Ukrainians and Jews from the region immigrated to Western Pennsylvania as well as the plains of Canada and the U.S.</p>\n"
   },
   "DE_2021_1.1.1_Ghost": {
     "name": "Baden-Württemberg & Hesse",
@@ -5772,27 +5791,43 @@
     },
     "overview": "Marked by fjords, harbor towns, and sparsely populated inland valleys, life along the southern coast of Norway offered economic opportunities for many. Small farmers could supplement their diet and income with fishing. Others logged, built ships, and fished, but this work could become a casualty of global events. Although shipbuilding and timber boomed in the mid-19th century, when shipyards failed to transition to steam in the 1880s, thousands of southern Norwegian workers and their families left for America where land and work were available."
   },
-  "SCAND2018_3.2": {
-    "name": "Eastern Norway",
+  "EEU2023_UkraineWest_Ghost": {
+    "name": "Western Ukraine",
     "subjourneys": {
-      "SCAND2018_3.2.2.3.3": "Vestre Slidre",
-      "SCAND2018_3.2.2.3.2": "Valdres",
-      "SCAND2018_3.2.1": "Buskerud",
-      "SCAND2018_3.2.3.1": "Rollag, Tinn & Notodden",
-      "SCAND2018_3.2.2.2": "Nord-Aurdal",
-      "SCAND2018_3.2.1.3": "Hallingdal Valley",
-      "SCAND2018_3.2.2.1.2": "Nord-Aurdal & Sør-Aurdal",
-      "SCAND2018_3.2.2.1.1": "Nordre Land & Søndre Land",
-      "SCAND2018_3.2.1.4": "Nes, Flå & Krødsherad",
-      "SCAND2018_3.2.2.3": "Slidrefjord",
-      "SCAND2018_3.2.3.3": "Rollag, Sigdal & Krødsherad",
-      "SCAND2018_3.2.3.4": "Rollag, Sigdal, Flesberg & Krødsherad",
-      "SCAND2018_3.2.3": "Telemark-Buskerud Border",
-      "SCAND2018_3.2.2.1": "Etnedal, Nord-Aurdal & Nordre Land",
-      "SCAND2018_3.2.2": "Oppland",
-      "SCAND2018_3.2.1.2": "Hallingskarvet"
+      "EEU2023_2.3.2.1.1": "Perechyn | Uzhhorod | Serednie",
+      "EEU2023_2.1.3.3.1": "Husiatyn | Borshchiv | Sniatyn",
+      "EEU2023_2.1.3.2.2": "Central Chernivtsi Oblast",
+      "EEU2023_2.1.3.1.3": "Eastern Ivano-Frankivsk & Southern Ternopil Oblasts",
+      "EEU2023_2.3.2.1": " Uzhhorod & Slovakia & Hungary Borders",
+      "EEU2023_2.1.3.2.1": "Central Chernivtsi Oblast & Romania Border",
+      "EEU2023_2.1.3.1.2": "Central Ivano-Frankivsk & Southernwestern Ternopil Oblasts",
+      "EEU2023_2.1.3.3.3": "Borshchiv | Zalishchyky | Kitsman",
+      "EEU2023_2.1.3.2.4": "East Central Ivano-Frankivsk & Northwestern Chernivtsi Oblasts",
+      "EEU2023_2.1.3.3.2": "Borshchiv | Zalishchyky | Chernivtsi",
+      "EEU2023_2.1.3.2.3": "Zalishchyky | Zabolotiv | Chernivtsi",
+      "EEU2023_2.1.3.1.7": "Southeastern Lviv, Northern Ivano-Frankivsk & Southern Ternopil Oblasts",
+      "EEU2023_2.1.3.3.4": "Eastern Ternopil Oblast",
+      "EEU2023_2.1.3.2.5": "Horodenka | Zastavna | Chernivtsi",
+      "EEU2023_2.1.3.1.6": "Eastern Zakarpattia, Central Ivano-Frankivsk & Southern Ternopil Oblasts",
+      "EEU2023_2.1.2.1.2": "Perechyn | Serednie | Mukachevo",
+      "EEU2023_2.1.1.2.2": "Northwestern Lviv Oblast & Poland Border",
+      "EEU2023_2.1.1.1.3": "Central & Southern Ternopil Oblast & Surrounding Area",
+      "EEU2023_2.1.1.2.1": "Northeastern Lviv & Central Ternopil",
+      "EEU2023_2.1.1.2.4": "Lviv, Ivano-Frankivsk, Ternopil & Chernivtsi Oblasts",
+      "EEU2023_2.1.1.1.5": "Central & Southern Ternopil Oblast & Ivano-Frankivsk Chernivtsi Borders",
+      "EEU2023_2.1.1.2.3": "Central Ternopil Oblast",
+      "EEU2023_2.1.1.1.4": "Eastern Ivano-Frankivsk, Southern Ternopil & Northern Chernivtsi Oblasts",
+      "EEU2023_2.1.1.1.1": "Central Lviv, Northern Ivano-Frankivsk, & Central Ternopil Oblasts",
+      "EEU2023_2.1.1.1": "Lviv, Ivano-Frankivsk, Ternopil & Chernivtsi Oblasts & Surrounding Area",
+      "EEU2023_2.1.1.2": "Southwestern Ukraine & Poland Border",
+      "EEU2023_2.1.3.1": "Central Ivano-Frankivsk & Southern Ternopil Oblasts",
+      "EEU2023_2.1.3.2": "Southwestern Ukraine",
+      "EEU2023_2.1.3.3": "Western Ukraine & Poland Border",
+      "EEU2023_2.1.1.1.7": "Eastern Lviv, Northern Ivano-Frankivsk & Western Ternopil Oblasts",
+      "EEU2023_2.1.3.4": "Skalat | Ivano-Frankivsk | Chernivtsi",
+      "EEU2023_2.1.1.2.5": "Lviv, Ivano-Frankivsk, Ternopil & Chernivtsi Oblasts & Poland Border"
     },
-    "overview": "<p>In the 1700s Norway’s population was mostly rural. Most farmers owned or leased their land, a small class of merchants and bureaucrats lived in the cities, and Norway’s rich natural resources led to rising wealth through trade. However, a steep increase in population in the 19th century combined with a scarcity of land, led many of Eastern Norway’s farmers and city-dwellers to look for greater prosperity in America. Once there, Norwegians made up one of the most tight-knit immigrant communities in the Upper Midwest.</p>\n"
+    "overview": "<p>The western region of present-day Ukraine is mostly wooded, mountainous, and marked by centuries of rule by central European states such as Poland and the Austro-Hungarian Empire. Its population—referred to in the 19th century as ‘Ruthenians,’ ‘Galicians,’ or ‘Rusyns’—was more likely to speak Ukrainian and belong to the Greek Catholic Orthodox religion than elsewhere in Ukraine. The inhabitants were traditionally poorer, had less land, worse infrastructure, and lower literacy rates than peasants elsewhere in Europe. Beginning in the latter 19th century, hundreds of thousands of Ukrainians and Jews from the region immigrated to Western Pennsylvania as well as the plains of Canada and the U.S.</p>\n"
   },
   "DE_2021_Netherlands_Ghost": {
     "name": "The Netherlands",
@@ -5880,6 +5915,33 @@
     },
     "overview": "Norway’s western coast winds for hundreds of miles, punctuated by fjords, fishing villages, and farms. For centuries, Norwegians there fished for cod and herring. Although life was often tenuous, the farmers and fishers in western Norway were well fed and prosperous compared to other places in Europe. Fish was the main export, but residents also relied on subsistence farming and timber. As the population grew in the 19th century, migrants from the Sognefjord and Hardangerfjord regions left for America to live in Wisconsin, Minnesota, and North Dakota."
   },
+  "AU-NZ_NZ2024-1": {
+    "name": "New Zealand, European Settlers",
+    "subjourneys": {
+      "AU-NZ_NZ2024-1.4": "Northern South Island & Southern North Island",
+      "AU-NZ_NZ2024-1.12": "Pātea | Palmerston North | Wellington",
+      "AU-NZ_NZ2024-1.5": "Southern North Island & Coastal Marlborough",
+      "AU-NZ_NZ2024-1.6": "Ortego & Eastern Southland",
+      "AU-NZ_NZ2024-1.14": "Whanganui | Hastings | Wellington",
+      "AU-NZ_NZ2024-1.7": "Taranaki, Coastal Manawatū-Whanganui, Western Wellington & Cook Strait",
+      "AU-NZ_NZ2024-1.8": "Southern North & South Island",
+      "AU-NZ_NZ2024-1.6.5": "Dunedin | Milton | Balclutha",
+      "AU-NZ_NZ2024-1.1": "Northland, Aukland & Western Waikato ",
+      "AU-NZ_NZ2024-1.2": "Southern Canterbury, Otago & Southland",
+      "AU-NZ_NZ2024-1.3": "Northern West Coast & Canterbury",
+      "AU-NZ_NZ2024-1.4.3": "South Taranaki Bight, Tasman Bay & Golden Bay",
+      "AU-NZ_NZ2024-1.4.2": "Northern Tasman & South Taranaki Bight",
+      "AU-NZ_NZ2024-1.5.1": "Whanganui | Palmerston North | Wellington",
+      "AU-NZ_NZ2024-1.4.4": "Golden Bay, Tasman Bay & Blenheim",
+      "AU-NZ_NZ2024-1.7.1": "Taranaki",
+      "AU-NZ_NZ2024-1.1.1": "Northland & Aukland",
+      "AU-NZ_NZ2024-1.1.2": "Aukland",
+      "AU-NZ_NZ2024-1.2.1": "Southland & Otago",
+      "AU-NZ_NZ2024-1.2.2": "Eastern Southland & Otago",
+      "AU-NZ_NZ2024-1.4.1": "Northern West Coast & South Taranaki Bight"
+    },
+    "overview": "<p>Between the 19th and 20th centuries, British migration deeply shaped New Zealand society. Following Te Tiriti o Waitangi / The Treaty of Waitangi in 1840, thousands of British families arrived to build farms, towns, and new lives. Settler economic expansion, fueled by sheep farming, gold rushes, and railways, relied heavily on acquiring Māori land, often causing intense conflict and dispossession. Settlers built vibrant communities and passed landmark social reforms, including women’s suffrage in 1893. Through the world wars and postwar growth, British culture remained central, while Māori continued to fight to defend their land, culture, and rights.</p>\n"
+  },
   "ASIA2023_3.3.2.4": {
     "name": "Fiji",
     "subjourneys": {},
@@ -5895,22 +5957,37 @@
     "subjourneys": {},
     "overview": "<p>Early settlers first migrated to the Tongan archipelago 3,200 years ago as part of the Lapita expansion that also settled neighboring Fiji and Sāmoa. According to Tongan oral traditions, the demi-god Maui pulled up the islands from the ocean with his magic fishhook. Those traditions also say that the god Tangaloa and a mortal woman were the parents of ‘Aho‘eitu, Tonga’s first divine king. The resulting Tu‘i Tonga Empire forged a trade and cultural network extending to Sāmoa, Fiji, Rotuma, and Vanuatu. The first Tongans and their descendants were skilled builders of long-range canoes, monuments, and <i>langi</i> (terraced tombs).</p>\n"
   },
-  "AUNZ2019_2.1_2.3_2.4_2.5_2.6_2.7_2.10": {
-    "name": "New South Wales, Australia, European & British Settlers",
+  "AU-NZ_AU2024-Victoria_Ghost": {
+    "name": "Victoria, European Settlers",
     "subjourneys": {
-      "AUNZ2019_2.1": "Australian Capital Territory, European & British Settlers",
-      "AUNZ2019_2.4.3": "Lower North Coast, New South Wales, European & British Settlers",
-      "AUNZ2019_2.3": "North West, New South Wales, European & British Settlers",
-      "AUNZ2019_2.4": "Greater North Coast, New South Wales, European & British Settlers",
-      "AUNZ2019_2.4.1": "Newcastle, New South Wales, European & British Settlers",
-      "AUNZ2019_2.4.2": "Mid-North Coast, New South Wales, European & British Settlers",
-      "AUNZ2019_2.10": "Southern Highlands & Blue Mountains, New South Wales, European & British Settlers",
-      "AUNZ2019_2.1.1": "South East, New South Wales, European & British Settlers",
-      "AUNZ2019_2.5": "North East, New South Wales, European & British Settlers",
-      "AUNZ2019_2.6": "Upper South Coast, New South Wales, European & British Settlers",
-      "AUNZ2019_2.7": "Greater Sydney, New South Wales, European & British Settlers"
+      "AU-NZ_AU2024-1.15": "Warrnambool | Bendigo | Traralgon",
+      "AU-NZ_AU2024-1.16": "Stawell | Euroa | Sale",
+      "AU-NZ_AU2024-1.17": "Ararat | Geelong | Numurkah",
+      "AU-NZ_AU2024-1.18": "Warrnambool | Melbourne | Shepparton",
+      "AU-NZ_AU2024-1.19": "Ballarat | Geelong | Shepparton",
+      "AU-NZ_AU2024-1.4.1": "Port Fairy | Mortlake | Cobden",
+      "AU-NZ_AU2024-1.4.2": "Penhurst | Port Fairy | Colac",
+      "AU-NZ_AU2024-1.4.3": "Coleraine | Warrnambool | Beeac",
+      "AU-NZ_AU2024-1.4.4": "Casterton | Port Campbell | Dunkeld",
+      "AU-NZ_AU2024-1.4.5": "Penhurst | Port Fairy | Camperdown",
+      "AU-NZ_AU2024-1.20": "Bendigo | Bllarat | Melboburne",
+      "AU-NZ_AU2024-1.21": "Mount Gambler | Melbourne | Bendigo",
+      "AU-NZ_AU2024-1.3": "Warrnambool | Swan Hill | Traralgon",
+      "AU-NZ_AU2024-1.4.6": "Edenhope | Portland | Warrnambool",
+      "AU-NZ_AU2024-1.2": "Mount Gambler | Traralgon | Albury",
+      "AU-NZ_AU2024-1.9": "Mildura | Mount Gambler | Sale",
+      "AU-NZ_AU2024-1.10": "Portland | Warragul | Burchip",
+      "AU-NZ_AU2024-1.8": "Mount Gambler | Bairnsdale | Gunbower",
+      "AU-NZ_AU2024-1.11": "Mount Gambler | Swan Hill | Traralgon",
+      "AU-NZ_AU2024-1.7": "Horsham | Geelong | Corryong ",
+      "AU-NZ_AU2024-1.12": "Wedderburn | Camperdown | Traralgon",
+      "AU-NZ_AU2024-1.6": "Ballarat | Bairnsdale | Mathoura",
+      "AU-NZ_AU2024-1.13": "Albury | Ballarat | Sale",
+      "AU-NZ_AU2024-1.5": "Adelaide | Warrnambool | Albury",
+      "AU-NZ_AU2024-1.14": "Albury | Bendigo | Melborune",
+      "AU-NZ_AU2024-1.4": "Mount Gambler | Traralgon | Birchip"
     },
-    "overview": "Great Britain was getting crowded. Convicts couldn’t be sent to the American colonies after they declared independence, prisons were full, and agriculture was near capacity. Australia offered a solution. After the First Fleet arrived in 1788, British colonists grew New South Wales from a rough collection of tents into a network of prosperous cities. The newcomers lived through boom and bust, gold rush and drought. Still, the migrants came, turning a former British colony into a land with a future and culture all its own."
+    "overview": "<p>Victoria's modern history began when settlers from Van Diemen's Land (now Tasmania) crossed Bass Strait to raise sheep on fertile grasslands. During the 1800s, migrants from Britain, Ireland, and later Europe arrived to farm, mine for gold, and build new towns. Melbourne grew from a small settlement into one of the largest and richest cities in the British Empire and became Australia's first federal capital in 1901. In the 1900s, factories, postwar immigration, and a strong sports and arts culture made Victoria more diverse, while European settlement greatly changed the lives and lands of its First Peoples.</p>\n"
   },
   "ASIA2023_Hawaii_Ghost": {
     "name": "Hawaiian Islands",
@@ -5922,10 +5999,63 @@
     },
     "overview": "<p><i>Kanaka Maoli</i> (Native Hawaiian) ancestors first settled Hawai‘i by way of large double-hulled voyaging canoes from the Marquesas and other islands in Polynesia. <i>Mo‘olelo</i> (oral traditions) suggest an initial migration between 1,200 and 2,000 years ago. Approximately 900 years ago, Pāʻao, a high priest from Tahiti, introduced a highly structured social order with <i>ali‘i</i> (chiefs) as the ruling nobility. To sustain their communities, early Hawaiians built <i>lo‘i</i> (irrigated terraces) to grow <i>kalo</i> (taro), which became Hawai‘i’s staple crop. They also constructed <i>loko</i> <i>i‘a</i> (fishponds) for a steady supply of <i>‘ama‘ama</i> (mullet) and other marine resources.</p>\n"
   },
+  "AU-NZ_AU2024-4": {
+    "name": "Queensland, European Settlers",
+    "subjourneys": {
+      "AU-NZ_AU2024-4.29": "Gatton | Ipswich | Boonah ",
+      "AU-NZ_AU2024-4.9": "Cairns | Mackay | Brisbane",
+      "AU-NZ_AU2024-4.31": "Cairns | Blackall | Brisbane",
+      "AU-NZ_AU2024-4.30": "Bundaberg | Chinchilla | Brisbane",
+      "AU-NZ_AU2024-4.11": "Longreach | Rockhampton | Gold Coast",
+      "AU-NZ_AU2024-4.10": "Inglewood | Toowoomba | Brisbane ",
+      "AU-NZ_AU2024-4.13": "Bundaberg | Warwick | Murwillumbah",
+      "AU-NZ_AU2024-4.12": "Port Douglas | Winton | Gold Coast",
+      "AU-NZ_AU2024-4.15": "Townsville | Charleville | Brisbane",
+      "AU-NZ_AU2024-4.14": "Cooktown | Clermont | Gold Coast",
+      "AU-NZ_AU2024-4.17": "Dalby | Warwick | Brisbane",
+      "AU-NZ_AU2024-4.16": "Bundaberg | Warwick | Brisbane",
+      "AU-NZ_AU2024-4.19": "Maryborough | Brisbane | Gulf Coast",
+      "AU-NZ_AU2024-4.18": "Gympie | Dalby | Tweed Heads",
+      "AU-NZ_AU2024-4.20": "Caboolture | Warwick | Tweed Heads",
+      "AU-NZ_AU2024-4.22": "Rockhampton | Bundaberg | Gympie",
+      "AU-NZ_AU2024-4.8": "Dalby | Tenterfield | Brisbane",
+      "AU-NZ_AU2024-4.21": "Toowoomba | Warwick | Brisbane",
+      "AU-NZ_AU2024-4.7": "Southern Queensland & New South Wales Border",
+      "AU-NZ_AU2024-4.24": "Maryborough | Brisbane | Warwick",
+      "AU-NZ_AU2024-4.6": "Longreach | Rockhampton | Warwick",
+      "AU-NZ_AU2024-4.23": "Cairns | Longreach | Rockhampton",
+      "AU-NZ_AU2024-4.5": "Townsville | Brisbane | Thargomindah",
+      "AU-NZ_AU2024-4.26": "Maryborough | Brisbane | Murwillumbah",
+      "AU-NZ_AU2024-4.4": "Cloncurry | Cairns | Gold Coast",
+      "AU-NZ_AU2024-4.25": "Toowoomba | Ipswich | Logan City",
+      "AU-NZ_AU2024-4.3": "Townsville | Barcaldine | Brisbane",
+      "AU-NZ_AU2024-4.2": "Rockhampton | Roma | Lismore",
+      "AU-NZ_AU2024-4.28": "Brisbane",
+      "AU-NZ_AU2024-4.1": "Bundaberg | Roma | Gold Coast",
+      "AU-NZ_AU2024-4.27": "Gladstone | Gayndah | Gold Coast"
+    },
+    "overview": "<p>Aboriginal and Torres Strait Islander peoples lived on and cared for land in present-day Queensland for tens of thousands of years before European settlement began with a convict outpost. After the prison closed, free settlers expanded from Brisbane, using riverways to develop industries including mining and manufacturing. During both world wars, Queensland became a key military training center while the home front supplied troops overseas. Post-war migration schemes brought people from many countries, increasing cultural diversity and shaping the growth of Queensland’s towns and cities.</p>\n"
+  },
   "LA2023_1.4.3": {
     "name": "Portuguese in Hawaii & California",
     "subjourneys": {},
     "overview": "<p>Known for their agricultural skills, residents of Portugal’s Azores and Madeira islands were often pushed by poverty and instability to seek new lives in the United States. In their primary destinations of Hawaii and California, they found work on plantations, on farms, and as business owners. In both places, they built strong communities, preserving unique traditions like the Holy Ghost Festival while also contributing to local culture, famously adapting their <i>braguinha</i> into the beloved ukulele.</p>\n"
+  },
+  "AU-NZ_AU2024-5": {
+    "name": "Western Australia, European Settlers",
+    "subjourneys": {
+      "AU-NZ_AU2024-5.10": "Perth",
+      "AU-NZ_AU2024-5.9": "Perth | Northam | Pingelly",
+      "AU-NZ_AU2024-5.8": "Perth | Busselton | Katanning",
+      "AU-NZ_AU2024-5.7": "Northampton | Perth | Bunbury",
+      "AU-NZ_AU2024-5.6": "Perth | Meckering | Busselton",
+      "AU-NZ_AU2024-5.5": "Gingin | Narrogin | Busselton",
+      "AU-NZ_AU2024-5.4": "Southwestern Australia",
+      "AU-NZ_AU2024-5.3": "Moora | York | Bridgetown",
+      "AU-NZ_AU2024-5.2": "Southwestern Coast",
+      "AU-NZ_AU2024-5.1": "Toodyay | Busselton | Albany"
+    },
+    "overview": "<p>Before British settlement, First Peoples had lived in Western Australia for at least 50,000 years, developing rich cultures, trade networks, and deep ties to the land. Concerned about growing French interest in the region, Britain established the Swan River Colony in 1829, near present-day Perth. Although isolated, Western Australians built connections across Australia and nearby Asia through shipping and, later, the Trans-Australian Railway. During both World Wars, they supplied food, minerals, military bases, and service members. After the war, mining, mechanised farming, and tourism helped transform the state's economy and way of life.</p>\n"
   },
   "SEUR2019_2.7": {
     "name": "Calabria",
@@ -5941,18 +6071,6 @@
     },
     "overview": "<p>Forming the toe of Italy’s boot-shaped peninsula, Calabria lies in the heart of southern Italy. The name “Italy” comes from this region, as the ancient residents of Calabria were known as Italoi in Greek. Known for their silk production and warm climate, Calabrians were nonetheless plagued by natural disasters and poverty in the 19th and early 20th centuries. Many uprooted their lives in search of better living conditions. Often they chose the United States, where millions of Italian immigrants embraced American culture and left an indelible mark on its entertainment, language, and cuisine.</p>\n"
   },
-  "AUNZ2019_1.6": {
-    "name": "Western Australia, European & British Settlers",
-    "subjourneys": {},
-    "overview": "Western Australia’s first British immigrants were free settlers, but the colony soon took in convicts as laborers. The colony was remote, connected to other Australian settlements by sea, but the discovery of gold brought fortune seekers from across the continent. Western Australia’s farmers helped meet the demands of two world wars, which brought other changes as well. During World War I, a rail route finally made the state more accessible to tourists and traders. Later came submarine bases, code-breaking units, fortifications, and changes in women’s roles."
-  },
-  "AUNZ2019_1.2": {
-    "name": "Victoria, Australia, European & British Settlers",
-    "subjourneys": {
-      "AUNZ2019_1.2.1": "Great South Coast, Victoria, European & British Settlers"
-    },
-    "overview": "As wealthy sheep farmers sought more land, Melbourne (and later Victoria) was established as a direct offshoot of Van Diemen’s Land. In the middle of the 19th century the population was shaped by gold rushes, as migrants arrived to seek their fortune. Melbourne developed into a culturally diverse city and was home to the first Australian Parliament after Federation. Industries grew on the city’s outskirts during the early 20th century, and Melbourne developed an expressive, creative sense of fun that continues today.\n"
-  },
   "ASIA2023_Samoa_Ghost": {
     "name": "Samoan Islands",
     "subjourneys": {
@@ -5966,15 +6084,32 @@
     "subjourneys": {},
     "overview": "<p>Guam (<i>Guåhan</i> in the Indigenous Chamorro language) is the largest and southernmost island of the Mariana Archipelago in the northwestern Pacific Islands region. The Chamorro people have called the archipelago home for 3,500 years. An extended period of Spanish influence began in the 1500s. Later, the United States took control of Guam in 1898 after the Spanish-American War, while Germany and subsequently Japan controlled the Northern Marianas. After World War II, the United States regained Guam and took over the northern islands, which remain U.S. territories. Although a popular slogan celebrates Guam as “Where America’s Day Begins,” the archipelago's Indigenous identity persists.</p>\n"
   },
-  "AUNZ2019_2.2": {
-    "name": "Queensland, European & British Settlers",
-    "subjourneys": {},
-    "overview": "European settlement in Queensland began with an outpost for convicts, housing the roughest reoffenders. The prison eventually closed, and the area opened to free settlers looking for land. Vast distances between settlements left rural residents dependent on transport and communication systems, even for education and medical services. During the world wars, Queensland was an important hub for training soldiers, while an active home front sent provisions to the front lines. Emigration plans after World War II introduced new multicultural influences to Queensland’s urban centers."
-  },
-  "AUNZ2019_1.4": {
-    "name": "South Australia, European & British Settlers",
-    "subjourneys": {},
-    "overview": "South Australia was planned and populated under a careful emigration plan intended to create the ideal colony. Mineral deposits, including gold and opal, led to thriving mining and refining industries, and the colony became the home of Australian female suffrage. The flat landscape lent itself to bicycles and automobiles, which residents were quick to adopt. The land also proved good for vineyards. During the war years, the colony turned to manufacturing household appliances, automobiles, and (later) military supplies. Wine and manufacturing continue to help define South Australian culture."
+  "AU-NZ_AU2024-1.1": {
+    "name": "South Australia, European Settlers",
+    "subjourneys": {
+      "AU-NZ_AU2024-1.1.20": "Freeling | Woodside | Goolwa",
+      "AU-NZ_AU2024-1.1.1": "Hawker | Port Lincoln | Hamilton",
+      "AU-NZ_AU2024-1.1.12": "Moonta | Victor Harbor | Burra",
+      "AU-NZ_AU2024-1.1.13": "Nuriootpa | McLaren Vale | Goolwa",
+      "AU-NZ_AU2024-1.1.2": "Hawker | Streaky Bay | Adelaide",
+      "AU-NZ_AU2024-1.1.10": "Marree | Wallaroo | Adelaide",
+      "AU-NZ_AU2024-1.1.21": "Kapunda | Lobethal | Victor Harbor",
+      "AU-NZ_AU2024-1.1.3": "Port Augusta | Adelaide | Portland",
+      "AU-NZ_AU2024-1.1.11": "Port Augusta | Edithburgh | Strathalbyn",
+      "AU-NZ_AU2024-1.1.4": "Hawker | Burra | Normanville",
+      "AU-NZ_AU2024-1.1.16": "Kapunda | Normanville | Meningie",
+      "AU-NZ_AU2024-1.1.5": "Quorn | Adelaide | Mount Gambler",
+      "AU-NZ_AU2024-1.1.17": "Burra | Mannum | Normanville",
+      "AU-NZ_AU2024-1.1.6": "Hamley Bridge | Adelaide | Willunga",
+      "AU-NZ_AU2024-1.1.14": "Wallaroo | Normanville | Burra",
+      "AU-NZ_AU2024-1.1.7": "Orroroo | Hardwicke Bay | Wellington",
+      "AU-NZ_AU2024-1.1.15": "Hawker | Hardwicke Bay | Strathalbyn",
+      "AU-NZ_AU2024-1.1.8": "Hawker | Adelaide | Kingscote",
+      "AU-NZ_AU2024-1.1.9": "Quorn | Adelaide | Victor Harbor",
+      "AU-NZ_AU2024-1.1.18": "AU-NZ_AU2024-1.1.18",
+      "AU-NZ_AU2024-1.1.19": "Peterborough | Hardwicke Bay | Goolwa"
+    },
+    "overview": "<p>Unlike Australia's penal colonies, South Australia was founded in 1836 as a planned free colony, attracting voluntary migrants from Britain and later Germany under organised emigration schemes. Farmers, miners, artisans, and merchants built prosperous communities supported by agriculture, copper mining, and world-renowned vineyards. The colony became a leader in democratic reform, granting women the right to vote in 1894. Through the 20th century, manufacturing, steel production, and postwar immigration fueled continued growth, while many South Australians also migrated across Australia in search of new opportunities. A strong tradition of community life, festivals, sport, and cultural innovation continues to shape South Australia's identity.</p>\n"
   },
   "AUNZ2019_1.5": {
     "name": "Tasmania, European & British Settlers",
@@ -5995,15 +6130,78 @@
     },
     "overview": "<p>Aotearoa, the Māori name for New Zealand, is an island nation in the southwestern Pacific Ocean. It consists primarily of two main islands: Te Ika-a-Māui (North Island) and Te Waipounamu (South Island). The subtropical North Island was the landing place of the first Māori inhabitants, who migrated from eastern Polynesia beginning in the 1300s. Although the arrival of European (<i>Pākehā</i>) settlers in the late 1700s profoundly changed Māori life, the culture has remained deeply rooted in <i>whakapapa</i>, the genealogical bonds between generations and the world they inhabit.</p>\n"
   },
-  "AUNZ2019_1.1": {
-    "name": "New Zealand, European & British Settlers",
+  "SCAND2018_3.2": {
+    "name": "Eastern Norway",
     "subjourneys": {
-      "AUNZ2019_1.1.1": "New Zealand, Otago & Southland Regions, European & British Settlers ",
-      "AUNZ2019_1.1.2": "New Zealand, Tasman, Nelson & Malborough Regions, European & British Settlers ",
-      "AUNZ2019_1.1.37": "New Zealand, Canterbury Region, European & British Settlers ",
-      "AUNZ2019_1.1.5": "New Zealand, Lower North Island, European & British Settlers ",
-      "AUNZ2019_1.1.3": "New Zealand, Taranaki Region, European & British Settlers "
+      "SCAND2018_3.2.2.3.3": "Vestre Slidre",
+      "SCAND2018_3.2.2.3.2": "Valdres",
+      "SCAND2018_3.2.1": "Buskerud",
+      "SCAND2018_3.2.3.1": "Rollag, Tinn & Notodden",
+      "SCAND2018_3.2.2.2": "Nord-Aurdal",
+      "SCAND2018_3.2.1.3": "Hallingdal Valley",
+      "SCAND2018_3.2.2.1.2": "Nord-Aurdal & Sør-Aurdal",
+      "SCAND2018_3.2.2.1.1": "Nordre Land & Søndre Land",
+      "SCAND2018_3.2.1.4": "Nes, Flå & Krødsherad",
+      "SCAND2018_3.2.2.3": "Slidrefjord",
+      "SCAND2018_3.2.3.3": "Rollag, Sigdal & Krødsherad",
+      "SCAND2018_3.2.3.4": "Rollag, Sigdal, Flesberg & Krødsherad",
+      "SCAND2018_3.2.3": "Telemark-Buskerud Border",
+      "SCAND2018_3.2.2.1": "Etnedal, Nord-Aurdal & Nordre Land",
+      "SCAND2018_3.2.2": "Oppland",
+      "SCAND2018_3.2.1.2": "Hallingskarvet"
     },
-    "overview": "The first non-Māori (<em>Pākehā</em>) occupants of New Zealand were mostly whalers and seal hunters. Their increasingly lawless behavior led to Britain making the islands an official British colony in 1840. As more colonists came to establish European-style farming and populate the land, tensions between the indigenous Māori and Pākehā led to fighting. Sheep and dairy farming gained a foothold, supported by a traveling workforce. Women increasingly participated in politics and employment, and by World War II were required to enter the workforce."
+    "overview": "<p>In the 1700s Norway’s population was mostly rural. Most farmers owned or leased their land, a small class of merchants and bureaucrats lived in the cities, and Norway’s rich natural resources led to rising wealth through trade. However, a steep increase in population in the 19th century combined with a scarcity of land, led many of Eastern Norway’s farmers and city-dwellers to look for greater prosperity in America. Once there, Norwegians made up one of the most tight-knit immigrant communities in the Upper Midwest.</p>\n"
+  },
+  "AU-NZ_AU2024-NewSouthWales_Ghost": {
+    "name": "New South Wales, European Settlers",
+    "subjourneys": {
+      "AU-NZ_AU2024-2.4.3": "Central Tablelands & Surrounding Area",
+      "AU-NZ_AU2024-2.6.1": "Bathurst Region",
+      "AU-NZ_AU2024-2.7.1": "Parramatta Area",
+      "AU-NZ_AU2024-2.3.2": "Eastern Riverina & Northern South Eastern Region",
+      "AU-NZ_AU2024-2.4.1": "Eastern Central West & Sydney Regions",
+      "AU-NZ_AU2024-2.3.3": "Eastern Riverina",
+      "AU-NZ_AU2024-2.4.2": "Orange, Bathurst & Surrounding Area",
+      "AU-NZ_AU2024-2.5.1": "Northern Southern Tablelands",
+      "AU-NZ_AU2024-2.1.2": "Southern South Coast & Southern Tablelands",
+      "AU-NZ_AU2024-2.2.1": "Eastern Central West Region",
+      "AU-NZ_AU2024-2.1.3": "Sydney | Wollongong | Eden",
+      "AU-NZ_AU2024-2.3.1": "Yass | Wagga Wagga | Tumbarumba",
+      "AU-NZ_AU2024-2.1.1": "Southeastern New South Wales & Eastern East Gippsland, Victoria",
+      "AU-NZ_AU2024-3": "Eastern New South Wales & Southeastern Queensland",
+      "AU-NZ_AU2024-3.5.3": "Grafton | Inverell | Gosford",
+      "AU-NZ_AU2024-2": "New South Wales & Victoria & Queensland Borders",
+      "AU-NZ_AU2024-2.10": "Sydney | Goulburn | Canberra",
+      "AU-NZ_AU2024-2.11": "Warren | Sydney | Cooma",
+      "AU-NZ_AU2024-2.12": "Dubbo | Orange | Sydney",
+      "AU-NZ_AU2024-2.13": "Orange | Wollongong | Wagga Wagga",
+      "AU-NZ_AU2024-2.14": "Albury | Dubbo | Sydney",
+      "AU-NZ_AU2024-2.15": "Sydney",
+      "AU-NZ_AU2024-2.2": "Central & Eastern New South Wales",
+      "AU-NZ_AU2024-3.1": "New England & Hunter",
+      "AU-NZ_AU2024-2.1": "Southeastern New South Wales ",
+      "AU-NZ_AU2024-3.4.1": "Port Macquarie | Dungog | New Castle",
+      "AU-NZ_AU2024-3.4.2": "Nambucca Heads | Taree | Newcastle",
+      "AU-NZ_AU2024-3.5.1": "Maitland | Gosford | Parramatta",
+      "AU-NZ_AU2024-3.5.2": "Singleton | Richmond | Sydney",
+      "AU-NZ_AU2024-3.10": "Scone | Newcastle | Dungog",
+      "AU-NZ_AU2024-3.9": "Lismore | Newcastle | Berry",
+      "AU-NZ_AU2024-2.9": "Eastern New South Wales",
+      "AU-NZ_AU2024-3.8": "Northeastern New South Wales",
+      "AU-NZ_AU2024-2.8": "Central & Eastern New South Wales",
+      "AU-NZ_AU2024-3.7": "Eastern New South Wales & Queensland Border",
+      "AU-NZ_AU2024-2.7": "Lismore | Wagga Wagga | Sydney",
+      "AU-NZ_AU2024-3.11": "Gloucester | Dungog | Newcastle",
+      "AU-NZ_AU2024-3.6": "Lismore | Port Macquarie | Canberra",
+      "AU-NZ_AU2024-2.6": "Eastern Central West, Northern Southern Tablelands, Blue Mountains & Greater Sydney",
+      "AU-NZ_AU2024-3.5": "Lismore | Batemans Bay | Walgett",
+      "AU-NZ_AU2024-2.5": "Southeastern New South Wales & Victoria Border",
+      "AU-NZ_AU2024-3.4": "Eastern Coast & Queensland Border",
+      "AU-NZ_AU2024-2.4": "Central & Eastern New South Wales & Victoria & Queensland Borders",
+      "AU-NZ_AU2024-3.3": "Eastern Coast",
+      "AU-NZ_AU2024-2.3": "Eastern New South Wales & Central Victoria",
+      "AU-NZ_AU2024-3.2": "Grafton | Newcastle | Wollongong"
+    },
+    "overview": "<p>In 1787, faced with overcrowded prisons and rampant crime, Great Britain sent the First Fleet of convicts and soldiers to New South Wales, Australia. However, First Nations peoples had lived across the region for tens of thousands of years, maintaining diverse cultures, languages, and connections to the land long before European arrival. Through boom and bust, gold rush and drought, the migrants kept coming. Enjoying meat pies and cheering on local rugby clubs, they turned a former British colony into a land with a future and culture all its own.</p>\n"
   }
 }

@@ -76,6 +76,21 @@
     }).catch(function () { })
   }
 
+  function fetchCurrentTags() {
+    return apiFetch('https://www.ancestry.com/discoveryui-matches/parents/list/api/tags/' + guid, {
+      method: 'POST', credentials: 'include', mode: 'cors',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ matchingSampleIds: [sampleId] })
+    }).then(function (data) {
+      if (!data || typeof data !== 'object') return
+      var tags = data[sampleId] || {}
+      var md = s.matchData && s.matchData.matchData
+      if (md) md.tags = tags
+      if (typeof DB !== 'undefined' && DB.setMatchTags) DB.setMatchTags(guid, sampleId, tags)
+      setState({ matchData: s.matchData })
+    }).catch(function () { })
+  }
+
   function createGroup() {
     var name = (s.groupName || '').trim()
     if (!name) return
@@ -785,6 +800,7 @@
           setState({ regionsVersion: rvKeys[0] })
         }
         fetchCustomTags()
+        fetchCurrentTags()
         loadRegionData()
         buildJourneyParents()
         refreshMatchJourneys()

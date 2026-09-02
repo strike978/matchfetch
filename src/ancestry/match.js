@@ -799,8 +799,8 @@
         limited ? m('.limited-note', [
           m('span.limited-note-icon', m.trust('<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>')),
           m('.limited-note-text', [
-            m('.limited-note-title', 'Limited data'),
-            m('.limited-note-detail', 'This match only shares the ancestral regions and journeys you have in common, so we can\u2019t see their full results.')
+            m('.limited-note-title', 'In-common ancestral regions and journeys'),
+            m('.limited-note-detail', 'You can only see the portion of this match\u2019s ancestral regions and journeys that you have in common with them.')
           ])
         ]) : null,
         m(Tabs),

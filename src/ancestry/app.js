@@ -1485,7 +1485,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
           setState({ sessionMatches: s.sessionMatches, matchListData: s.matchListData, batchCommunitiesData: s.batchCommunitiesData, batchEthnicityData: s.batchEthnicityData, profileData: s.profileData })
         }
       }
-      await restoreFetchUI(guid)
+      try { await restoreFetchUI(guid) } catch (e) { console.log('[MatchFetch] restore error:', e) }
       s.profileLoading = false
       m.redraw()
     }

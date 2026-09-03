@@ -26,6 +26,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
     ethnicityVersion: null,
     showFetchOptions: false,
     fetchComplete: false,
+    profileLoading: false,
     sortBy: 'cm',
     buttonLabel: null,
     modal: null,
@@ -578,7 +579,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
   }
 
   function restoreFetchUI(guid) {
-    DB.getFetchState(guid).then(function (fs) {
+    return DB.getFetchState(guid).then(function (fs) {
       if (fs && fs.status === 0) {
         if (fs.mode === 'cmRange') {
           setState({ mode: 'cmRange', cmRangeMin: '', cmRangeMax: '' })
@@ -591,18 +592,22 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
           if (count > 0) setState({ mode: 'count', desiredCount: String(count) })
         }
         setState({ showFetchOptions: false, buttonLabel: 'Resume', statusMsg: 'Previous fetch incomplete \u2014 click Resume to continue' })
-        DB.getSession(guid).then(function (session) {
+        return DB.getSession(guid).then(function (session) {
           var c = session && session.matches ? Object.keys(session.matches).length : 0
           setState({ fetchStateBadge: '\u21bb ' + c + ' fetched (page ' + (fs.nextPage || 1) + ')' })
         })
       } else if (fs && fs.status === 1) {
         setState({ mode: fs.mode || 'all' })
-        DB.getSession(guid).then(function (session) {
+        return DB.getSession(guid).then(function (session) {
           var c = session && session.matches ? Object.keys(session.matches).length : 0
           setState({ showFetchOptions: false, fetchComplete: true, fetchStateBadge: '\u2713 ' + c + ' matches' })
         })
       } else {
         setState({ showFetchOptions: false, fetchComplete: false, buttonLabel: null, fetchStateBadge: '' })
+        return DB.getSession(guid).then(function (session) {
+          var c = session && session.matches ? Object.keys(session.matches).length : 0
+          if (c > 0) setState({ mode: 'all', showFetchOptions: false, fetchComplete: true, fetchStateBadge: '\u2713 ' + c + ' matches' })
+        })
       }
     })
   }
@@ -1044,7 +1049,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
             }
           }, m.trust('<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>')) : null
         ]),
-        m('#fetchGroup', s.selectedGuid && !s.isFetching && !s.fetchComplete ? [
+        m('#fetchGroup', s.selectedGuid && !s.isFetching && !s.fetchComplete && !s.profileLoading ? [
           !s.buttonLabel ? m('.fetch-toggle', {
             onclick: function () { setState({ showFetchOptions: !s.showFetchOptions, mode: s.showFetchOptions ? 'all' : s.mode }) }
           }, [
@@ -1098,7 +1103,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
             m('#fetchBarFill', { style: { height: '100%', width: s.fetchProgress + '%', borderRadius: '4px', transition: 'width .3s, background .3s' } })
           ])
         ]) : null,
-        s.fetchComplete && s.mode === 'all' && s.selectedGuid && !s.isFetching ? m('button.btn.fetch-list-btn', {
+        s.fetchComplete && s.mode === 'all' && s.selectedGuid && !s.isFetching && !s.profileLoading ? m('button.btn.fetch-list-btn', {
           onclick: function () { checkForNewMatches(s.selectedGuid) }
         }, [m.trust('<span>&#x21BB;</span>'), ' Check for new matches']) : null,
         s.statusMsg ? m('.status-msg', s.statusMsg) : null
@@ -1442,6 +1447,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
     s.canEdit = null
     s.customTags = null
     s.regionsVersion = null
+    s.profileLoading = !!guid
     m.redraw()
     if (guid) {
       fetchMatchCount(guid)
@@ -1479,7 +1485,9 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
           setState({ sessionMatches: s.sessionMatches, matchListData: s.matchListData, batchCommunitiesData: s.batchCommunitiesData, batchEthnicityData: s.batchEthnicityData, profileData: s.profileData })
         }
       }
-      restoreFetchUI(guid)
+      await restoreFetchUI(guid)
+      s.profileLoading = false
+      m.redraw()
     }
   }
 

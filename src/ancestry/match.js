@@ -163,7 +163,8 @@
     s.modal = {
       title: 'Add / edit your groups',
       icon: '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>',
-      body: renderGroupManager
+      body: renderGroupManager,
+      blocking: true
     }
     m.redraw()
   }
@@ -638,7 +639,7 @@
   var Modal = {
     view: function () {
       if (!s.modal) return null
-      return m('.modal-overlay', { onclick: function (e) { if (e.target === e.currentTarget) { s.modal = null; m.redraw() } } }, [
+      return m('.modal-overlay', { onclick: function (e) { if (!s.modal.blocking && e.target === e.currentTarget) { s.modal = null; m.redraw() } } }, [
         m('.modal', [
           m('button.modal-close', { title: 'Close', onclick: function () { s.modal = null; m.redraw() } }, m.trust('<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>')),
           s.modal.icon ? m('.modal-icon', m.trust(s.modal.icon)) : null,

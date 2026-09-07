@@ -146,17 +146,15 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
     }
   }
 
-  // Determine whether the selected subject can be starred/tagged. Fetches the matches page
-  // and reads the roleObject role — any role other than Guest means we have permission.
+  // Determine whether the selected subject can be starred/tagged. Fetches the test role —
+  // any role other than Guest means we have permission.
   // If allowed, also loads the custom tag groups (labels + group filter options).
   function checkCanEdit(guid) {
-    return apiFetch('https://www.ancestry.com/dna/matches/' + guid + '/list', {
-      credentials: 'include', mode: 'cors', responseType: 'text',
-      headers: { 'Accept': 'text/html' }
-    }).then(function (body) {
-      var text = String(body || '')
-      var match = text.match(/"roleObject"\s*:\s*\{[^}]*?"role"\s*:\s*"([^"]+)"/)
-      var role = match ? match[1] : null
+    return apiFetch('https://www.ancestry.com/dna/origins/secure/tests/' + guid + '/role', {
+      credentials: 'include', mode: 'cors',
+      headers: { 'Accept': 'application/json' }
+    }).then(function (data) {
+      var role = data && data.role ? data.role : null
       var ok = !!role && role !== 'Guest'
       setState({ canEdit: ok })
       fetchCustomTags(guid)

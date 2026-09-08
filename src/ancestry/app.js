@@ -38,6 +38,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
     canEdit: null,
     customTags: null,
     regionsVersion: null,
+    paternalCluster: '',
   }
 
   function setState(o) { Object.assign(s, o); m.redraw() }
@@ -172,6 +173,21 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
     }).then(function (data) {
       setState({ customTags: data })
     }).catch(function () { })
+  }
+
+  // The paternalCluster API returns which cluster (p1 or p2) of this kit is the paternal side.
+  // Response: { clusterCode: 'p1'|'p2' } or {} when nothing is set.
+  // Refetched every time a profile is selected.
+  function fetchPaternalClusters(guid) {
+    return apiFetch('https://www.ancestry.com/discoveryui-matches/cluster/api/paternalCluster/' + guid, {
+      credentials: 'include', mode: 'cors',
+      headers: { 'Accept': 'application/json' }
+    }).then(function (data) {
+      var code = data && typeof data === 'object' && data.clusterCode ? data.clusterCode : ''
+      setState({ paternalCluster: code })
+    }).catch(function () {
+      setState({ paternalCluster: '' })
+    })
   }
 
   var FETCH_DELAY = 500
@@ -1337,6 +1353,12 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
       var journeys = sm && sm.journeys
       var tags = sm && sm.tags
       var favorite = !!(tags && tags['2'] !== undefined)
+      var clusterCode = matchObj.matchClusterCode || ''
+      var sideLabel = null
+      var sideClass = ''
+      if (clusterCode === 'both') { sideLabel = 'Both sides'; sideClass = 'side-both' }
+      else if (clusterCode === s.paternalCluster && clusterCode) { sideLabel = 'Paternal side'; sideClass = 'side-paternal' }
+      else if (clusterCode === 'p1' || clusterCode === 'p2') { sideLabel = 'Maternal side'; sideClass = 'side-maternal' }
       var regs = sm ? getFilterRegions(sm) : null
       var limited = false
       if (regs && regs.length) {
@@ -1389,6 +1411,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
         ]),
         m('.card-details', [
           buildRelText(r),
+          sideLabel ? m('span.cluster-side-pill.' + sideClass, sideLabel) : null,
           limited ? m('span.limited-pill', { title: 'You can only see the portion of this match\u2019s ancestral regions and journeys that you have in common with them.' }, 'In-common only') : null
         ]),
         journeys && journeys.length > 0 ? m('.journey-strip', renderJourneyPills(journeys)) : null
@@ -1445,12 +1468,10 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
     s.canEdit = null
     s.customTags = null
     s.regionsVersion = null
+    s.paternalCluster = ''
     s.profileLoading = !!guid
     m.redraw()
     if (guid) {
-      fetchMatchCount(guid)
-      checkCanEdit(guid)
-      ensureEthnicityVersion()
       var session = await DB.getSession(guid)
       if (typeof DB !== 'undefined') DB.setProfileName(guid, currentTestName())
       if (session && session.matches) {
@@ -1459,7 +1480,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
         var sampleIds = Object.keys(session.matches)
         for (var si = 0; si < sampleIds.length; si++) {
           var m2 = session.matches[sampleIds[si]]
-          matchList.push({ sampleId: sampleIds[si], relationship: m2.relationship || {}, createdDate: m2.createdDate || null })
+          matchList.push({ sampleId: sampleIds[si], relationship: m2.relationship || {}, createdDate: m2.createdDate || null, matchClusterCode: m2.matchClusterCode || null })
         }
         if (matchList.length > 0) {
           s.matchListData = { matchList: matchList }
@@ -1484,6 +1505,12 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
         }
       }
       try { await restoreFetchUI(guid) } catch (e) { console.log('[MatchFetch] restore error:', e) }
+      await Promise.all([
+        fetchMatchCount(guid),
+        checkCanEdit(guid),
+        ensureEthnicityVersion(),
+        fetchPaternalClusters(guid)
+      ])
       s.profileLoading = false
       m.redraw()
     }

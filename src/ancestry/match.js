@@ -92,6 +92,21 @@
     }).catch(function () { })
   }
 
+  function fetchCurrentClusterCode() {
+    return apiFetch('https://www.ancestry.com/discoveryui-matches/cluster/api/matchClusterCodes/' + guid, {
+      method: 'POST', credentials: 'include', mode: 'cors',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ matchingSampleIds: [sampleId] })
+    }).then(function (data) {
+      if (!data || typeof data !== 'object') return
+      var code = data[sampleId] || ''
+      var md = s.matchData && s.matchData.matchData
+      if (md) md.matchClusterCode = code
+      if (typeof DB !== 'undefined' && DB.setMatchClusterCode) DB.setMatchClusterCode(guid, sampleId, code)
+      setState({ matchData: s.matchData })
+    }).catch(function () { })
+  }
+
   // Which cluster (p1 or p2) of this kit is the paternal side.
   function fetchPaternalClusters() {
     return apiFetch('https://www.ancestry.com/discoveryui-matches/cluster/api/paternalCluster/' + guid, {
@@ -821,6 +836,7 @@
         }
         fetchCustomTags()
         fetchCurrentTags()
+        fetchCurrentClusterCode()
         fetchPaternalClusters()
         loadRegionData()
         buildJourneyParents()

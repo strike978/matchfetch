@@ -513,6 +513,20 @@ var DB = (function() {
             });
         },
 
+        setMatchClusterCode: function(guid, sampleId, code, provider) {
+            var t = table(provider);
+            return db.transaction('rw', t, function() {
+                return t.get(guid).then(function(existing) {
+                    if (!existing) return;
+                    if (!existing.matches) existing.matches = {};
+                    var m = existing.matches[sampleId] || {};
+                    m.matchClusterCode = code || null;
+                    existing.matches[sampleId] = m;
+                    return t.put(existing);
+                });
+            });
+        },
+
         removeTagFromAllMatches: function(guid, tagId, provider) {
             var t = table(provider);
             return db.transaction('rw', t, function() {

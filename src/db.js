@@ -527,6 +527,23 @@ var DB = (function() {
             });
         },
 
+        setMatchProfile: function(guid, sampleId, profile, provider) {
+            var t = table(provider);
+            return db.transaction('rw', t, function() {
+                return t.get(guid).then(function(existing) {
+                    if (!existing) return;
+                    if (!existing.matches) existing.matches = {};
+                    var m = existing.matches[sampleId] || {};
+                    m.matchName = profile.matchName || null;
+                    m.matchNameInitials = profile.matchNameInitials || null;
+                    m.displayGender = profile.displayGender || null;
+                    m.photoUrl = profile.photoUrl || null;
+                    existing.matches[sampleId] = m;
+                    return t.put(existing);
+                });
+            });
+        },
+
         removeTagFromAllMatches: function(guid, tagId, provider) {
             var t = table(provider);
             return db.transaction('rw', t, function() {

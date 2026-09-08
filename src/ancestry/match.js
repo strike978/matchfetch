@@ -636,6 +636,7 @@
       var sideLabel = null
       var sideClass = ''
       if (clusterCode === 'both') { sideLabel = 'Both sides'; sideClass = 'side-both' }
+      else if (clusterCode === 'no_call') { sideLabel = 'Unassigned'; sideClass = 'side-unassigned' }
       else if (s.paternalCluster && clusterCode === s.paternalCluster) { sideLabel = 'Paternal side'; sideClass = 'side-paternal' }
       else if (s.paternalCluster && (clusterCode === 'p1' || clusterCode === 'p2')) { sideLabel = 'Maternal side'; sideClass = 'side-maternal' }
       return m('.card.profile-card', [

@@ -713,8 +713,8 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
   function matchSide(m) {
     var code = matchSideCode(m)
     if (code === 'both') return 'both'
-    if (code && code === s.paternalCluster) return 'paternal'
-    if (code === 'p1' || code === 'p2') return 'maternal'
+    if (s.paternalCluster && code === s.paternalCluster) return 'paternal'
+    if (s.paternalCluster && (code === 'p1' || code === 'p2')) return 'maternal'
     return ''
   }
 
@@ -1382,8 +1382,8 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
       var sideLabel = null
       var sideClass = ''
       if (clusterCode === 'both') { sideLabel = 'Both sides'; sideClass = 'side-both' }
-      else if (clusterCode === s.paternalCluster && clusterCode) { sideLabel = 'Paternal side'; sideClass = 'side-paternal' }
-      else if (clusterCode === 'p1' || clusterCode === 'p2') { sideLabel = 'Maternal side'; sideClass = 'side-maternal' }
+      else if (s.paternalCluster && clusterCode === s.paternalCluster) { sideLabel = 'Paternal side'; sideClass = 'side-paternal' }
+      else if (s.paternalCluster && (clusterCode === 'p1' || clusterCode === 'p2')) { sideLabel = 'Maternal side'; sideClass = 'side-maternal' }
       var regs = sm ? getFilterRegions(sm) : null
       var limited = false
       if (regs && regs.length) {

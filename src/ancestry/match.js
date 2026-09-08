@@ -29,6 +29,7 @@
     editingTagId: null,
     renameName: '',
     regionsVersion: null,
+    paternalCluster: '',
   }
 
   function setState(o) { Object.assign(s, o); m.redraw() }
@@ -89,6 +90,19 @@
       if (typeof DB !== 'undefined' && DB.setMatchTags) DB.setMatchTags(guid, sampleId, tags)
       setState({ matchData: s.matchData })
     }).catch(function () { })
+  }
+
+  // Which cluster (p1 or p2) of this kit is the paternal side.
+  function fetchPaternalClusters() {
+    return apiFetch('https://www.ancestry.com/discoveryui-matches/cluster/api/paternalCluster/' + guid, {
+      credentials: 'include', mode: 'cors',
+      headers: { 'Accept': 'application/json' }
+    }).then(function (data) {
+      var code = data && typeof data === 'object' && data.clusterCode ? data.clusterCode : ''
+      setState({ paternalCluster: code })
+    }).catch(function () {
+      setState({ paternalCluster: '' })
+    })
   }
 
   function createGroup() {
@@ -583,10 +597,17 @@
           }
         }
       }
+      var clusterCode = md.matchClusterCode || ''
+      var sideLabel = null
+      var sideClass = ''
+      if (clusterCode === 'both') { sideLabel = 'Both sides'; sideClass = 'side-both' }
+      else if (s.paternalCluster && clusterCode === s.paternalCluster) { sideLabel = 'Paternal side'; sideClass = 'side-paternal' }
+      else if (s.paternalCluster && (clusterCode === 'p1' || clusterCode === 'p2')) { sideLabel = 'Maternal side'; sideClass = 'side-maternal' }
       return m('.card.profile-card', [
         m('.match-name', [
           p.photoUrl ? m('a', { href: p.photoUrl, target: '_blank', title: 'Open photo' }, m('img.avatar', { src: p.photoUrl })) : m('.avatar.avatar-initials.' + gc, p.matchNameInitials || '?'),
           m('span', hideNames ? (p.matchNameInitials || '??') : (p.matchName || 'Unknown')),
+          sideLabel ? m('span.cluster-side-pill.' + sideClass, sideLabel) : null,
           tagLabels.length > 0 ? tagLabels.map(function (l) { return m('span.tag-pill', l) }) : null,
           canEdit ? m('button.star-btn' + (favorite ? '.active' : ''), {
             title: favorite ? 'Remove from starred matches' : 'Add to starred matches',
@@ -800,6 +821,7 @@
         }
         fetchCustomTags()
         fetchCurrentTags()
+        fetchPaternalClusters()
         loadRegionData()
         buildJourneyParents()
         refreshMatchJourneys()

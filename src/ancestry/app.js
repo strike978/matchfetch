@@ -9,7 +9,7 @@
     batchEthnicityData: {},
     batchCommunitiesData: {},
     sessionMatches: null,
-filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, regions: [{ region: '', pctMin: null, pctMax: null }], group: '', starredOnly: false },
+filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, regions: [{ region: '', pctMin: null, pctMax: null }], group: '', starredOnly: false, side: '' },
     journeySearch: '',
     regionSearch: '',
     currentPage: 1,
@@ -706,6 +706,18 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
     console.log('[MatchFetch] ' + msg)
   }
 
+  function matchSideCode(m) {
+    return m.matchClusterCode || (s.sessionMatches && s.sessionMatches[m.sampleId] && s.sessionMatches[m.sampleId].matchClusterCode) || ''
+  }
+
+  function matchSide(m) {
+    var code = matchSideCode(m)
+    if (code === 'both') return 'both'
+    if (code && code === s.paternalCluster) return 'paternal'
+    if (code === 'p1' || code === 'p2') return 'maternal'
+    return ''
+  }
+
   function matchesFilter(m) {
     var p = s.profileData && s.profileData[m.sampleId] || {}
     var f = s.filters
@@ -737,6 +749,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
       if (f.group && !(tags && tags[f.group] !== undefined)) return false
       if (f.starredOnly && !(tags && tags['2'] !== undefined)) return false
     }
+    if (f.side && matchSide(m) !== f.side) return false
     var activeRegions = s._activeRegionFilters
     if (activeRegions && activeRegions.length) {
       var sm = s.sessionMatches && s.sessionMatches[m.sampleId]
@@ -917,6 +930,8 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
     var groupEl = document.getElementById('filterGroup')
     f.group = groupEl ? groupEl.value : ''
     f.starredOnly = document.getElementById('filterStarred') ? document.getElementById('filterStarred').checked : false
+    var sideEl = document.getElementById('filterSide')
+    f.side = sideEl ? sideEl.value : ''
     var rows = document.querySelectorAll('#regionFilters .region-row')
     s._activeRegionFilters = []
     for (var ri = 0; ri < rows.length; ri++) {
@@ -1054,7 +1069,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
                     s.fetchStateBadge = ''
                     s.showFetchOptions = false
                     s.currentPage = 1
-                    setState({ matchListData: null, sessionMatches: null, profileData: {}, batchEthnicityData: {}, batchCommunitiesData: {}, filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, regions: [{ region: '', pctMin: null, pctMax: null }], group: '', starredOnly: false }, journeySearch: '', regionSearch: '', fetchStateBadge: '', showFetchOptions: false, fetchComplete: false, buttonLabel: null, currentPage: 1, statusMsg: '' })
+                    setState({ matchListData: null, sessionMatches: null, profileData: {}, batchEthnicityData: {}, batchCommunitiesData: {}, filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, regions: [{ region: '', pctMin: null, pctMax: null }], group: '', starredOnly: false, side: '' }, journeySearch: '', regionSearch: '', fetchStateBadge: '', showFetchOptions: false, fetchComplete: false, buttonLabel: null, currentPage: 1, statusMsg: '' })
                     document.getElementById('filterJourney').innerHTML = '<option value="">All</option>'
                   })
                 }
@@ -1160,6 +1175,15 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
               m('input#filterCmMin.filter-input.filter-cm', { type: 'number', placeholder: 'min of 6', min: 6, oninput: function () { applyFilterChange(); m.redraw() }, onblur: function () { var v = parseFloat(this.value); if (this.value && !isNaN(v)) { var clamped = Math.max(6, Math.min(3490, v)); this.value = clamped; applyFilterChange(); m.redraw() } } }),
               m('span.filter-sep', '\u2013'),
               m('input#filterCmMax.filter-input.filter-cm', { type: 'number', placeholder: 'max of 3490', max: 3490, oninput: function () { applyFilterChange(); m.redraw() }, onblur: function () { var v = parseFloat(this.value); if (this.value && !isNaN(v)) { var clamped = Math.max(6, Math.min(3490, v)); this.value = clamped; applyFilterChange(); m.redraw() } } })
+            ]),
+            m('span.filter-group', [
+              'Side ',
+              m('select#filterSide.filter-select', { value: s.filters.side, onchange: function (e) { s.filters.side = e.target.value; applyFilterChange(); m.redraw() } }, [
+                m('option', { value: '' }, 'All'),
+                m('option', { value: 'paternal' }, 'Paternal side'),
+                m('option', { value: 'maternal' }, 'Maternal side'),
+                m('option', { value: 'both' }, 'Both sides')
+              ])
             ])
           ]),
           m('.filter-row', [
@@ -1216,6 +1240,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
                 document.getElementById('filterJourneyOnly').checked = false
                 document.getElementById('filterGroup').value = ''
                 document.getElementById('filterStarred').checked = false
+                document.getElementById('filterSide').value = ''
                 _cachedJourneyOpts = null
                 readFilters()
                 s.filters.regions = [{ region: '', pctMin: null, pctMax: null }]
@@ -1301,7 +1326,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
     var f = s.filters
     var rk = ''
     if (s._activeRegionFilters) for (var i = 0; i < s._activeRegionFilters.length; i++) rk += '|' + s._activeRegionFilters[i].region + '|' + (s._activeRegionFilters[i].pctMin||'') + '|' + (s._activeRegionFilters[i].pctMax||'')
-    return s.sortBy + '|' + (list ? list.length : 0) + '|' + (f.name||'') + '|' + (f.cmMin||'') + '|' + (f.cmMax||'') + '|' + (f.journey||'') + '|' + (f.journeyOnly?'1':'0') + '|' + (f.group||'') + '|' + (f.starredOnly?'1':'0') + rk + '|v' + _dataVersion + '|' + (s.regionsVersion || '')
+    return s.sortBy + '|' + (list ? list.length : 0) + '|' + (f.name||'') + '|' + (f.cmMin||'') + '|' + (f.cmMax||'') + '|' + (f.journey||'') + '|' + (f.journeyOnly?'1':'0') + '|' + (f.group||'') + '|' + (f.starredOnly?'1':'0') + '|' + (f.side||'') + rk + '|v' + _dataVersion + '|' + (s.regionsVersion || '')
   }
 
   var MatchList = {
@@ -1462,7 +1487,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
     s.fetchStateBadge = ''
     s.statusMsg = ''
     s.currentPage = 1
-    s.filters = { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, regions: [{ region: '', pctMin: null, pctMax: null }], group: '', starredOnly: false }
+    s.filters = { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, regions: [{ region: '', pctMin: null, pctMax: null }], group: '', starredOnly: false, side: '' }
     s.buttonLabel = null
     s.fetchComplete = false
     s.canEdit = null

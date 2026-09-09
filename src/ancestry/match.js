@@ -612,7 +612,7 @@
       var gc = 'gender-n'
       if (p.displayGender === 'M') gc = 'gender-m'
       else if (p.displayGender === 'F') gc = 'gender-f'
-      var profileUrl = 'https://www.ancestry.com/dna/matches/' + guid + '/compare/' + sampleId + '?returnUrl=' + encodeURIComponent('https://www.ancestry.com/dna/matches/' + guid + '/list')
+      var profileUrl = 'https://www.ancestry.com/dna/matches/' + guid + '/compare/' + sampleId + '/origins'
       var relParts = []
       if (rel.sharedCentimorgans) relParts.push(m('span', [m('span.num', rel.sharedCentimorgans), ' cM']))
       if (rel.sharedCentimorgans && rel.numSharedSegments) relParts.push(' across ')

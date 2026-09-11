@@ -23,7 +23,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
     mode: 'all',
     matchCount: null,
     fetchStateBadge: '',
-    ethnicityVersion: null,
+    ethnicityVersion: '2025', // bump to '2026' when Ancestry releases a new ethnicity version; selects regions_<version>.json and the DB storage key
     showFetchOptions: false,
     fetchComplete: false,
     profileLoading: false,
@@ -319,7 +319,6 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
   }
 
   async function fetchMatchList(guid, mode, params) {
-    await ensureEthnicityVersion()
     s.currentPage = 1
     s.matchListData = null
     s.profileData = {}
@@ -670,36 +669,6 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify(sampleIds)
     })
-  }
-
-  function extractEthnicityVersion(body) {
-    return body ? String(body) : null
-  }
-
-  var _versionPromise = null
-
-  function fetchEthnicityVersion() {
-    return apiFetch('https://www.ancestry.com/dna/origins/public/site-setting/dnaapps.originsfe.updateEthnicityVersion', {
-      method: 'GET', credentials: 'include', mode: 'cors', responseType: 'text',
-      headers: { 'Accept': 'text/plain' }
-    }).then(function (body) {
-      debugLog('Ethnicity version response: ' + String(body).substring(0, 500))
-      var v = extractEthnicityVersion(body)
-      setState({ ethnicityVersion: v })
-      if (v) loadRegionMap()
-      return v
-    }).catch(function (err) {
-      debugLog('Ethnicity version request failed: ' + err.message)
-      setState({ ethnicityVersion: null })
-      return null
-    })
-  }
-
-  function ensureEthnicityVersion() {
-    if (s.ethnicityVersion) return Promise.resolve(s.ethnicityVersion)
-    if (_versionPromise) return _versionPromise
-    _versionPromise = fetchEthnicityVersion().finally(function () { _versionPromise = null })
-    return _versionPromise
   }
 
   function debugLog(msg) {
@@ -1536,7 +1505,6 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
       await Promise.all([
         fetchMatchCount(guid),
         checkCanEdit(guid),
-        ensureEthnicityVersion(),
         fetchPaternalClusters(guid)
       ])
       s.profileLoading = false

@@ -24,6 +24,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
     matchCount: null,
     fetchStateBadge: '',
     ethnicityVersion: '2025', // bump to '2026' when Ancestry releases a new ethnicity version; selects regions_<version>.json and the DB storage key
+    bannerDismissed: false,
     showFetchOptions: false,
     fetchComplete: false,
     profileLoading: false,
@@ -969,7 +970,32 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
       Promise.all([loadRegionMap(), loadJourneyNameMap()]).then(fetchTests)
     },
     view: function () {
-      return [m(KitSelector), m(FilterBar), m(MatchList), m(Modal)]
+      return [m(UpdateBanner), m(KitSelector), m(FilterBar), m(MatchList), m(Modal)]
+    }
+  }
+
+  var UpdateBanner = {
+    view: function () {
+      if (s.bannerDismissed) return null
+      var current = s.ethnicityVersion || '2025'
+      var next = String(Number(current) + 1)
+      return m('.update-banner', [
+        m('.update-banner-icon', m.trust('<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>')),
+        m('.update-banner-text', [
+          'This build uses AncestryDNA\u2019s ',
+          m('strong', current),
+          ' ethnicity regions. The ',
+          m('strong', next),
+          ' update is coming soon, and we\u2019ll update when it\u2019s available.'
+        ]),
+        m('button.update-banner-dismiss', {
+          title: 'Dismiss',
+          onclick: function () {
+            s.bannerDismissed = true
+            m.redraw()
+          }
+        }, '\u00D7')
+      ])
     }
   }
 

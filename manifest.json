@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "MatchFetch",
   "version": "2.1.5",
-  "description": "Fetch and explore your DNA match data.",
+  "description": "Fetch and explore your DNA matches.",
   "author": "Omar Nunez",
   "icons": {
     "16": "icons/icon16.png",

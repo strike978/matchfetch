@@ -1,6 +1,6 @@
 # MatchFetch
 
-MatchFetch brings all your DNA matches into one place, right in your browser. Pull down every match or narrow the fetch by count or cM range — and if it gets interrupted, resume right where you left off.
+MatchFetch brings all your DNA matches into one place, right in your browser. Pull down every match or narrow the fetch by count or cM range. If a fetch gets interrupted, resume right where you left off.
 
 ![MatchFetch screenshot](screenshot.png)
 

@@ -1,4 +1,6 @@
 ﻿(function () {
+  var REGIONS_SWITCH_TIME = Date.parse('2026-10-08T19:00:00Z') // Oct 8, 2026 1:00 PM MT
+
   var s = {
     regionMap: null,
     journeyNameMap: null,
@@ -23,7 +25,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
     mode: 'all',
     matchCount: null,
     fetchStateBadge: '',
-    ethnicityVersion: '2025', // bump to '2026' when Ancestry releases a new ethnicity version; selects regions_<version>.json and the DB storage key
+    ethnicityVersion: Date.now() >= REGIONS_SWITCH_TIME ? '2026' : '2025',
     bannerDismissed: false,
     showFetchOptions: false,
     fetchComplete: false,
@@ -967,6 +969,21 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
         setState({ hideNames: this.checked })
         m.redraw()
       })
+      // Roll the version forward to 2026 the moment it goes live
+      // (Oct 8, 2026 1:00 PM MT) and dismiss the update banner.
+      if (Date.now() < REGIONS_SWITCH_TIME) {
+        var switchTimer = setInterval(function () {
+          if (Date.now() < REGIONS_SWITCH_TIME) return
+          if (s.ethnicityVersion !== '2026') {
+            s.ethnicityVersion = '2026'
+            s.regionsVersion = null
+            loadRegionMap()
+          }
+          if (!s.bannerDismissed) s.bannerDismissed = true
+          clearInterval(switchTimer)
+          m.redraw()
+        }, 30000)
+      }
       Promise.all([loadRegionMap(), loadJourneyNameMap()]).then(fetchTests)
     },
     view: function () {
@@ -977,6 +994,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
   var UpdateBanner = {
     view: function () {
       if (s.bannerDismissed) return null
+      if (Date.now() >= REGIONS_SWITCH_TIME) return null
       var current = s.ethnicityVersion || '2025'
       var next = String(Number(current) + 1)
       return m('.update-banner', [

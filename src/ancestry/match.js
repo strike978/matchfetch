@@ -492,6 +492,7 @@
                 style: { borderLeft: '3px solid ' + reg.color },
                 onclick: function () { zoomToRegion(reg.key) }
               }, [
+                m('span.region-toggle' + (isExpanded ? '.open' : ''), isExpanded ? '\u25B2' : '\u25BC'),
                 m('span.detail-label', reg.displayName || reg.key || ''),
                 m('span.detail-value', [
                   reg.percentage + '%',

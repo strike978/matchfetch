@@ -1453,7 +1453,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
         m('.card-details', [
           buildRelText(r),
           sideLabel ? m('span.cluster-side-pill.' + sideClass, sideLabel) : null,
-          limited ? m('span.limited-pill', { title: 'You can only see the portion of this match\u2019s ancestral regions and journeys that you have in common with them.' }, 'In-common only') : null
+          limited ? m('span.limited-pill', { title: 'You can only see the portion of this match\u2019s ancestral regions and journeys that you have in common with them.' }, 'Limited Data') : null
         ]),
         journeys && journeys.length > 0 ? m('.journey-strip', renderJourneyPills(journeys)) : null
       ])

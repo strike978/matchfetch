@@ -496,7 +496,7 @@
                 m('span.detail-label', reg.displayName || reg.key || ''),
                 m('span.detail-value', [
                   reg.percentage + '%',
-                  reg.lowerConfidence != null && reg.upperConfidence != null ? m('span.range', ' (' + reg.lowerConfidence + '\u2013' + reg.upperConfidence + '%)') : null
+                  reg.lowerConfidence != null && reg.upperConfidence != null ? m('span.range', ' (Range: ' + reg.lowerConfidence + '%\u2013' + reg.upperConfidence + '%)') : null
                 ])
               ]),
               isExpanded ? m('.region-expanded', [
@@ -561,7 +561,7 @@
       var isExpanded = s.expandedJourneyKey === n.id
       var hasChildren = n.communities && n.communities.length > 0
       var sc = n.connection ? 'strength-' + n.connection.toLowerCase() : ''
-      var strength = n.connection ? m('span.journey-strength.' + sc, [titleize(n.connection), ' ', (n.connectionPercent || '') + '%']) : null
+      var strength = n.connection ? m('span.journey-strength.' + sc, ['Connection: ', (n.connectionPercent || '') + '%']) : null
       var raw = s.journeyNameData && s.journeyNameData[n.id]
       var ownOverview = raw && raw.overview ? raw.overview.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'") : null
       var overview = ownOverview || fallbackOverview

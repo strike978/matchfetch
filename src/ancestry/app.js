@@ -1484,8 +1484,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
     var maxPills = 3
     var pills = sorted.slice(0, maxPills).map(function (j) {
       return m('span.journey-pill.' + (j.connection || '').toLowerCase(), [
-        m('span.jp-name', j.displayName || j.id || ''),
-        ' ',
+        m('span.jp-name', (j.displayName || j.id || '') + ':'),
         m('span.jp-pct', (j.connectionPercent || '?') + '%')
       ])
     })

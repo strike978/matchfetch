@@ -409,12 +409,13 @@
     return color
   }
 
-  function renderInlineMap(el, gj, color, type) {
+  function renderInlineMap(el, gj, color, type, label) {
     if (!gj || !gj.coordinates || !gj.coordinates.length) return
     try {
       var map = L.map(el, { zoomControl: true, attributionControl: false })
       L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 }).addTo(map)
       var layer = L.geoJSON(gj, { style: { color: color, weight: 1.5, fillColor: color, fillOpacity: 0.2 } })
+      if (label) layer.bindTooltip(label, { permanent: true, direction: 'center', className: 'map-label' })
       layer.addTo(map)
       el._map = map
       el._allBounds = layer.getBounds()
@@ -441,7 +442,7 @@
           var entry = (s.regionCoords || {})[itemKey]
           if (!entry) return
           var gj = entry.type ? entry : { type: 'MultiPolygon', coordinates: toMultiPolygon(entry.coordinates) }
-          renderInlineMap(el, gj, vnode.attrs.color || '#3b82f6', type)
+          renderInlineMap(el, gj, vnode.attrs.color || '#3b82f6', type, vnode.attrs.label)
         } else {
           el.innerHTML = mapLoadingHtml()
           var loadFn = type === 'subjourney' ? loadSubjourneyPolygon : loadJourneyPolygon
@@ -452,7 +453,7 @@
               el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:#64748b;font-size:12px;">No map data</div>'
               return
             }
-            renderInlineMap(el, gj, journeyColor(itemKey), type)
+            renderInlineMap(el, gj, journeyColor(itemKey), type, vnode.attrs.label)
           })
         }
       }, 100)
@@ -479,7 +480,7 @@
         var gj = entry.type ? entry : { type: 'MultiPolygon', coordinates: toMultiPolygon(entry.coordinates) }
         var color = reg.color || '#3b82f6'
         var layer = L.geoJSON(gj, { style: { color: color, weight: 1, fillColor: color, fillOpacity: 0.35 } })
-        layer.bindTooltip((reg.displayName || reg.key || '') + (reg.percentage != null ? ': ' + reg.percentage + '%' : ''), { sticky: true })
+        layer.bindTooltip((reg.displayName || reg.key || '') + (reg.percentage != null ? ' (' + reg.percentage + '%)' : ''), { sticky: true })
         layer.on('click', function () {
           setState({ expandedRegionKey: reg.key, expandedJourneyKey: null })
           revealCard(reg.key)
@@ -578,7 +579,7 @@
           pending--
           if (gj && el.isConnected) {
             var layer = L.geoJSON(gj, { style: { color: it.color, weight: 1.5, fillColor: it.color, fillOpacity: 0.35 } })
-            layer.bindTooltip((it.name || it.key || '') + (it.pct != null ? ': ' + it.pct + '%' : ''), { sticky: true })
+            layer.bindTooltip((it.name || it.key || '') + (it.pct != null ? ' (' + it.pct + '%)' : ''), { sticky: true })
             layer.on('click', function () {
               setState({ expandedJourneyKey: it.key, expandedRegionKey: null })
               revealCard(it.key)
@@ -689,7 +690,7 @@
                   var txt = ni.overview.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
                   return txt
                 })()) : null,
-                m(InlineMap, { itemKey: reg.key, type: 'region', color: reg.color || '#3b82f6' })
+                m(InlineMap, { itemKey: reg.key, type: 'region', color: reg.color || '#3b82f6', label: (reg.displayName || reg.key || '') + (reg.percentage != null ? ' (' + reg.percentage + '%)' : '') })
               ]) : null
             ])
           }))
@@ -748,7 +749,7 @@
       var overview = ownOverview || fallbackOverview
       var expContent = isExpanded ? m('.journey-expanded', [
         overview ? m('.journey-exp-overview', overview) : null,
-        m(InlineMap, { itemKey: n.id, type: depth === 0 ? 'journey' : 'subjourney' })
+        m(InlineMap, { itemKey: n.id, type: depth === 0 ? 'journey' : 'subjourney', label: (n.displayName || n.id || '') + (n.connectionPercent != null ? ' (' + n.connectionPercent + '%)' : '') })
       ]) : null
       var toggle = m('span.journey-toggle' + (isExpanded ? '.open' : ''), '\u25BC')
       if (depth === 0) {

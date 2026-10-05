@@ -133,6 +133,7 @@
           L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 }).addTo(map)
           var color = vnode.attrs.color || '#3b82f6'
           var layer = L.geoJSON(entry, { style: { color: color, weight: 1.5, fillColor: color, fillOpacity: 0.25 } })
+          if (vnode.attrs.label) layer.bindTooltip(vnode.attrs.label, { permanent: true, direction: 'center', className: 'map-label' })
           layer.addTo(map)
           map.fitBounds(layer.getBounds().pad(0.1))
           vnode.state.map = map
@@ -218,7 +219,7 @@
       }
       var color = n.color || '#3b82f6'
       var layer = L.geoJSON(entry, { style: { color: color, weight: 1, fillColor: color, fillOpacity: 0.35 } })
-      layer.bindTooltip((n.label || n.id) + (n.totalPercent != null ? ': ' + n.totalPercent + '%' : ''), { sticky: true })
+      layer.bindTooltip((n.label || n.id) + (n.totalPercent != null ? ' (' + n.totalPercent + '%)' : ''), { sticky: true })
       ;(function (id) { layer.on('click', function () { expandAndReveal(id) }) })(n.id)
       layer.addTo(map)
       placed[n.id] = layer
@@ -281,7 +282,7 @@
         m('span.region-exp-value', pop.reference_ethnicities)
       ]) : null,
       pop && pop.description ? m('.region-exp-overview' + (hasRef ? '.has-ref' : ''), pop.description) : null,
-      m(InlineMap, { itemKey: node.id, color: color || (pop && pop.color) || '#3b82f6' })
+      m(InlineMap, { itemKey: node.id, color: color || (pop && pop.color) || '#3b82f6', label: (node.label || node.id) + (node.totalPercent != null ? ' (' + node.totalPercent + '%)' : '') })
     ])
   }
 

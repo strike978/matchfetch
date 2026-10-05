@@ -93,7 +93,7 @@
         (function (node) {
           var childLabels = node.regions ? Object.keys(node.regions) : []
           var isExpanded = !!s.expandedKeys[node.id]
-          out.push(m('.region-item' + (isExpanded ? '.expanded' : ''), { key: node.id }, [
+          out.push(m('.region-item' + (isExpanded ? '.expanded' : ''), { key: node.id, 'data-key': node.id }, [
             m('.region-header', {
               style: { paddingLeft: (depth * 20 + 12) + 'px', borderLeft: '3px solid ' + (node.color || '#3b82f6') },
               onclick: function () {
@@ -144,6 +144,131 @@
     },
     view: function () {
       return m('div', { style: { height: '260px', borderRadius: '8px', overflow: 'hidden', marginTop: '8px' } })
+    }
+  }
+
+  function collectMapNodes() {
+    var ancestry = (s.matchData && s.matchData.ancestry) || {}
+    var regions = ancestry.regions || {}
+    var nodes = []
+    function walk(list) {
+      for (var i = 0; i < list.length; i++) {
+        var n = list[i]
+        if (!n || n.id == null) continue
+        var childKeys = n.regions ? Object.keys(n.regions) : []
+        if (childKeys.length === 0) {
+          nodes.push(n)
+        } else {
+          for (var ki = 0; ki < childKeys.length; ki++) walk(n.regions[childKeys[ki]])
+        }
+      }
+    }
+    Object.keys(regions).forEach(function (label) { walk(regions[label] || []) })
+    var trace = ancestry.trace || []
+    for (var ti = 0; ti < trace.length; ti++) { if (trace[ti] && trace[ti].id != null) nodes.push(trace[ti]) }
+    return nodes
+  }
+
+  function isTraceId(id) {
+    var trace = (s.matchData && s.matchData.ancestry && s.matchData.ancestry.trace) || []
+    for (var i = 0; i < trace.length; i++) { if (trace[i].id === id) return true }
+    return false
+  }
+
+  function expandAndReveal(id) {
+    var keys = Object.assign({}, s.expandedKeys)
+    keys[id] = true
+    var node = s.popTree && s.popTree[id]
+    var p = node && node.parent_id
+    var guard = 0
+    while (p && p !== 'root' && guard++ < 40) {
+      keys[p] = true
+      var pn = s.popTree[p]
+      p = pn && pn.parent_id
+    }
+    var state = { expandedKeys: keys }
+    if (isTraceId(id)) state.expandedTrace = true
+    setState(state)
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        var el = document.querySelector('.region-item[data-key="' + id + '"]')
+        if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      })
+    })
+  }
+
+  function drawAllMapLayers(el) {
+    var map = el._map
+    if (!map) return
+    var nodes = el._nodes || []
+    if (!el._placed) el._placed = {}
+    if (!el._layers) el._layers = []
+    if (!el._ensured) el._ensured = {}
+    var placed = el._placed
+    var layers = el._layers
+    var added = 0
+    for (var i = 0; i < nodes.length; i++) {
+      var n = nodes[i]
+      if (!n || n.id == null || placed[n.id]) continue
+      var entry = (s.popCoords || {})[n.id]
+      if (!entry || !entry.geometry) {
+        var canLoad = s.rootOf && s.rootOf[n.id]
+        if (canLoad && !el._ensured[n.id]) { el._ensured[n.id] = true; ensureCoords(n.id) }
+        continue
+      }
+      var color = n.color || '#3b82f6'
+      var layer = L.geoJSON(entry, { style: { color: color, weight: 1, fillColor: color, fillOpacity: 0.35 } })
+      layer.bindTooltip((n.label || n.id) + (n.totalPercent != null ? ': ' + n.totalPercent + '%' : ''), { sticky: true })
+      ;(function (id) { layer.on('click', function () { expandAndReveal(id) }) })(n.id)
+      layer.addTo(map)
+      placed[n.id] = layer
+      layers.push(layer)
+      added++
+    }
+    if (added && layers.length) {
+      try {
+        el._allBounds = L.featureGroup(layers).getBounds()
+        map.fitBounds(el._allBounds.pad(0.1))
+      } catch (e) { }
+    }
+  }
+
+  function resetMapView(el) {
+    if (!el._map || !el._allBounds) return
+    try { el._map.fitBounds(el._allBounds.pad(0.1)) } catch (e) { }
+  }
+
+  var _allRegionsMap = null
+
+  var AllRegionsMap = {
+    oncreate: function (vnode) {
+      setTimeout(function () {
+        var el = vnode.dom
+        if (!el || !el.isConnected) return
+        el._nodes = collectMapNodes()
+        el._placed = {}
+        el._layers = []
+        if (_allRegionsMap) { try { _allRegionsMap.remove() } catch (e) { } _allRegionsMap = null }
+        var map = L.map(el, { zoomControl: true, attributionControl: false })
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 }).addTo(map)
+        el._map = map
+        _allRegionsMap = map
+        drawAllMapLayers(el)
+      }, 100)
+    },
+    onupdate: function (vnode) {
+      var el = vnode.dom
+      if (!el._map) return
+      drawAllMapLayers(el)
+      var count = Object.keys(s.expandedKeys || {}).length + (s.expandedTrace ? 1 : 0)
+      if (el._expandedCount != null && count < el._expandedCount) resetMapView(el)
+      el._expandedCount = count
+    },
+    onremove: function () {
+      if (_allRegionsMap) { try { _allRegionsMap.remove() } catch (e) { } _allRegionsMap = null }
+    },
+    view: function () {
+      return m('div', { style: { height: '160px', borderRadius: '8px', overflow: 'hidden', marginBottom: '16px' } })
     }
   }
 
@@ -253,7 +378,7 @@
       ]),
       isExpanded ? m('.region-expanded', trace.map(function (t) {
         var tExpanded = !!s.expandedKeys[t.id]
-        return m('.region-item' + (tExpanded ? '.expanded' : ''), { key: t.id }, [
+        return m('.region-item' + (tExpanded ? '.expanded' : ''), { key: t.id, 'data-key': t.id }, [
           m('.region-header', {
             style: { paddingLeft: '32px', borderLeft: '3px solid ' + (t.color || '#3b82f6') },
             onclick: function () {
@@ -280,6 +405,7 @@
       var trace = ancestry.trace
       if ((!regions || Object.keys(regions).length === 0) && (!trace || trace.length === 0)) return null
       return m('.card', [
+        m(AllRegionsMap),
         regions && Object.keys(regions).length > 0 ? renderRegionTree(regions, 0) : null,
         trace && trace.length > 0 ? renderTraceSection(trace) : null
       ])

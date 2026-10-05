@@ -628,6 +628,19 @@
     }
   }
 
+  function sortRegionsByRange(a, b) {
+    var pa = a.percentage || 0
+    var pb = b.percentage || 0
+    if (pb !== pa) return pb - pa
+    var ua = a.upperConfidence != null ? a.upperConfidence : -1
+    var ub = b.upperConfidence != null ? b.upperConfidence : -1
+    if (ub !== ua) return ub - ua
+    var la = a.lowerConfidence != null ? a.lowerConfidence : -1
+    var lb = b.lowerConfidence != null ? b.lowerConfidence : -1
+    if (lb !== la) return lb - la
+    return (a.displayName || a.key || '').localeCompare(b.displayName || b.key || '')
+  }
+
   var RegionsPanel = {
     view: function () {
       var d = s.matchData
@@ -659,7 +672,7 @@
       }
       macroKeys.sort(function (a, b) { return (macroTotals[b] || 0) - (macroTotals[a] || 0) })
       var groups = macroKeys.map(function (mk) {
-        var regions = grouped[mk]
+        var regions = grouped[mk].slice().sort(sortRegionsByRange)
         return m('.ethnicity-group', [
           m('.section-title', [titleize(mk), ' ', m('span.total-pct', macroTotals[mk] + '%')]),
           m('.region-list', regions.map(function (reg) {

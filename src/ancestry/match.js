@@ -382,6 +382,15 @@
     setState({ expandedJourneyKey: s.expandedJourneyKey === key ? null : key, expandedRegionKey: null })
   }
 
+  function revealCard(key) {
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        var el = document.querySelector('.region-item[data-key="' + key + '"], .journey-header[data-key="' + key + '"], .journey-item[data-key="' + key + '"]')
+        if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      })
+    })
+  }
+
   function toMultiPolygon(coords) {
     if (!coords || !coords.length) return coords
     var third = coords[0] && coords[0][0] && coords[0][0][0]
@@ -407,7 +416,9 @@
       L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 }).addTo(map)
       var layer = L.geoJSON(gj, { style: { color: color, weight: 1.5, fillColor: color, fillOpacity: 0.2 } })
       layer.addTo(map)
-      map.fitBounds(layer.getBounds().pad(0.1))
+      el._map = map
+      el._allBounds = layer.getBounds()
+      map.fitBounds(el._allBounds.pad(0.1))
       if (type === 'region') { if (_inlineRegionMap) _inlineRegionMap.remove(); _inlineRegionMap = map }
       else { if (_inlineJourneyMap) _inlineJourneyMap.remove(); _inlineJourneyMap = map }
     } catch (e) { console.log('Inline map error:', e) }
@@ -446,8 +457,173 @@
         }
       }, 100)
     },
+    onupdate: function (vnode) {
+      ensureMapVisible(vnode.dom)
+    },
     view: function () {
       return m('div', { style: { height: '260px', borderRadius: '8px', overflow: 'hidden', marginTop: '8px' } })
+    }
+  }
+
+  var _allRegionsMap = null
+
+  function renderAllRegionsMap(el, regions) {
+    var coords = s.regionCoords || {}
+    var layers = []
+    try {
+      var map = L.map(el, { zoomControl: true, attributionControl: false })
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 }).addTo(map)
+      regions.forEach(function (reg) {
+        var entry = coords[reg.key]
+        if (!entry || !entry.coordinates || !entry.coordinates.length) return
+        var gj = entry.type ? entry : { type: 'MultiPolygon', coordinates: toMultiPolygon(entry.coordinates) }
+        var color = reg.color || '#3b82f6'
+        var layer = L.geoJSON(gj, { style: { color: color, weight: 1, fillColor: color, fillOpacity: 0.35 } })
+        layer.bindTooltip((reg.displayName || reg.key || '') + (reg.percentage != null ? ': ' + reg.percentage + '%' : ''), { sticky: true })
+        layer.on('click', function () {
+          setState({ expandedRegionKey: reg.key, expandedJourneyKey: null })
+          revealCard(reg.key)
+        })
+        layers.push(layer)
+      })
+      el._map = map
+      if (layers.length) {
+        var group = L.featureGroup(layers).addTo(map)
+        el._allBounds = group.getBounds()
+        map.fitBounds(el._allBounds.pad(0.1))
+      }
+    } catch (e) { console.log('All regions map error:', e) }
+    return map
+  }
+
+  function resetMapView(el) {
+    var map = el._map
+    if (!map || !el._allBounds) return
+    try { map.fitBounds(el._allBounds.pad(0.1)) } catch (e) { }
+  }
+
+  function ensureMapVisible(el) {
+    var visible = el.clientWidth > 0
+    if (visible && el._visible === false && el._map) {
+      el._map.invalidateSize()
+      if (el._allBounds) { try { el._map.fitBounds(el._allBounds.pad(0.1)) } catch (e) { } }
+    }
+    el._visible = visible
+  }
+
+  var AllRegionsMap = {
+    oncreate: function (vnode) {
+      setTimeout(function () {
+        if (!vnode.dom || !vnode.dom.isConnected) return
+        vnode.dom._coords = s.regionCoords
+        vnode.dom._version = s.regionsVersion
+        vnode.dom._expanded = s.expandedRegionKey
+        if (_allRegionsMap) { _allRegionsMap.remove(); _allRegionsMap = null }
+        _allRegionsMap = renderAllRegionsMap(vnode.dom, vnode.attrs.regions)
+        vnode.dom._visible = vnode.dom.clientWidth > 0
+      }, 100)
+    },
+    onupdate: function (vnode) {
+      ensureMapVisible(vnode.dom)
+      if (vnode.dom._coords === s.regionCoords && vnode.dom._version === s.regionsVersion) {
+        if (vnode.dom._expanded !== s.expandedRegionKey) {
+          if (vnode.dom._expanded && !s.expandedRegionKey) resetMapView(vnode.dom)
+          vnode.dom._expanded = s.expandedRegionKey
+        }
+        return
+      }
+      setTimeout(function () {
+        if (!vnode.dom || !vnode.dom.isConnected) return
+        vnode.dom._coords = s.regionCoords
+        vnode.dom._version = s.regionsVersion
+        vnode.dom._expanded = s.expandedRegionKey
+        if (_allRegionsMap) { _allRegionsMap.remove(); _allRegionsMap = null }
+        _allRegionsMap = renderAllRegionsMap(vnode.dom, vnode.attrs.regions)
+      }, 50)
+    },
+    view: function () {
+      return m('div', { style: { height: '160px', borderRadius: '8px', overflow: 'hidden', marginBottom: '16px' } })
+    }
+  }
+
+  var _allJourneysMap = null
+
+  function journeyMapItems(nodes) {
+    return (nodes || []).map(function (n) {
+      return { key: n.id, color: strengthColor(n.connection), name: n.displayName || n.id, pct: n.connectionPercent }
+    })
+  }
+
+  function journeyMapSig(items) {
+    return items.map(function (it) { return it.key + ':' + it.color + ':' + it.name + ':' + it.pct }).join('|')
+  }
+
+  function renderAllJourneysMap(el, items) {
+    var layers = []
+    try {
+      var map = L.map(el, { zoomControl: true, attributionControl: false })
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 }).addTo(map)
+      el._map = map
+      var pending = items.length
+      if (!pending) return map
+      function maybeFit() {
+        if (pending > 0 || !el.isConnected || !layers.length) return
+        try {
+          el._allBounds = L.featureGroup(layers).getBounds()
+          map.fitBounds(el._allBounds.pad(0.1))
+        } catch (e) { }
+      }
+      items.forEach(function (it) {
+        loadJourneyPolygon(it.key).then(function (gj) {
+          pending--
+          if (gj && el.isConnected) {
+            var layer = L.geoJSON(gj, { style: { color: it.color, weight: 1.5, fillColor: it.color, fillOpacity: 0.35 } })
+            layer.bindTooltip((it.name || it.key || '') + (it.pct != null ? ': ' + it.pct + '%' : ''), { sticky: true })
+            layer.on('click', function () {
+              setState({ expandedJourneyKey: it.key, expandedRegionKey: null })
+              revealCard(it.key)
+            })
+            layer.addTo(map)
+            layers.push(layer)
+          }
+          maybeFit()
+        }).catch(function () { pending--; maybeFit() })
+      })
+    } catch (e) { console.log('All journeys map error:', e) }
+    return map
+  }
+
+  var AllJourneysMap = {
+    oncreate: function (vnode) {
+      setTimeout(function () {
+        if (!vnode.dom || !vnode.dom.isConnected) return
+        var items = journeyMapItems(vnode.attrs.journeys)
+        vnode.dom._sig = journeyMapSig(items)
+        vnode.dom._expanded = s.expandedJourneyKey
+        if (_allJourneysMap) { _allJourneysMap.remove(); _allJourneysMap = null }
+        _allJourneysMap = renderAllJourneysMap(vnode.dom, items)
+        vnode.dom._visible = vnode.dom.clientWidth > 0
+      }, 100)
+    },
+    onupdate: function (vnode) {
+      ensureMapVisible(vnode.dom)
+      if (vnode.dom._expanded !== s.expandedJourneyKey) {
+        if (vnode.dom._expanded && !s.expandedJourneyKey) resetMapView(vnode.dom)
+        vnode.dom._expanded = s.expandedJourneyKey
+      }
+      var items = journeyMapItems(vnode.attrs.journeys)
+      var sig = journeyMapSig(items)
+      if (vnode.dom._sig === sig) return
+      setTimeout(function () {
+        if (!vnode.dom || !vnode.dom.isConnected) return
+        vnode.dom._sig = sig
+        vnode.dom._expanded = s.expandedJourneyKey
+        if (_allJourneysMap) { _allJourneysMap.remove(); _allJourneysMap = null }
+        _allJourneysMap = renderAllJourneysMap(vnode.dom, items)
+      }, 50)
+    },
+    view: function () {
+      return m('div', { style: { height: '160px', borderRadius: '8px', overflow: 'hidden', marginBottom: '16px' } })
     }
   }
 
@@ -464,6 +640,7 @@
         else regions = rbv[versions[0]]
       }
       if (!regions || !regions.length) return null
+      var allRegions = regions.slice()
       var grouped = {}
       for (var ri = 0; ri < regions.length; ri++) {
         var reg = regions[ri]
@@ -534,6 +711,7 @@
               }, v)
             })
           ]) : null,
+          m(AllRegionsMap, { regions: allRegions }),
           groups
         ])
       ])
@@ -550,7 +728,10 @@
       var com = s.journeys
       if (!com || !com.length) return null
       return m('.regions-map-row', [
-        m('.card', [m('.journey-tree', renderJourneyTree(com, 0))])
+        m('.card', [
+          m(AllJourneysMap, { journeys: com }),
+          m('.journey-tree', renderJourneyTree(com, 0))
+        ])
       ])
     }
   }

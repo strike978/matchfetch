@@ -415,7 +415,7 @@
       var map = L.map(el, { zoomControl: true, attributionControl: false })
       L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 }).addTo(map)
       var layer = L.geoJSON(gj, { style: { color: color, weight: 1.5, fillColor: color, fillOpacity: 0.2 } })
-      if (label) layer.bindTooltip(label, { permanent: true, direction: 'center', className: 'map-label' })
+      if (label) layer.bindTooltip(label, { direction: 'center', className: 'map-label' })
       layer.addTo(map)
       el._map = map
       el._allBounds = layer.getBounds()

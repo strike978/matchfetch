@@ -133,7 +133,7 @@
           L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 }).addTo(map)
           var color = vnode.attrs.color || '#3b82f6'
           var layer = L.geoJSON(entry, { style: { color: color, weight: 1.5, fillColor: color, fillOpacity: 0.25 } })
-          if (vnode.attrs.label) layer.bindTooltip(vnode.attrs.label, { permanent: true, direction: 'center', className: 'map-label' })
+          if (vnode.attrs.label) layer.bindTooltip(vnode.attrs.label, { direction: 'center', className: 'map-label' })
           layer.addTo(map)
           map.fitBounds(layer.getBounds().pad(0.1))
           vnode.state.map = map

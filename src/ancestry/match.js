@@ -480,7 +480,7 @@
         var gj = entry.type ? entry : { type: 'MultiPolygon', coordinates: toMultiPolygon(entry.coordinates) }
         var color = reg.color || '#3b82f6'
         var layer = L.geoJSON(gj, { style: { color: color, weight: 1, fillColor: color, fillOpacity: 0.35 } })
-        layer.bindTooltip((reg.displayName || reg.key || '') + (reg.percentage != null ? ' (' + reg.percentage + '%)' : ''), { sticky: true })
+        layer.bindTooltip((reg.displayName || reg.key || '') + (reg.percentage != null ? ' (' + fmtPct(reg.percentage) + ')' : ''), { sticky: true })
         layer.on('click', function () {
           setState({ expandedRegionKey: reg.key, expandedJourneyKey: null })
           revealCard(reg.key)
@@ -628,17 +628,28 @@
     }
   }
 
+  function fmtPct(n) {
+    if (n == null) return ''
+    return n === 0 ? '<1%' : n + '%'
+  }
+
+  function fmtRange(lower, upper) {
+    var lo = lower === 0 ? '0%' : lower + '%'
+    var hi = upper === 0 ? '<1%' : upper + '%'
+    return lo + '\u2013' + hi
+  }
+
   function sortRegionsByRange(a, b) {
     var pa = a.percentage || 0
     var pb = b.percentage || 0
     if (pb !== pa) return pb - pa
-    var ua = a.upperConfidence != null ? a.upperConfidence : -1
-    var ub = b.upperConfidence != null ? b.upperConfidence : -1
-    if (ub !== ua) return ub - ua
     var la = a.lowerConfidence != null ? a.lowerConfidence : -1
     var lb = b.lowerConfidence != null ? b.lowerConfidence : -1
     if (lb !== la) return lb - la
-    return (a.displayName || a.key || '').localeCompare(b.displayName || b.key || '')
+    var ua = a.upperConfidence != null ? a.upperConfidence : -1
+    var ub = b.upperConfidence != null ? b.upperConfidence : -1
+    if (ub !== ua) return ub - ua
+    return 0
   }
 
   var RegionsPanel = {
@@ -674,7 +685,7 @@
       var groups = macroKeys.map(function (mk) {
         var regions = grouped[mk].slice().sort(sortRegionsByRange)
         return m('.ethnicity-group', [
-          m('.section-title', [titleize(mk), ' ', m('span.total-pct', macroTotals[mk] + '%')]),
+          m('.section-title', [titleize(mk), ' ', m('span.total-pct', fmtPct(macroTotals[mk]))]),
           m('.region-list', regions.map(function (reg) {
             var isExpanded = s.expandedRegionKey === reg.key
             var ni = s.regionNameData && s.regionNameData[reg.key]
@@ -686,8 +697,8 @@
                 m('span.region-toggle' + (isExpanded ? '.open' : ''), isExpanded ? '\u25B2' : '\u25BC'),
                 m('span.detail-label', reg.displayName || reg.key || ''),
                 m('span.detail-value', [
-                  reg.percentage + '%',
-                  reg.lowerConfidence != null && reg.upperConfidence != null ? m('span.range', ' (Range: ' + reg.lowerConfidence + '%\u2013' + reg.upperConfidence + '%)') : null
+                  fmtPct(reg.percentage),
+                  reg.lowerConfidence != null && reg.upperConfidence != null ? m('span.range', ' (Range: ' + fmtRange(reg.lowerConfidence, reg.upperConfidence) + ')') : null
                 ])
               ]),
               isExpanded ? m('.region-expanded', [
@@ -703,7 +714,7 @@
                   var txt = ni.overview.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
                   return txt
                 })()) : null,
-                m(InlineMap, { itemKey: reg.key, type: 'region', color: reg.color || '#3b82f6', label: (reg.displayName || reg.key || '') + (reg.percentage != null ? ' (' + reg.percentage + '%)' : '') })
+                m(InlineMap, { itemKey: reg.key, type: 'region', color: reg.color || '#3b82f6', label: (reg.displayName || reg.key || '') + (reg.percentage != null ? ' (' + fmtPct(reg.percentage) + ')' : '') })
               ]) : null
             ])
           }))

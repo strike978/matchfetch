@@ -397,16 +397,29 @@
     return Array.isArray(third) ? coords : [coords]
   }
 
-  function journeyColor(itemKey) {
-    if (!s.matchData) return '#3b82f6'
-    var color = '#3b82f6'
-    ;(function findCol(nodes) {
-      for (var fi = 0; fi < nodes.length; fi++) {
-        if (nodes[fi].id === itemKey) { color = strengthColor(nodes[fi].connection); return }
-        if (nodes[fi].communities) findCol(nodes[fi].communities)
+  var JOURNEY_PALETTE = [
+    '#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231',
+    '#911eb4', '#42d4f4', '#f032e6', '#bfef45', '#fabed4',
+    '#469990', '#dcbeff', '#9a6324', '#fffac8', '#800000',
+    '#aaffc3', '#808000', '#ffd8b1', '#000075', '#a9a9a9'
+  ]
+
+  function journeyColorMap() {
+    var cmap = {}
+    var roots = s.journeys || []
+    function assign(nodes, col) {
+      for (var j = 0; j < nodes.length; j++) {
+        var n = nodes[j]
+        if (n.id) cmap[n.id] = col
+        if (n.communities && n.communities.length) assign(n.communities, col)
       }
-    })(s.journeys || [])
-    return color
+    }
+    for (var i = 0; i < roots.length; i++) assign([roots[i]], JOURNEY_PALETTE[i % JOURNEY_PALETTE.length])
+    return cmap
+  }
+
+  function journeyColor(itemKey) {
+    return journeyColorMap()[itemKey] || '#3b82f6'
   }
 
   function renderInlineMap(el, gj, color, type, label) {
@@ -550,8 +563,9 @@
   var _allJourneysMap = null
 
   function journeyMapItems(nodes) {
+    var cmap = journeyColorMap()
     return (nodes || []).map(function (n) {
-      return { key: n.id, color: strengthColor(n.connection), name: n.displayName || n.id, pct: n.connectionPercent }
+      return { key: n.id, color: cmap[n.id] || '#3b82f6', name: n.displayName || n.id, pct: n.connectionPercent }
     })
   }
 
@@ -634,9 +648,7 @@
   }
 
   function fmtRange(lower, upper) {
-    var lo = lower === 0 ? '0%' : lower + '%'
-    var hi = upper === 0 ? '<1%' : upper + '%'
-    return lo + '\u2013' + hi
+    return lower + '%\u2014' + upper + '%'
   }
 
   function sortRegionsByRange(a, b) {
@@ -698,7 +710,7 @@
                 m('span.detail-label', reg.displayName || reg.key || ''),
                 m('span.detail-value', [
                   fmtPct(reg.percentage),
-                  reg.lowerConfidence != null && reg.upperConfidence != null ? m('span.range', ' (Range: ' + fmtRange(reg.lowerConfidence, reg.upperConfidence) + ')') : null
+                  reg.lowerConfidence != null && reg.upperConfidence != null ? m('span.range', { title: 'Ancestry\u2019s confidence range for this region \u2014 the estimated lower and upper bounds of this ethnicity contribution.' }, ' (' + fmtRange(reg.lowerConfidence, reg.upperConfidence) + ')') : null
                 ])
               ]),
               isExpanded ? m('.region-expanded', [
@@ -767,7 +779,7 @@
       var isExpanded = s.expandedJourneyKey === n.id
       var hasChildren = n.communities && n.communities.length > 0
       var sc = n.connection ? 'strength-' + n.connection.toLowerCase() : ''
-      var strength = n.connection ? m('span.journey-strength.' + sc, ['Connection: ', (n.connectionPercent || '') + '%']) : null
+      var strength = n.connection ? m('span.journey-strength.' + sc, { title: 'Ancestry\u2019s confidence that this journey is part of the match\u2019s ancestry.' }, [(n.connectionPercent || '') + '%']) : null
       var raw = s.journeyNameData && s.journeyNameData[n.id]
       var ownOverview = raw && raw.overview ? raw.overview.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'") : null
       var overview = ownOverview || fallbackOverview
@@ -776,10 +788,13 @@
         m(InlineMap, { itemKey: n.id, type: depth === 0 ? 'journey' : 'subjourney', label: (n.displayName || n.id || '') + (n.connectionPercent != null ? ' (' + n.connectionPercent + '%)' : '') })
       ]) : null
       var toggle = m('span.journey-toggle' + (isExpanded ? '.open' : ''), '\u25BC')
+      var dotSize = depth === 0 ? 12 : 8
+      var dot = m('span.journey-dot', { style: { borderColor: journeyColor(n.id), width: dotSize + 'px', height: dotSize + 'px' } })
       if (depth === 0) {
         return m('.journey-node', { key: n.id }, [
           m('.journey-header', { 'data-key': n.id, onclick: function () { zoomToJourney(n.id) } }, [
             toggle,
+            dot,
             m('span.journey-name', n.displayName || n.id || ''),
             strength
           ]),
@@ -791,6 +806,7 @@
         return m('.journey-sub-node', { key: n.id }, [
           m('.journey-header', { 'data-key': n.id, style: { paddingLeft: depth * 20 + 'px' }, onclick: function () { zoomToJourney(n.id) } }, [
             toggle,
+            dot,
             m('span.journey-name', n.displayName || n.id || ''),
             strength
           ]),
@@ -801,6 +817,7 @@
       return m('.journey-sub-node', { key: n.id }, [
         m('.journey-item', { 'data-key': n.id, style: { paddingLeft: (depth * 20 + 20) + 'px' }, onclick: function () { zoomToJourney(n.id) } }, [
           toggle,
+          dot,
           m('span.journey-name', n.displayName || n.id || ''),
           strength
         ]),

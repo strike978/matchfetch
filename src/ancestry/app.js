@@ -247,10 +247,12 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
 
   function syncRegionVersions() {
     var versions = getRegionVersions()
-    if (s.ethnicityVersion && versions.indexOf(String(s.ethnicityVersion)) !== -1) {
-      if (s.regionsVersion !== String(s.ethnicityVersion)) s.regionsVersion = String(s.ethnicityVersion)
-    } else if (versions.length && versions.indexOf(s.regionsVersion) === -1) {
-      s.regionsVersion = versions[0]
+    if (versions.length && versions.indexOf(s.regionsVersion) === -1) {
+      if (s.ethnicityVersion && versions.indexOf(String(s.ethnicityVersion)) !== -1) {
+        s.regionsVersion = String(s.ethnicityVersion)
+      } else {
+        s.regionsVersion = versions[0]
+      }
     }
     return versions
   }

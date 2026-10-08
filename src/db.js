@@ -291,11 +291,18 @@ var DB = (function() {
             .then(streamKeys);
     }
 
+    function exportFileName() {
+        var d = new Date();
+        function p(n) { return (n < 10 ? '0' : '') + n; }
+        return 'matchfetch-export-' + d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds()) + '.json';
+    }
+
     function exportDatabase() {
+        var fileName = exportFileName();
         var pickerPromise = null;
         if (typeof window.showSaveFilePicker === 'function') {
             pickerPromise = window.showSaveFilePicker({
-                suggestedName: 'matchfetch-export.json',
+                suggestedName: fileName,
                 types: [{ description: 'JSON file', accept: { 'application/json': ['.json'] } }]
             });
         }
@@ -334,7 +341,7 @@ var DB = (function() {
                 var blob = new Blob(blobParts, { type: 'application/json' });
                 var url = URL.createObjectURL(blob);
                 var a = document.createElement('a');
-                a.href = url; a.download = 'matchfetch-export.json';
+                a.href = url; a.download = fileName;
                 document.body.appendChild(a); a.click();
                 document.body.removeChild(a); URL.revokeObjectURL(url);
                 return 0;

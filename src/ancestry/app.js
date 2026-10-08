@@ -231,18 +231,30 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
     return null
   }
 
+  var _cachedRegionVersions = { sm: undefined, key: '', list: [] }
+
   function getRegionVersions() {
+    // Cached: this walks every stored match, and it is called on every render
+    // (with large match lists that made the filter bar lag on each keystroke).
+    // Recompute only when the data set or the build version actually changes.
+    var key = _dataVersion + '|' + (s.ethnicityVersion || '')
+    if (_cachedRegionVersions.sm === s.sessionMatches && _cachedRegionVersions.key === key) return _cachedRegionVersions.list
     var versions = {}
     if (s.ethnicityVersion) versions[String(s.ethnicityVersion)] = true
-    if (!s.sessionMatches) return Object.keys(versions).sort(function (a, b) { return Number(b) - Number(a) })
-    var sids = Object.keys(s.sessionMatches)
-    for (var i = 0; i < sids.length; i++) {
-      var r = s.sessionMatches[sids[i]] && s.sessionMatches[sids[i]].regions
-      if (!r || Array.isArray(r)) continue
-      var keys = Object.keys(r)
-      for (var k = 0; k < keys.length; k++) versions[keys[k]] = true
+    if (s.sessionMatches) {
+      var sids = Object.keys(s.sessionMatches)
+      for (var i = 0; i < sids.length; i++) {
+        var r = s.sessionMatches[sids[i]] && s.sessionMatches[sids[i]].regions
+        if (!r || Array.isArray(r)) continue
+        var keys = Object.keys(r)
+        for (var k = 0; k < keys.length; k++) versions[keys[k]] = true
+      }
     }
-    return Object.keys(versions).sort(function (a, b) { return Number(b) - Number(a) })
+    var list = Object.keys(versions).sort(function (a, b) { return Number(b) - Number(a) })
+    _cachedRegionVersions.sm = s.sessionMatches
+    _cachedRegionVersions.key = key
+    _cachedRegionVersions.list = list
+    return list
   }
 
   function syncRegionVersions() {

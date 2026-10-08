@@ -200,8 +200,26 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
     var r = sm.regions
     if (!r) return null
     if (Array.isArray(r)) return r
-    var keys = Object.keys(r)
-    return keys.length ? r[keys[keys.length - 1]] : null
+    var v = s.ethnicityVersion
+    if (v && r[String(v)]) return r[String(v)]
+    return null
+  }
+
+  // A profile only counts as "having data" for a version when at least one
+  // stored match has that version's regions. If not, the profile is shown as
+  // empty while any older-version data stays saved in the database.
+  function hasVersionData(matches, version) {
+    if (!matches) return false
+    var v = String(version || s.ethnicityVersion || '2025')
+    var keys = Object.keys(matches)
+    for (var i = 0; i < keys.length; i++) {
+      var m = matches[keys[i]]
+      var r = m && m.regions
+      if (!r) continue
+      if (Array.isArray(r)) { if (String(m.version || '2025') === v) return true; continue }
+      if (r[v]) return true
+    }
+    return false
   }
 
   function getFilterRegions(sm) {
@@ -401,7 +419,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
       var fs = await DB.getFetchState(guid)
       if (fs && fs.status === 0) {
         var session = await DB.getSession(guid)
-        if (session && session.matches) {
+        if (session && session.matches && hasVersionData(session.matches, s.ethnicityVersion)) {
           var sm = session.matches
           var sids = Object.keys(sm)
           for (var i = 0; i < sids.length; i++) {
@@ -1514,7 +1532,8 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
     if (guid) {
       var session = await DB.getSession(guid)
       if (typeof DB !== 'undefined') DB.setProfileName(guid, currentTestName())
-      if (session && session.matches) {
+      var hasData = session && session.matches && hasVersionData(session.matches, s.ethnicityVersion)
+      if (hasData) {
         s.sessionMatches = session.matches
         var matchList = []
         var sampleIds = Object.keys(session.matches)
@@ -1544,7 +1563,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
           setState({ sessionMatches: s.sessionMatches, matchListData: s.matchListData, batchCommunitiesData: s.batchCommunitiesData, batchEthnicityData: s.batchEthnicityData, profileData: s.profileData })
         }
       }
-      try { await restoreFetchUI(guid) } catch (e) { console.log('[MatchFetch] restore error:', e) }
+      if (hasData) { try { await restoreFetchUI(guid) } catch (e) { console.log('[MatchFetch] restore error:', e) } }
       await Promise.all([
         fetchMatchCount(guid),
         checkCanEdit(guid),

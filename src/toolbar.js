@@ -18,6 +18,7 @@
         '.topbar-toggle .slider::after { content: ""; position: absolute; top: 2px; left: 2px; width: 10px; height: 10px; background: #64748b; border-radius: 50%; transition: transform .2s, background .2s; }',
         '.topbar-toggle input:checked + .slider { background: #3b82f6; }',
         '.topbar-toggle input:checked + .slider::after { transform: translateX(12px); background: #fff; }',
+        '.topbar-toggle + .topbar-toggle { margin-left: 12px; }',
         '.service-toggle { display: flex; background: #0f1724; border-radius: 6px; overflow: hidden; border: 1px solid #253044; flex-shrink: 0; }',
         '.service-opt { padding: 3px 10px; font-size: 11px; font-weight: 600; cursor: pointer; transition: background .15s, color .15s; display: flex; align-items: center; gap: 4px; color: #94a3b8; text-decoration: none; }',
         '.service-opt.active { background: #1e293b; color: #f1f5f9; }',
@@ -38,6 +39,7 @@
         + '</div>'
         + '<div class="topbar-actions" id="topbar-actions">'
         + '<label class="topbar-toggle"><input type="checkbox" id="hideNamesToggle"><span class="slider"></span> Hide names</label>'
+        + (isAncestry ? '<label class="topbar-toggle"><input type="checkbox" id="hideRangesToggle" checked><span class="slider"></span> Hide ranges</label>' : '')
         + '<button class="topbar-btn" id="importBtn" title="Import database"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Import</button>'
         + '<button class="topbar-btn" id="exportBtn" title="Export database"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export</button>'
         + '</div>'

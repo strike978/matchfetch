@@ -1,5 +1,5 @@
 ﻿(function () {
-  var REGIONS_SWITCH_TIME = Date.parse('2026-10-08T19:00:00Z') // Oct 8, 2026 1:00 PM MT
+  var REGIONS_SWITCH_TIME = Date.parse('2026-10-08T15:30:00Z') // Oct 8, 2026 11:30 AM ET
 
   var s = {
     regionMap: null,
@@ -17,6 +17,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
     currentPage: 1,
     pageSize: 20,
     hideNames: false,
+    hideRanges: true,
     showFilterBody: false,
     fetchMsg: '',
     fetchPct: '',
@@ -987,8 +988,12 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
         setState({ hideNames: this.checked })
         m.redraw()
       })
+      document.getElementById('hideRangesToggle').addEventListener('change', function () {
+        setState({ hideRanges: this.checked })
+        m.redraw()
+      })
       // Roll the version forward to 2026 the moment it goes live
-      // (Oct 8, 2026 1:00 PM MT) and dismiss the update banner.
+      // (Oct 8, 2026 11:30 AM ET) and dismiss the update banner.
       if (Date.now() < REGIONS_SWITCH_TIME) {
         var switchTimer = setInterval(function () {
           if (Date.now() < REGIONS_SWITCH_TIME) return
@@ -1441,7 +1446,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
       return m('.card.match-card', {
         'data-guid': guid,
         'data-sample': matchObj.sampleId,
-        onclick: function () { if (guid && matchObj.sampleId) window.open('match.html?guid=' + guid + '&sampleId=' + matchObj.sampleId + (s.hideNames ? '&hideNames=1' : '') + '&canEdit=' + (s.canEdit ? '1' : '0') + '&version=' + (getCurrentVersion(sm) || '2025'), '_blank') }
+        onclick: function () { if (guid && matchObj.sampleId) window.open('match.html?guid=' + guid + '&sampleId=' + matchObj.sampleId + (s.hideNames ? '&hideNames=1' : '') + (s.hideRanges ? '' : '&hideRanges=0') + '&canEdit=' + (s.canEdit ? '1' : '0') + '&version=' + (getCurrentVersion(sm) || '2025'), '_blank') }
       }, [
         m('.card-top', [
           p.photoUrl ? m('img.avatar', { src: p.photoUrl }) : m('.avatar.avatar-initials.' + gc, p.matchNameInitials || '?'),

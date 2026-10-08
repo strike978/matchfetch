@@ -3,6 +3,7 @@
   var guid = params.get('guid')
   var sampleId = params.get('sampleId')
   var hideNames = params.get('hideNames') === '1'
+  var hideRanges = params.get('hideRanges') !== '0'
   var canEdit = params.get('canEdit') === '1'
   var version = params.get('version') || '2025'
 
@@ -710,7 +711,7 @@
                 m('span.detail-label', reg.displayName || reg.key || ''),
                 m('span.detail-value', [
                   fmtPct(reg.percentage),
-                  reg.lowerConfidence != null && reg.upperConfidence != null ? m('span.range', { title: 'Ancestry\u2019s confidence range for this region \u2014 the estimated lower and upper bounds of this ethnicity contribution.' }, ' (' + fmtRange(reg.lowerConfidence, reg.upperConfidence) + ')') : null
+                  !hideRanges && reg.lowerConfidence != null && reg.upperConfidence != null ? m('span.range', { title: 'Ancestry\u2019s confidence range for this region \u2014 the estimated lower and upper bounds of this ethnicity contribution.' }, ' (' + fmtRange(reg.lowerConfidence, reg.upperConfidence) + ')') : null
                 ])
               ]),
               isExpanded ? m('.region-expanded', [
@@ -1137,12 +1138,15 @@
     e.target.value = ''
   })
 
-  ;['hideNamesToggle','importBtn','exportBtn'].forEach(function(id) {
+  ;['hideNamesToggle','hideRangesToggle','importBtn','exportBtn'].forEach(function(id) {
     var el = document.getElementById(id)
     if (!el) return
     if (id === 'hideNamesToggle') {
       el.checked = hideNames
       el.addEventListener('change', function() { hideNames = this.checked; m.redraw() })
+    } else if (id === 'hideRangesToggle') {
+      el.checked = hideRanges
+      el.addEventListener('change', function() { hideRanges = this.checked; m.redraw() })
     } else if (id === 'importBtn') {
       el.addEventListener('click', function() { document.getElementById('importFileInput').click() })
     } else if (id === 'exportBtn') {

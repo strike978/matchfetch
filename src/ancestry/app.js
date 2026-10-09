@@ -243,6 +243,48 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
     return String(s.regionsVersion || s.ethnicityVersion) === String(s.ethnicityVersion)
   }
 
+  var _cachedVersionCount = { sm: undefined, key: '', count: 0 }
+
+  // Number of stored matches that have region data for the given version.
+  // Cached (like getRegionVersions) because it walks every stored match and is
+  // called on each render.
+  function countMatchesForVersion(version) {
+    if (!s.sessionMatches) return 0
+    var v = String(version || s.ethnicityVersion || '2025')
+    var key = v + '|' + _dataVersion
+    if (_cachedVersionCount.sm === s.sessionMatches && _cachedVersionCount.key === key) return _cachedVersionCount.count
+    var count = 0
+    var keys = Object.keys(s.sessionMatches)
+    for (var i = 0; i < keys.length; i++) {
+      var m = s.sessionMatches[keys[i]]
+      var r = m && m.regions
+      if (!r) continue
+      if (Array.isArray(r)) { if (String(m.version || '2025') === v) count++; continue }
+      if (r[v]) count++
+    }
+    _cachedVersionCount.sm = s.sessionMatches
+    _cachedVersionCount.key = key
+    _cachedVersionCount.count = count
+    return count
+  }
+
+  // The fetch-state badge is version-aware: a completed "✓ N matches" badge
+  // shows the count for the version currently being viewed. Progress/resume
+  // badges describe the active fetch and are left untouched. When the active
+  // version has no stored badge (e.g. only older-version data exists) we still
+  // show a ✓ count for the selected version.
+  function fetchStateBadgeText() {
+    var b = s.fetchStateBadge || ''
+    if (b.charAt(0) === '\u21bb') return b
+    if (!s.sessionMatches) return b
+    var v = String(s.regionsVersion || s.ethnicityVersion)
+    // Active build version with a stored badge: keep it verbatim so we never
+    // walk the whole match list on a normal render.
+    if (b && v === String(s.ethnicityVersion)) return b
+    if (!hasVersionData(s.sessionMatches, v)) return b
+    return '\u2713 ' + countMatchesForVersion(v) + ' matches'
+  }
+
   function getFilterRegions(sm) {
     if (!sm || !sm.regions) return null
     if (Array.isArray(sm.regions)) return sm.regions
@@ -1114,6 +1156,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
       if (s.testsLoading) return m('.spinner', [m('.spinner-ring'), m('.spinner-text', 'Loading...')])
       if (s.tests.length === 0 && s.statusMsg) return m('.error', s.statusMsg)
       if (s.tests.length === 0) return m('.empty', 'No tests found')
+      var stateBadge = fetchStateBadgeText()
       return [
         m('.label', [
           'Select a profile',
@@ -1124,7 +1167,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
           ]) : null,
           s.matchCount && s.matchCount.error ? m('.badge', { style: { color: '#f87171' } }, s.matchCount.error) : null,
           s.matchCountLoading ? m('.badge', m('.spinner-ring', { style: { width: '12px', height: '12px', borderWidth: '2px', display: 'inline-block', verticalAlign: 'middle' } })) : null,
-          s.fetchStateBadge ? m('.badge#fetchStateBadge', s.fetchStateBadge) : null
+          stateBadge ? m('.badge#fetchStateBadge', stateBadge) : null
         ]),
         m('.select-row', [
           m('select#testSelect', {

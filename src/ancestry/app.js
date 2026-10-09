@@ -268,19 +268,27 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
     return count
   }
 
-  // The fetch-state badge is version-aware: a completed "✓ N matches" badge
-  // shows the count for the version currently being viewed. Progress/resume
-  // badges describe the active fetch and are left untouched. When the active
-  // version has no stored badge (e.g. only older-version data exists) we still
-  // show a ✓ count for the selected version.
+  // True when the given match has region data for the given version. Used to
+  // keep the match list scoped to the version currently being viewed.
+  function matchHasVersionData(match, version) {
+    if (!match) return false
+    var sm = s.sessionMatches && s.sessionMatches[match.sampleId]
+    if (!sm || !sm.regions) return false
+    var v = String(version || s.ethnicityVersion || '2025')
+    if (Array.isArray(sm.regions)) return String(sm.version || '2025') === v
+    return !!sm.regions[v]
+  }
+
+  // The fetch-state badge is version-aware: a "✓ N matches" badge always shows
+  // the number of stored matches that have the version currently being viewed
+  // (not the overall total, which can include matches without that version's
+  // data). Progress/resume ("↻") badges describe the active fetch and are left
+  // untouched.
   function fetchStateBadgeText() {
     var b = s.fetchStateBadge || ''
     if (b.charAt(0) === '\u21bb') return b
     if (!s.sessionMatches) return b
     var v = String(s.regionsVersion || s.ethnicityVersion)
-    // Active build version with a stored badge: keep it verbatim so we never
-    // walk the whole match list on a normal render.
-    if (b && v === String(s.ethnicityVersion)) return b
     if (!hasVersionData(s.sessionMatches, v)) return b
     return '\u2713 ' + countMatchesForVersion(v) + ' matches'
   }
@@ -329,6 +337,64 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
       }
     }
     return versions
+  }
+
+  // Versions that actually have stored region data (unlike getRegionVersions,
+  // which always includes the active build version). Used to decide whether a
+  // clear should target a single version or wipe the whole profile.
+  function getDataVersions() {
+    var versions = {}
+    if (s.sessionMatches) {
+      var sids = Object.keys(s.sessionMatches)
+      for (var i = 0; i < sids.length; i++) {
+        var r = s.sessionMatches[sids[i]] && s.sessionMatches[sids[i]].regions
+        if (!r || Array.isArray(r)) continue
+        var keys = Object.keys(r)
+        for (var k = 0; k < keys.length; k++) versions[keys[k]] = true
+      }
+    }
+    return Object.keys(versions).sort(function (a, b) { return Number(b) - Number(a) })
+  }
+
+  // Remove one version's region data (in memory and in the DB), keeping every
+  // other version plus all matches, journeys and tags. When the active build
+  // version is cleared, its fetch state is cleared too so the Fetch button
+  // returns and the "✓ N matches" badge goes away.
+  function clearVersionData(guid, version) {
+    var v = String(version)
+    if (s.sessionMatches) {
+      var sids = Object.keys(s.sessionMatches)
+      for (var i = 0; i < sids.length; i++) {
+        var match = s.sessionMatches[sids[i]]
+        if (!match || !match.regions) continue
+        if (Array.isArray(match.regions)) {
+          if (String(match.version || '2025') === v) { match.regions = null; match.version = null }
+        } else {
+          delete match.regions[v]
+          if (Object.keys(match.regions).length === 0) match.regions = null
+        }
+      }
+    }
+    _dataVersion++
+    _cachedRegionOpts = null
+    _cachedJourneyOpts = null
+    // Region filters belong to the version that was just removed.
+    s.filters.regions = [{ region: '', pctMin: null, pctMax: null }]
+    s.regionSearch = ''
+    s.currentPage = 1
+    if (typeof DB !== 'undefined') {
+      var clearPromise = DB.deleteVersionRegions(guid, v)
+      if (v === String(s.ethnicityVersion)) {
+        clearPromise = clearPromise.then(function () { return DB.deleteFetchState(guid) })
+        s.fetchStateBadge = ''
+        s.fetchComplete = false
+        s.buttonLabel = null
+        s.showFetchOptions = false
+      }
+      clearPromise.catch(function (e) { console.log('[MatchFetch] clear version error:', e) })
+    }
+    syncRegionVersions()
+    m.redraw()
   }
 
   function getCurrentVersion(sm) {
@@ -1184,6 +1250,22 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
           s.selectedGuid ? m('button.clear-btn#clearKitBtn', {
             title: 'Clear profile data',
             onclick: function () {
+              var versions = getDataVersions()
+              if (versions.length > 1) {
+                var cv = String(s.regionsVersion || s.ethnicityVersion)
+                if (versions.indexOf(cv) === -1) cv = versions[0]
+                var others = versions.filter(function (x) { return x !== cv })
+                s.modal = {
+                  icon: '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+                  title: 'Clear ' + cv + ' data?',
+                  text: 'This will remove the ' + cv + ' region data for this profile. Your ' + others.join(', ') + ' data and all matches, journeys, and tags will be kept.',
+                  confirmText: 'Clear ' + cv,
+                  cancelText: 'Cancel',
+                  onConfirm: function () { clearVersionData(s.selectedGuid, cv) }
+                }
+                m.redraw()
+                return
+              }
               s.modal = {
                 icon: '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
                 title: 'Clear profile data?',
@@ -1460,21 +1542,28 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
     view: function () {
       var list = s.matchListData && s.matchListData.matchList
       if (!list) return m('#matchListResult')
-      // Only show matches for the selected version. While fetching we always
-      // show the list so cards stream in as the active version is populated.
-      if (!s.isFetching && s.sessionMatches && !hasVersionData(s.sessionMatches, s.regionsVersion || s.ethnicityVersion)) return m('#matchListResult')
+      var v = String(s.regionsVersion || s.ethnicityVersion)
+      // Nothing to show when the selected version has no data. While fetching
+      // we always show the list so cards stream in as the active version is
+      // populated.
+      if (!s.isFetching && s.sessionMatches && !hasVersionData(s.sessionMatches, v)) return m('#matchListResult')
       if (s.canEdit === null) return m('.spinner', [m('.spinner-ring'), m('.spinner-text', 'Loading...')])
       var key = computeFilterKey(list)
       if (key !== _filterCache.key || list !== _filterCache.list) {
         _filterCache.key = key
         _filterCache.list = list
-        _filterCache.sorted = list.slice().sort(sortMatches)
+        // Scope the list to matches that actually have the selected version's
+        // region data, so switching versions hides other-version matches.
+        var base = (!s.isFetching && s.sessionMatches)
+          ? list.filter(function (match) { return matchHasVersionData(match, v) })
+          : list.slice()
+        _filterCache.sorted = base.sort(sortMatches)
         _filterCache.filtered = _filterCache.sorted.filter(matchesFilter)
       }
       var filtered = _filterCache.filtered
       var start = (s.currentPage - 1) * s.pageSize
       var end = Math.min(start + s.pageSize, filtered.length)
-      var total = list.length
+      var total = _filterCache.sorted.length
       var shown = filtered.length
       var page = filtered.slice(start, end)
       var totalPages = Math.max(1, Math.ceil(filtered.length / s.pageSize))

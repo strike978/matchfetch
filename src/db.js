@@ -577,6 +577,28 @@ var DB = (function() {
             });
         },
 
+        deleteVersionRegions: function(guid, version, provider) {
+            var t = table(provider);
+            var v = String(version);
+            return db.transaction('rw', t, function() {
+                return t.get(guid).then(function(existing) {
+                    if (!existing || !existing.matches) return;
+                    var sids = Object.keys(existing.matches);
+                    for (var i = 0; i < sids.length; i++) {
+                        var m = existing.matches[sids[i]];
+                        if (!m || !m.regions) continue;
+                        if (Array.isArray(m.regions)) {
+                            if (String(m.version || '2025') === v) { m.regions = null; m.version = null; }
+                        } else {
+                            delete m.regions[v];
+                            if (Object.keys(m.regions).length === 0) m.regions = null;
+                        }
+                    }
+                    return t.put(existing);
+                });
+            });
+        },
+
         getSession: function(guid, provider) {
             return table(provider).get(guid).then(function(r) { return r || null; });
         },

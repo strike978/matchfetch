@@ -206,9 +206,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
     return null
   }
 
-  // A profile only counts as "having data" for a version when at least one
-  // stored match has that version's regions. If not, the profile is shown as
-  // empty while any older-version data stays saved in the database.
+  // True when at least one stored match has regions for the given version.
   function hasVersionData(matches, version) {
     if (!matches) return false
     var v = String(version || s.ethnicityVersion || '2025')
@@ -221,6 +219,28 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
       if (r[v]) return true
     }
     return false
+  }
+
+  // True when a stored session has region data for ANY version. This lets a
+  // profile fetched under an older build version still show its matches and
+  // filtering options, so the user can switch the Version dropdown to view it.
+  function hasAnyVersionData(matches) {
+    if (!matches) return false
+    var keys = Object.keys(matches)
+    for (var i = 0; i < keys.length; i++) {
+      var m = matches[keys[i]]
+      var r = m && m.regions
+      if (!r) continue
+      if (Array.isArray(r)) { if (r.length) return true; continue }
+      if (Object.keys(r).length) return true
+    }
+    return false
+  }
+
+  // True when the Version dropdown is showing the active build version (the
+  // one fetches are stored under). Fetch controls only apply to it.
+  function isActiveVersion() {
+    return String(s.regionsVersion || s.ethnicityVersion) === String(s.ethnicityVersion)
   }
 
   function getFilterRegions(sm) {
@@ -1024,7 +1044,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
       Promise.all([loadRegionMap(), loadJourneyNameMap()]).then(fetchTests)
     },
     view: function () {
-      return [m(UpdateBanner), m(KitSelector), m(FilterBar), m(MatchList), m(Modal)]
+      return [m(UpdateBanner), m(KitSelector), m(MatchList), m(Modal)]
     }
   }
 
@@ -1065,6 +1085,24 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
           m('.modal-actions', [
             s.modal.cancelText ? m('button.modal-btn.modal-cancel', { onclick: function () { s.modal = null; m.redraw() } }, s.modal.cancelText) : null,
             s.modal.confirmText ? m('button.modal-btn.modal-confirm', { onclick: function () { var cb = s.modal.onConfirm; s.modal = null; m.redraw(); if (cb) cb() } }, s.modal.confirmText) : null,
+          ])
+        ])
+      ])
+    }
+  }
+
+  var VersionSelector = {
+    view: function () {
+      if (!s.selectedGuid || !s.sessionMatches) return null
+      return m('.filter-row', { style: { marginTop: '16px' } }, [
+        m('span.filter-group', [
+          'Version ',
+          m('select#filterRegionVersion.filter-select', {
+            style: { width: '100px' },
+            value: s.regionsVersion || '',
+            onchange: function (e) { s.regionsVersion = e.target.value || null; _cachedRegionOpts = null; s.currentPage = 1; m.redraw() }
+          }, [
+            syncRegionVersions().map(function (v) { return m('option', { value: v }, v) })
           ])
         ])
       ])
@@ -1129,7 +1167,9 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
             }
           }, m.trust('<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>')) : null
         ]),
-        m('#fetchGroup', s.selectedGuid && !s.isFetching && !s.fetchComplete && !s.profileLoading ? [
+        m(VersionSelector),
+        m(FilterBar),
+        m('#fetchGroup', s.selectedGuid && !s.isFetching && !s.fetchComplete && !s.profileLoading && isActiveVersion() ? [
           !s.buttonLabel ? m('.fetch-toggle', {
             onclick: function () { setState({ showFetchOptions: !s.showFetchOptions, mode: s.showFetchOptions ? 'all' : s.mode }) }
           }, [
@@ -1183,7 +1223,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
             m('#fetchBarFill', { style: { height: '100%', width: s.fetchProgress + '%', borderRadius: '4px', transition: 'width .3s, background .3s' } })
           ])
         ]) : null,
-        s.fetchComplete && s.mode === 'all' && s.selectedGuid && !s.isFetching && !s.profileLoading ? m('button.btn.fetch-list-btn', {
+        s.fetchComplete && s.mode === 'all' && s.selectedGuid && !s.isFetching && !s.profileLoading && isActiveVersion() ? m('button.btn.fetch-list-btn', {
           onclick: function () { checkForNewMatches(s.selectedGuid) }
         }, [m.trust('<span>&#x21BB;</span>'), ' Check for new matches']) : null,
         s.statusMsg ? m('.status-msg', s.statusMsg) : null
@@ -1195,6 +1235,10 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
     view: function () {
       var list = s.matchListData && s.matchListData.matchList
       if (!list) return null
+      // Nothing to filter when the selected version has no data yet (the fetch
+      // controls take over there). While fetching we keep it so filters remain
+      // available as the active version streams in.
+      if (!s.isFetching && s.sessionMatches && !hasVersionData(s.sessionMatches, s.regionsVersion || s.ethnicityVersion)) return null
       return m('#filterBar', [
         m('.filter-toggle#filterToggle', {
           onclick: function () {
@@ -1207,18 +1251,6 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
           ' Filtering Options'
         ]),
         m('#filterBody', { style: { display: s.showFilterBody ? '' : 'none' } }, [
-          m('.filter-row', [
-            m('span.filter-group', [
-              'Version ',
-              m('select#filterRegionVersion.filter-select', {
-                style: { width: '100px' },
-                value: s.regionsVersion || '',
-                onchange: function (e) { s.regionsVersion = e.target.value || null; s.currentPage = 1; m.redraw() }
-              }, [
-                syncRegionVersions().map(function (v) { return m('option', { value: v }, v) })
-              ])
-            ])
-          ]),
           m('.filter-row', [
             m('label.filter-group', ['Name ',         m('input#filterName.filter-input', { type: 'text', placeholder: 'Filter by name', oninput: function () { applyFilterChange(); m.redraw() } })]),
             m('label.filter-group', [
@@ -1385,6 +1417,9 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
     view: function () {
       var list = s.matchListData && s.matchListData.matchList
       if (!list) return m('#matchListResult')
+      // Only show matches for the selected version. While fetching we always
+      // show the list so cards stream in as the active version is populated.
+      if (!s.isFetching && s.sessionMatches && !hasVersionData(s.sessionMatches, s.regionsVersion || s.ethnicityVersion)) return m('#matchListResult')
       if (s.canEdit === null) return m('.spinner', [m('.spinner-ring'), m('.spinner-text', 'Loading...')])
       var key = computeFilterKey(list)
       if (key !== _filterCache.key || list !== _filterCache.list) {
@@ -1547,12 +1582,19 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
     s.regionsVersion = null
     s.paternalCluster = ''
     s.profileLoading = !!guid
+    _cachedRegionOpts = null
+    _cachedJourneyOpts = null
     m.redraw()
     if (guid) {
       var session = await DB.getSession(guid)
       if (typeof DB !== 'undefined') DB.setProfileName(guid, currentTestName())
-      var hasData = session && session.matches && hasVersionData(session.matches, s.ethnicityVersion)
-      if (hasData) {
+      // Load stored matches for ANY version so the Version dropdown stays
+      // available, but only mark the profile as fetched for the active build
+      // version (2026). When that version has no data the Fetch button shows
+      // exactly as it did before, and the list stays empty until the user
+      // switches the Version dropdown to a version that has data (e.g. 2025).
+      var hasAnyData = session && session.matches && hasAnyVersionData(session.matches)
+      if (hasAnyData) {
         s.sessionMatches = session.matches
         var matchList = []
         var sampleIds = Object.keys(session.matches)
@@ -1582,7 +1624,9 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
           setState({ sessionMatches: s.sessionMatches, matchListData: s.matchListData, batchCommunitiesData: s.batchCommunitiesData, batchEthnicityData: s.batchEthnicityData, profileData: s.profileData })
         }
       }
-      if (hasData) { try { await restoreFetchUI(guid) } catch (e) { console.log('[MatchFetch] restore error:', e) } }
+      if (session && session.matches && hasVersionData(session.matches, s.ethnicityVersion)) {
+        try { await restoreFetchUI(guid) } catch (e) { console.log('[MatchFetch] restore error:', e) }
+      }
       await Promise.all([
         fetchMatchCount(guid),
         checkCanEdit(guid),

@@ -101,6 +101,9 @@
 
   var ICON_DOWNLOAD = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>'
   var ICON_COPY = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>'
+  var ICON_SHARE = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>'
+  var ICON_CHECK = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+  var ICON_INFO = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>'
 
   function render(payload) {
     content.innerHTML = ''
@@ -112,6 +115,32 @@
     var json = JSON.stringify(payload, null, 2)
     var counts = fmtCounts(payload)
 
+    var bar = el('div', 'sharebar')
+    var shareBtn = el('button', 'btn-sm primary lg')
+    shareBtn.innerHTML = ICON_SHARE + ' Share to Ancestry Journey Explorer'
+    var status = el('span', 'share-status')
+    bar.appendChild(shareBtn)
+    bar.appendChild(status)
+    content.appendChild(bar)
+
+    shareBtn.addEventListener('click', function () {
+      if (shareBtn.disabled) return
+      shareBtn.disabled = true
+      status.className = 'share-status'
+      status.textContent = 'Sharing\u2026'
+      AncestrySummarizer.upload(payload, function (done, total) {
+        status.textContent = 'Sharing profile ' + done + ' of ' + total + '\u2026'
+      }).then(function () {
+        status.className = 'share-status ok'
+        status.textContent = 'Shared ' + payload.profiles.length + ' profile(s). Thank you!'
+        shareBtn.innerHTML = ICON_CHECK + ' Shared'
+      }).catch(function (err) {
+        shareBtn.disabled = false
+        status.className = 'share-status err'
+        status.textContent = String(err && err.message || err)
+      })
+    })
+
     var stats = el('div', 'stats')
     stats.appendChild(stat(counts.profiles, 'Profiles'))
     stats.appendChild(stat(counts.matches, 'Matches'))
@@ -120,18 +149,16 @@
     stats.appendChild(stat(counts.regions, 'Unique regions'))
     content.appendChild(stats)
 
-    if (payload.rule) {
-      var rule = el('div', 'rule')
-      rule.appendChild(ruleItem('Only this journey', payload.rule.onlyJourney))
-      rule.appendChild(ruleItem('Min connection', payload.rule.minConnectionPercent + '%'))
-      rule.appendChild(ruleItem('Min matches', payload.rule.minMatches))
-      rule.appendChild(ruleItem('Build', payload.year))
-      content.appendChild(rule)
-    }
+    var info = el('div', 'info')
+    var infoIcon = el('span', 'info-icon')
+    infoIcon.innerHTML = ICON_INFO
+    info.appendChild(infoIcon)
+    info.appendChild(el('span', null, 'Only matches that belong to a single journey are counted, and only journeys with at least 20 matches are included (Ancestry ' + payload.year + ' build).'))
+    content.appendChild(info)
 
     var panel = el('div', 'panel')
     var head = el('div', 'panel-head')
-    head.appendChild(el('div', 'panel-title', 'Shared data'))
+    head.appendChild(el('div', 'panel-title', 'Data'))
     var actions = el('div', 'panel-actions')
     actions.appendChild(button(ICON_COPY + ' Copy', '', function () {
       if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(json)
@@ -142,13 +169,6 @@
     var pre = el('pre', null, json)
     panel.appendChild(pre)
     content.appendChild(panel)
-  }
-
-  function ruleItem(label, value) {
-    var s = el('span')
-    s.appendChild(el('b', null, label + ':'))
-    s.appendChild(document.createTextNode(' ' + value))
-    return s
   }
 
   function wireToolbar() {

@@ -8,6 +8,12 @@ var AncestrySummarizer = (function () {
     year: '2026'
   }
 
+  var REMOTE = {
+    url: 'https://retvsehqusqfbpxywkxf.supabase.co',
+    publishableKey: 'sb_publishable_DJudcXGWpEUpWVGDF-GLwg_FRJabT0q',
+    schemaVersion: 1
+  }
+
   function cyrb128(str) {
     var h1 = 1779033703, h2 = 3144134277, h3 = 1013904242, h4 = 2773480762
     for (var i = 0, k; i < str.length; i++) {
@@ -331,6 +337,35 @@ var AncestrySummarizer = (function () {
     }
   }
 
+  function upload(payload, onProgress) {
+    var profiles = payload.profiles || []
+    var total = profiles.length
+    var i = 0
+    function next() {
+      if (i >= total) return Promise.resolve()
+      var prof = profiles[i]
+      var body = JSON.stringify({
+        payload: {
+          provider: payload.provider,
+          year: payload.year,
+          schemaVersion: REMOTE.schemaVersion,
+          profiles: [prof]
+        }
+      })
+      return fetch(REMOTE.url + '/rest/v1/rpc/submit_summary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': REMOTE.publishableKey },
+        body: body
+      }).then(function (r) {
+        if (!r.ok) return r.text().then(function (t) { throw new Error('Upload failed (' + r.status + ')' + (t ? ': ' + t : '')) })
+        i++
+        if (onProgress) onProgress(i, total)
+        return next()
+      })
+    }
+    return next().then(function () { return { profiles: total } })
+  }
+
   function download(obj, filename) {
     var blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' })
     var url = URL.createObjectURL(blob)
@@ -351,6 +386,8 @@ var AncestrySummarizer = (function () {
     build: build,
     detectVersion: detectVersion,
     profileId: profileId,
+    remote: REMOTE,
+    upload: upload,
     download: download,
     titleize: titleize
   }

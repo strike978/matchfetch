@@ -113,12 +113,6 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
     }
   }
 
-  function openSharedView() {
-    if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.create) {
-      chrome.tabs.create({ url: chrome.runtime.getURL('src/ancestry/share.html') })
-    }
-  }
-
   function apiFetch(url, options) {
     return new Promise(function (resolve, reject) {
       chrome.runtime.sendMessage({
@@ -1140,8 +1134,6 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
         setState({ hideRanges: this.checked })
         m.redraw()
       })
-      var shareBtn = document.getElementById('shareBtn')
-      if (shareBtn) shareBtn.addEventListener('click', openSharedView)
       // Roll the version forward to 2026 the moment it goes live
       // (Oct 8, 2026 11:30 AM ET) and dismiss the update banner.
       if (Date.now() < REGIONS_SWITCH_TIME) {

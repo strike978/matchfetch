@@ -151,11 +151,35 @@
     return s
   }
 
+  function wireToolbar() {
+    var hideNames = document.getElementById('hideNamesToggle')
+    if (hideNames) hideNames.addEventListener('change', function () { })
+    var hideRanges = document.getElementById('hideRangesToggle')
+    if (hideRanges) hideRanges.addEventListener('change', function () { })
+    var fileInput = document.getElementById('importFileInput')
+    var importBtn = document.getElementById('importBtn')
+    var exportBtn = document.getElementById('exportBtn')
+    if (importBtn && fileInput) importBtn.addEventListener('click', function () { fileInput.click() })
+    if (fileInput) fileInput.addEventListener('change', function (e) {
+      var file = e.target.files[0]
+      e.target.value = ''
+      if (!file || typeof DB === 'undefined' || !DB.importDatabase) return
+      if (!confirm('Restore "' + file.name + '"? Existing data will be overwritten.')) return
+      DB.importDatabase(file).then(function () { location.reload() }).catch(function (err) { alert('Import failed: ' + (err && err.message || err)) })
+    })
+    if (exportBtn) exportBtn.addEventListener('click', function () {
+      if (typeof DB !== 'undefined' && DB.exportDatabase) DB.exportDatabase().catch(function () { })
+    })
+  }
+
   function run() {
+    wireToolbar()
     content.innerHTML = ''
-    var loading = el('div', 'empty')
-    loading.appendChild(el('b', null, 'Gathering your journey stats'))
-    loading.appendChild(document.createTextNode('This only takes a moment.'))
+    var loading = el('div', 'loading')
+    loading.appendChild(el('div', 'spinner-ring'))
+    loading.appendChild(el('div', 'loading-title', 'Gathering your journey stats'))
+    loading.appendChild(el('div', 'loading-sub', 'Reading matches from every profile\u2026'))
+    loading.appendChild(el('div', 'progress'))
     content.appendChild(loading)
 
     if (typeof DB === 'undefined' || !DB.getAllSessions || typeof AncestrySummarizer === 'undefined') {

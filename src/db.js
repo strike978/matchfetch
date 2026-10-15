@@ -603,6 +603,10 @@ var DB = (function() {
             return table(provider).get(guid).then(function(r) { return r || null; });
         },
 
+        getAllSessions: function(provider) {
+            return table(provider).toArray().then(function(rows) { return rows || []; });
+        },
+
         getMatchData: function(guid, sampleId, provider) {
             return table(provider).get(guid).then(function(session) {
                 if (!session) return null;

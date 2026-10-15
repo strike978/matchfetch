@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Share journey stats - MatchFetch</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif; background: #0f1724; color: #f1f5f9; min-height: 100vh; }
+.page { max-width: 920px; margin: 0 auto; padding: 28px 28px 64px; }
+
+.hero { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 22px; }
+.hero-icon { width: 48px; height: 48px; border-radius: 14px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: linear-gradient(160deg, #1e3a8a 0%, #172554 100%); border: 1px solid #1e40af; }
+.hero-text h1 { font-size: 21px; font-weight: 700; letter-spacing: -.2px; }
+.hero-text p { font-size: 13.5px; color: #94a3b8; line-height: 1.6; margin-top: 6px; max-width: 640px; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; padding: 4px 10px; border-radius: 999px; }
+.chip.ok { background: rgba(34,197,94,.1); color: #4ade80; border: 1px solid rgba(34,197,94,.28); }
+.chip.no { background: rgba(239,68,68,.08); color: #f87171; border: 1px solid rgba(239,68,68,.24); }
+.chip svg { width: 12px; height: 12px; }
+
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.stat { background: #1a2332; border: 1px solid #253044; border-radius: 12px; padding: 14px 16px; }
+.stat .num { font-size: 22px; font-weight: 700; color: #f1f5f9; font-variant-numeric: tabular-nums; letter-spacing: -.5px; }
+.stat .lbl { font-size: 10.5px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: .6px; margin-top: 3px; }
+
+.rule { font-size: 12px; color: #94a3b8; margin-bottom: 18px; display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.rule span { display: inline-flex; align-items: center; gap: 5px; }
+.rule b { color: #e2e8f0; font-weight: 600; }
+
+.panel { background: #1a2332; border: 1px solid #253044; border-radius: 14px; overflow: hidden; }
+.panel-head { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid #253044; }
+.panel-title { font-size: 13px; font-weight: 700; color: #e2e8f0; margin-right: auto; }
+.panel-actions { display: flex; gap: 8px; }
+.btn-sm { background: #1e293b; border: 1px solid #253044; color: #e2e8f0; cursor: pointer; font-size: 12.5px; font-weight: 600; padding: 7px 14px; border-radius: 9px; font-family: inherit; display: inline-flex; align-items: center; gap: 6px; transition: background .2s, border-color .2s, color .2s; }
+.btn-sm:hover { background: #253044; border-color: #475569; }
+.btn-sm.primary { background: #3b82f6; border-color: #3b82f6; color: #fff; }
+.btn-sm.primary:hover { background: #2563eb; border-color: #2563eb; }
+.btn-sm svg { width: 14px; height: 14px; }
+
+pre { margin: 0; padding: 16px; font-size: 12px; line-height: 1.55; overflow: auto; max-height: 62vh; color: #cbd5e1; font-family: 'SF Mono', 'Fira Code', Consolas, monospace; white-space: pre; tab-size: 2; }
+pre::-webkit-scrollbar { width: 10px; height: 10px; }
+pre::-webkit-scrollbar-thumb { background: #253044; border-radius: 6px; }
+pre::-webkit-scrollbar-thumb:hover { background: #334155; }
+
+.footnote { font-size: 12px; color: #64748b; line-height: 1.6; margin-top: 16px; max-width: 720px; }
+
+.empty { padding: 56px 24px; text-align: center; color: #64748b; font-size: 14px; background: #1a2332; border: 1px solid #253044; border-radius: 14px; }
+.empty b { display: block; color: #94a3b8; font-size: 15px; margin-bottom: 6px; }
+</style>
+</head>
+<body>
+<script src="../toolbar.js"></script>
+<div class="page">
+  <header class="hero">
+    <div class="hero-icon">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+    </div>
+    <div class="hero-text">
+      <h1>Share journey stats</h1>
+      <p>Help build the Ancestry Journey Explorer. This creates an anonymous statistics file from every profile on your account, one section per profile, and contributes aggregated journey and region averages to our online database.</p>
+      <div class="chips">
+        <span class="chip ok"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Aggregated averages only</span>
+        <span class="chip ok"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Anonymous profile IDs</span>
+        <span class="chip no"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>No names or real IDs</span>
+        <span class="chip no"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>No raw matches</span>
+      </div>
+    </div>
+  </header>
+  <div id="content"></div>
+</div>
+<script src="../../lib/dexie.js"></script>
+<script src="../db.js"></script>
+<script src="share.js"></script>
+<script src="share-view.js"></script>
+</body>
+</html>

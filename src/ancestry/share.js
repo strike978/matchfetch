@@ -131,7 +131,8 @@ var AncestrySummarizer = (function () {
       mean: round2(agg.sum / agg.n),
       min: agg.min,
       max: agg.max,
-      n: agg.n
+      n: agg.n,
+      sum: round2(agg.sum)
     }
   }
 
@@ -234,10 +235,10 @@ var AncestrySummarizer = (function () {
         for (var rki = 0; rki < rkeys.length; rki++) {
           var rObj = mObj._regions[rkeys[rki]]
           var rStat = finalize(rObj._agg)
-          subRegions.push({ region: rObj.displayName, mean: rStat.mean, min: rStat.min, max: rStat.max, n: rStat.n })
+          subRegions.push({ region: rObj.displayName, mean: rStat.mean, min: rStat.min, max: rStat.max, n: rStat.n, sum: rStat.sum })
         }
         subRegions.sort(function (a, b) { return b.mean - a.mean })
-        macroRegions.push({ macroRegion: mObj.displayName, mean: mStat.mean, min: mStat.min, max: mStat.max, n: mStat.n, regions: subRegions })
+        macroRegions.push({ macroRegion: mObj.displayName, mean: mStat.mean, min: mStat.min, max: mStat.max, n: mStat.n, sum: mStat.sum, regions: subRegions })
       }
       macroRegions.sort(function (a, b) { return b.mean - a.mean })
       journeys.push({ id: j.id, displayName: j.displayName, matches: j.matches, regions: macroRegions })

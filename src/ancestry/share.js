@@ -506,7 +506,7 @@ var AncestryShare = (function () {
           m('.share-desc', [
             'Help build the ',
             m('a', { href: EXPLORER_URL, target: '_blank', rel: 'noopener' }, 'Ancestry Journey Explorer'),
-            ' by contributing anonymous journey and region averages from your matches.'
+            ' with aggregated journey and region averages from your matches.'
           ]),
           m('.share-stats', [
             m('.share-stat', [m('.n', counts.matches.toLocaleString()), m('.l', 'Matches')]),

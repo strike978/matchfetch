@@ -1134,6 +1134,10 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
         setState({ hideRanges: this.checked })
         m.redraw()
       })
+      document.addEventListener('mf-share', function () {
+        if (typeof AncestryShare === 'undefined') return
+        AncestryShare.startShare({ setModal: function (mo) { setState({ modal: mo }) } })
+      })
       // Roll the version forward to 2026 the moment it goes live
       // (Oct 8, 2026 11:30 AM ET) and dismiss the update banner.
       if (Date.now() < REGIONS_SWITCH_TIME) {
@@ -1190,6 +1194,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
           s.modal.icon ? m('.modal-icon', m.trust(s.modal.icon)) : null,
           s.modal.title ? m('.modal-title', s.modal.title) : null,
           s.modal.text ? m('.modal-text', s.modal.text) : null,
+          s.modal.body ? m('.modal-body', (typeof s.modal.body === 'function' ? s.modal.body() : s.modal.body)) : null,
           m('.modal-actions', [
             s.modal.cancelText ? m('button.modal-btn.modal-cancel', { onclick: function () { s.modal = null; m.redraw() } }, s.modal.cancelText) : null,
             s.modal.confirmText ? m('button.modal-btn.modal-confirm', { onclick: function () { var cb = s.modal.onConfirm; s.modal = null; m.redraw(); if (cb) cb() } }, s.modal.confirmText) : null,

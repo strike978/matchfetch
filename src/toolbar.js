@@ -28,7 +28,6 @@
 
     var isAncestry = /\/ancestry\//.test(location.pathname)
     var is23 = /\/23andme\//.test(location.pathname)
-    var isSharePage = /share\.html/.test(location.pathname)
 
     var bar = document.createElement('div')
     bar.className = 'topbar'
@@ -62,7 +61,6 @@
 
     var shareBtn = document.getElementById('shareBtn')
     if (shareBtn) shareBtn.addEventListener('click', function() {
-        if (isSharePage) location.reload()
-        else chrome.tabs.create({ url: chrome.runtime.getURL('src/ancestry/share.html') })
+        document.dispatchEvent(new CustomEvent('mf-share'))
     })
 })()

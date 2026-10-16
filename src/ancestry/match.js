@@ -1163,5 +1163,10 @@
     }
   })
 
+  document.addEventListener('mf-share', function () {
+    if (typeof AncestryShare === 'undefined') return
+    AncestryShare.startShare({ setModal: function (mo) { setState({ modal: mo }) } })
+  })
+
   m.mount(document.getElementById('content'), MatchDetail)
 })()

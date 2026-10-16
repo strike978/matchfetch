@@ -1,4 +1,4 @@
-var AncestrySummarizer = (function () {
+var AncestryShare = (function () {
   var DEFAULTS = {
     onlyJourney: true,
     minConnectionPercent: 20,
@@ -366,18 +366,168 @@ var AncestrySummarizer = (function () {
     return next().then(function () { return { profiles: total } })
   }
 
-  function download(obj, filename) {
-    var blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' })
-    var url = URL.createObjectURL(blob)
-    var a = document.createElement('a')
-    a.href = url
-    a.download = filename || 'ancestry_journeys_summary.json'
-    document.body.appendChild(a)
-    a.click()
-    setTimeout(function () {
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
-    }, 0)
+  function fmtCounts(payload) {
+    var matches = 0
+    var journeys = {}
+    var regions = {}
+    var profiles = payload.profiles || []
+    for (var i = 0; i < profiles.length; i++) {
+      matches += profiles[i].matches || 0
+      var js = profiles[i].journeys || []
+      for (var j = 0; j < js.length; j++) {
+        journeys[js[j].displayName || js[j].id] = true
+        var macros = js[j].regions || []
+        for (var k = 0; k < macros.length; k++) {
+          var subs = macros[k].regions || []
+          for (var n = 0; n < subs.length; n++) regions[subs[n].region] = true
+        }
+      }
+    }
+    return { profiles: profiles.length, matches: matches, journeys: Object.keys(journeys).length, regions: Object.keys(regions).length }
+  }
+
+  function extURL(p) {
+    return (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getURL) ? chrome.runtime.getURL(p) : p
+  }
+
+  function loadJourneyNames() {
+    return fetch(extURL('data/ancestry/ancestry_journey_names.json'))
+      .then(function (r) { return r.json() })
+      .then(function (data) {
+        var names = {}
+        for (var id in data) {
+          names[id] = data[id].name
+          var subs = data[id].subjourneys
+          if (subs) for (var sub in subs) names[sub] = subs[sub]
+        }
+        return names
+      })
+      .catch(function () { return {} })
+  }
+
+  function loadRegionNames(version) {
+    return fetch(extURL('data/ancestry/regions_' + version + '.json'))
+      .then(function (r) { return r.json() })
+      .then(function (data) {
+        var names = {}
+        for (var id in data) names[id] = data[id].displayName
+        return names
+      })
+      .catch(function () { return {} })
+  }
+
+  var SHARE_STYLE = [
+    '.share-modal { text-align: center; }',
+    '.share-hero { width: 40px; height: 40px; margin: 0 auto; display: flex; align-items: center; justify-content: center; color: #60a5fa; }',
+    '.share-hero.ok { color: #4ade80; }',
+    '.share-hero svg { width: 32px; height: 32px; }',
+    '.share-desc { font-size: 13.5px; color: #94a3b8; line-height: 1.6; margin-bottom: 18px; }',
+    '.share-desc a { color: #60a5fa; font-weight: 600; text-decoration: none; }',
+    '.share-desc a:hover { text-decoration: underline; }',
+    '.share-stats { display: flex; gap: 10px; margin-bottom: 16px; }',
+    '.share-stat { flex: 1; background: #0f1724; border: 1px solid #253044; border-radius: 12px; padding: 12px 6px; text-align: center; }',
+    '.share-stat .n { font-size: 20px; font-weight: 700; color: #f1f5f9; font-variant-numeric: tabular-nums; letter-spacing: -.3px; }',
+    '.share-stat .l { font-size: 10px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: .5px; margin-top: 3px; }',
+    '.share-status { font-size: 12.5px; color: #94a3b8; margin-bottom: 14px; min-height: 16px; }',
+    '.share-status.ok { color: #4ade80; }',
+    '.share-status.err { color: #f87171; }',
+    '.share-btn { width: 100%; padding: 12px 16px; border: none; border-radius: 11px; background: linear-gradient(135deg, #3b82f6, #2563eb); color: #fff; font-size: 13.5px; font-weight: 600; cursor: pointer; font-family: inherit; display: inline-flex; align-items: center; justify-content: center; gap: 7px; box-shadow: 0 6px 16px rgba(37,99,235,.35); transition: filter .2s, box-shadow .2s; }',
+    '.share-btn:hover:not(:disabled) { filter: brightness(1.08); }',
+    '.share-btn:disabled { opacity: .6; cursor: default; box-shadow: none; }',
+    '.share-btn svg { width: 15px; height: 15px; }'
+  ].join('')
+
+  if (typeof document !== 'undefined' && document.head && !document.getElementById('mf-share-style')) {
+    var shareStyle = document.createElement('style')
+    shareStyle.id = 'mf-share-style'
+    shareStyle.textContent = SHARE_STYLE
+    document.head.appendChild(shareStyle)
+  }
+
+  var EXPLORER_URL = 'https://admixr.com/ancestry2026'
+  var SHARE_ICON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>'
+  var CHECK_ICON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+  var SPINNER_ICON = '<div class="spinner-ring" style="margin:0 auto;width:28px;height:28px;border-width:3px"></div>'
+  var SHARE_HERO = '<div class="share-hero">' + SHARE_ICON + '</div>'
+  var CHECK_HERO = '<div class="share-hero ok">' + CHECK_ICON + '</div>'
+
+  function startShare(opts) {
+    opts = opts || {}
+    var setModal = opts.setModal
+    var redraw = opts.redraw || function () { if (typeof m !== 'undefined') m.redraw() }
+    if (!setModal) return
+
+    function show(mo) { setModal(mo) }
+
+    show({ icon: SPINNER_ICON, title: 'Crunching your journey stats', text: 'Combining journeys and regions from every profile\u2026' })
+
+    if (typeof DB === 'undefined' || !DB.getAllSessions) {
+      show({ title: 'Could not load your data', text: 'Please reopen the page and try again.', cancelText: 'Close' })
+      return
+    }
+
+    DB.getAllSessions('ancestry').then(function (sessions) {
+      var version = detectVersion(sessions) || DEFAULTS.year
+      return Promise.all([loadJourneyNames(), loadRegionNames(version)]).then(function (maps) {
+        return build(sessions, { year: version, version: version, journeyNames: maps[0], regionNames: maps[1] })
+      })
+    }).then(function (payload) {
+      if (!payload.profiles || !payload.profiles.length) {
+        show({ title: 'Nothing to share yet', text: 'Fetch matches in the Ancestry app first, then come back.', cancelText: 'Close' })
+        return
+      }
+      var view = { state: 'ready', done: 0, total: payload.profiles.length, error: '' }
+      var counts = fmtCounts(payload)
+
+      function doShare() {
+        if (view.state === 'sharing' || view.state === 'done') return
+        view.state = 'sharing'
+        view.done = 0
+        redraw()
+        upload(payload, function (done, total) { view.done = done; view.total = total; redraw() })
+          .then(function () {
+            view.state = 'done'
+            show({ title: 'Thank you!', icon: CHECK_HERO, body: body, cancelText: 'Close' })
+          })
+          .catch(function (err) {
+            view.state = 'error'
+            view.error = String(err && err.message || err)
+            redraw()
+          })
+      }
+
+      function body() {
+        var cls = 'share-status'
+        var text = ''
+        if (view.state === 'sharing') text = 'Sharing profile ' + view.done + ' of ' + view.total + '\u2026'
+        else if (view.state === 'done') { cls += ' ok'; text = 'Shared stats from ' + counts.profiles + ' profile' + (counts.profiles === 1 ? '' : 's') + '.' }
+        else if (view.state === 'error') { cls += ' err'; text = view.error }
+        return m('.share-modal', [
+          m('.share-desc', [
+            'Help build the ',
+            m('a', { href: EXPLORER_URL, target: '_blank', rel: 'noopener' }, 'Ancestry Journey Explorer'),
+            ' by contributing anonymous journey and region averages from your matches.'
+          ]),
+          m('.share-stats', [
+            m('.share-stat', [m('.n', counts.matches.toLocaleString()), m('.l', 'Matches')]),
+            m('.share-stat', [m('.n', counts.journeys.toLocaleString()), m('.l', 'Journeys')]),
+            m('.share-stat', [m('.n', counts.regions.toLocaleString()), m('.l', 'Regions')])
+          ]),
+          m('.' + cls, text),
+          m('button.share-btn', {
+            disabled: view.state === 'sharing' || view.state === 'done',
+            onclick: doShare
+          }, m.trust(view.state === 'done' ? CHECK_ICON + ' Shared'
+            : view.state === 'sharing' ? 'Sharing\u2026'
+            : view.state === 'error' ? 'Try again'
+            : SHARE_ICON + ' Share stats'))
+        ])
+      }
+
+      show({ title: 'Share your journey stats', icon: SHARE_HERO, body: body, cancelText: 'Not now' })
+    }).catch(function () {
+      show({ title: 'Something went wrong', text: 'We could not gather your stats. Please try again.', cancelText: 'Close' })
+    })
   }
 
   return {
@@ -388,7 +538,7 @@ var AncestrySummarizer = (function () {
     profileId: profileId,
     remote: REMOTE,
     upload: upload,
-    download: download,
+    startShare: startShare,
     titleize: titleize
   }
 })()

@@ -871,6 +871,10 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', journey
     if (jf && jf.length) {
       var sm = s.sessionMatches && s.sessionMatches[m.sampleId]
       var branches = sm && sm.journeys
+      // "Only this journey" means the match has exactly one journey, which can
+      // only apply when a single journey filter is active.
+      var activeJourneys = 0
+      for (var aj = 0; aj < jf.length; aj++) if (jf[aj] && jf[aj].journey) activeJourneys++
       for (var ji = 0; ji < jf.length; ji++) {
         var row = jf[ji]
         if (!row || !row.journey) continue
@@ -881,7 +885,7 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', journey
           }
         }
         if (!found) return false
-        if (row.journeyOnly && branches.length > 1) return false
+        if (row.journeyOnly && activeJourneys <= 1 && branches.length > 1) return false
         if (row.subjourney) {
           var subFound = false
           var subOnlyOk = true
@@ -1071,6 +1075,14 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', journey
     var rows = s.filters.journeys || []
     for (var i = 0; i < rows.length; i++) if (rows[i] && hasSubsForJourney(rows[i].journey)) return true
     return false
+  }
+
+  // Number of journey rows that currently have a journey selected.
+  function activeJourneyCount() {
+    var n = 0
+    var rows = s.filters.journeys || []
+    for (var i = 0; i < rows.length; i++) if (rows[i] && rows[i].journey) n++
+    return n
   }
 
   function getGroupOptions() {
@@ -1551,6 +1563,7 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', journey
 
   function renderJourneyFilterRows() {
     var rows = s.filters.journeys && s.filters.journeys.length ? s.filters.journeys : [{ journey: '', journeyOnly: false, subjourney: '', subjourneyOnly: false }]
+    var multiJourneys = activeJourneyCount() > 1
     return rows.map(function (f, idx) {
       var addBtn = idx === rows.length - 1 ? m('button#addJourneyRow.topbar-btn', {
         style: { fontSize: '14px', padding: '2px 8px' },
@@ -1575,15 +1588,15 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', journey
             m.redraw()
           }
         }, filterSelectOptions(getJourneyOptions(), s.journeySearch, f.journey).map(function (o) { return m('option', { value: o.value }, o.label) })),
-        m('label.filter-check', [
-          m('input.journey-only', { type: 'checkbox', 'data-idx': idx, checked: f.journeyOnly, onchange: function (e) {
+        m('label.filter-check' + (multiJourneys ? '.disabled' : ''), { title: multiJourneys ? 'Only available when filtering by a single journey' : '' }, [
+          m('input.journey-only', { type: 'checkbox', 'data-idx': idx, checked: f.journeyOnly, disabled: multiJourneys, onchange: function (e) {
             s.filters.journeys[idx] = s.filters.journeys[idx] || { journey: '', journeyOnly: false, subjourney: '', subjourneyOnly: false }
             s.filters.journeys[idx].journeyOnly = e.target.checked
             applyFilterChange()
             m.redraw()
           } }),
           m('span.check-mark'),
-          ' Only this'
+          ' Only this journey'
         ]),
         hasSubs ? m('select.subjourney-select.filter-select', {
           'data-idx': idx,
@@ -1605,7 +1618,7 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', journey
             m.redraw()
           } }),
           m('span.check-mark'),
-          ' Only this'
+          ' Only this subjourney'
         ]) : null,
         m('button.journey-remove.topbar-btn', {
           'data-idx': idx,

@@ -11,8 +11,9 @@
     batchEthnicityData: {},
     batchCommunitiesData: {},
     sessionMatches: null,
-filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, regions: [{ region: '', pctMin: null, pctMax: null }], group: '', starredOnly: false, side: '' },
+filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, subjourney: '', subjourneyOnly: false, regions: [{ region: '', pctMin: null, pctMax: null }], group: '', starredOnly: false, side: '' },
     journeySearch: '',
+    subjourneySearch: '',
     regionSearch: '',
     currentPage: 1,
     pageSize: 20,
@@ -378,6 +379,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
     _dataVersion++
     _cachedRegionOpts = null
     _cachedJourneyOpts = null
+    _cachedSubjourneyOpts = { journey: null, opts: [{ value: '', label: 'All' }] }
     // Region filters belong to the version that was just removed.
     s.filters.regions = [{ region: '', pctMin: null, pctMax: null }]
     s.regionSearch = ''
@@ -877,6 +879,24 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
       }
       if (!found) return false
     }
+    if (f.subjourney) {
+      var sm = s.sessionMatches && s.sessionMatches[m.sampleId]
+      var branches = sm && sm.journeys
+      var found = false
+      var onlyOne = false
+      if (branches) {
+        for (var bi = 0; bi < branches.length; bi++) {
+          var comms = branches[bi].communities
+          if (!comms) continue
+          for (var ci = 0; ci < comms.length; ci++) {
+            if ((comms[ci].displayName || '') === f.subjourney) { found = true; onlyOne = comms.length === 1; break }
+          }
+          if (found) break
+        }
+      }
+      if (!found) return false
+      if (f.subjourneyOnly && !onlyOne) return false
+    }
     if (f.group || f.starredOnly) {
       var sm = s.sessionMatches && s.sessionMatches[m.sampleId]
       var tags = sm && sm.tags
@@ -996,6 +1016,48 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
     _cachedJourneyOpts = buildJourneyOptions()
   }
 
+  var _cachedSubjourneyOpts = { journey: null, opts: [{ value: '', label: 'All' }] }
+
+  // Subjourneys of the selected journey that appear among the loaded matches.
+  // Matches store journeys as a tree (branches -> communities), so we collect
+  // the communities of the branch whose display name is the selected journey.
+  function buildSubjourneyOptions(journeyName) {
+    var opts = [{ value: '', label: 'All' }]
+    if (!journeyName || !s.sessionMatches) return opts
+    var known = {}
+    var sids = Object.keys(s.sessionMatches)
+    for (var i = 0; i < sids.length; i++) {
+      var branches = s.sessionMatches[sids[i]] && s.sessionMatches[sids[i]].journeys
+      if (!branches) continue
+      for (var bi = 0; bi < branches.length; bi++) {
+        if ((branches[bi].displayName || '') !== journeyName) continue
+        var comms = branches[bi].communities
+        if (!comms) continue
+        for (var ci = 0; ci < comms.length; ci++) {
+          var name = comms[ci].displayName
+          if (name && !known[name]) { known[name] = true; opts.push({ value: name, label: name }) }
+        }
+      }
+    }
+    if (opts.length > 1) {
+      var all = opts.shift()
+      opts.sort(function (a, b) { return a.label.localeCompare(b.label) })
+      opts.unshift(all)
+    }
+    return opts
+  }
+
+  function getSubjourneyOptions() {
+    if (_cachedSubjourneyOpts.journey !== s.filters.journey) {
+      _cachedSubjourneyOpts = { journey: s.filters.journey, opts: buildSubjourneyOptions(s.filters.journey) }
+    }
+    return _cachedSubjourneyOpts.opts
+  }
+
+  function refreshSubjourneyOptions() {
+    _cachedSubjourneyOpts = { journey: s.filters.journey, opts: buildSubjourneyOptions(s.filters.journey) }
+  }
+
   function getGroupOptions() {
     var opts = [{ value: '', label: 'All' }]
     if (!s.customTags) return opts
@@ -1061,6 +1123,9 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
     var journeyEl = document.getElementById('filterJourney')
     f.journey = journeyEl ? journeyEl.value : ''
     f.journeyOnly = document.getElementById('filterJourneyOnly') ? document.getElementById('filterJourneyOnly').checked : false
+    var subjourneyEl = document.getElementById('filterSubjourney')
+    f.subjourney = subjourneyEl ? subjourneyEl.value : ''
+    f.subjourneyOnly = document.getElementById('filterSubjourneyOnly') ? document.getElementById('filterSubjourneyOnly').checked : false
     var groupEl = document.getElementById('filterGroup')
     f.group = groupEl ? groupEl.value : ''
     f.starredOnly = document.getElementById('filterStarred') ? document.getElementById('filterStarred').checked : false
@@ -1288,7 +1353,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
                     s.fetchStateBadge = ''
                     s.showFetchOptions = false
                     s.currentPage = 1
-                    setState({ matchListData: null, sessionMatches: null, profileData: {}, batchEthnicityData: {}, batchCommunitiesData: {}, filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, regions: [{ region: '', pctMin: null, pctMax: null }], group: '', starredOnly: false, side: '' }, journeySearch: '', regionSearch: '', fetchStateBadge: '', showFetchOptions: false, fetchComplete: false, buttonLabel: null, currentPage: 1, statusMsg: '' })
+                    setState({ matchListData: null, sessionMatches: null, profileData: {}, batchEthnicityData: {}, batchCommunitiesData: {}, filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, subjourney: '', subjourneyOnly: false, regions: [{ region: '', pctMin: null, pctMax: null }], group: '', starredOnly: false, side: '' }, journeySearch: '', subjourneySearch: '', regionSearch: '', fetchStateBadge: '', showFetchOptions: false, fetchComplete: false, buttonLabel: null, currentPage: 1, statusMsg: '' })
                     document.getElementById('filterJourney').innerHTML = '<option value="">All</option>'
                   })
                 }
@@ -1408,7 +1473,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
                 style: { width: '110px' },
                 oninput: function (e) { s.journeySearch = e.target.value; m.redraw() }
               }),
-              m('select#filterJourney.filter-select', { value: s.filters.journey, onfocus: function () { refreshJourneyOptions(); m.redraw() }, onchange: function (e) { s.filters.journey = e.target.value; applyFilterChange(); m.redraw() } }, [
+              m('select#filterJourney.filter-select', { value: s.filters.journey, onfocus: function () { refreshJourneyOptions(); m.redraw() }, onchange: function (e) { s.filters.journey = e.target.value; applyFilterChange(); s.filters.subjourney = ''; s.filters.subjourneyOnly = false; s.subjourneySearch = ''; m.redraw() } }, [
                 filterSelectOptions(getJourneyOptions(), s.journeySearch, s.filters.journey).map(function (o) { return m('option', { value: o.value }, o.label) })
               ]),
               m('label.filter-check', [
@@ -1417,6 +1482,22 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
                 ' Only this'
               ])
             ]),
+            s.filters.journey ? m('span.filter-group', [
+              'Subjourney ',
+              m('input.filter-input', {
+                type: 'text', placeholder: 'Filter by subjourney', value: s.subjourneySearch,
+                style: { width: '110px' },
+                oninput: function (e) { s.subjourneySearch = e.target.value; m.redraw() }
+              }),
+              m('select#filterSubjourney.filter-select', { value: s.filters.subjourney, onfocus: function () { refreshSubjourneyOptions(); m.redraw() }, onchange: function (e) { s.filters.subjourney = e.target.value; applyFilterChange(); m.redraw() } }, [
+                filterSelectOptions(getSubjourneyOptions(), s.subjourneySearch, s.filters.subjourney).map(function (o) { return m('option', { value: o.value }, o.label) })
+              ]),
+              m('label.filter-check', [
+                m('input#filterSubjourneyOnly', { type: 'checkbox', checked: s.filters.subjourneyOnly, onchange: function (e) { s.filters.subjourneyOnly = e.target.checked; applyFilterChange(); m.redraw() } }),
+                m('span.check-mark'),
+                ' Only this'
+              ])
+            ]) : null,
             m('span.filter-group', [
               'Region ',
               m('input.filter-input', {
@@ -1457,8 +1538,11 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
                 document.getElementById('filterSide').value = ''
                 _cachedJourneyOpts = null
                 readFilters()
+                s.filters.subjourney = ''
+                s.filters.subjourneyOnly = false
                 s.filters.regions = [{ region: '', pctMin: null, pctMax: null }]
                 s.journeySearch = ''
+                s.subjourneySearch = ''
                 s.regionSearch = ''
                 s.currentPage = 1
                 m.redraw()
@@ -1540,7 +1624,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
     var f = s.filters
     var rk = ''
     if (s._activeRegionFilters) for (var i = 0; i < s._activeRegionFilters.length; i++) rk += '|' + s._activeRegionFilters[i].region + '|' + (s._activeRegionFilters[i].pctMin||'') + '|' + (s._activeRegionFilters[i].pctMax||'')
-    return s.sortBy + '|' + (list ? list.length : 0) + '|' + (f.name||'') + '|' + (f.cmMin||'') + '|' + (f.cmMax||'') + '|' + (f.journey||'') + '|' + (f.journeyOnly?'1':'0') + '|' + (f.group||'') + '|' + (f.starredOnly?'1':'0') + '|' + (f.side||'') + rk + '|v' + _dataVersion + '|' + (s.regionsVersion || '')
+    return s.sortBy + '|' + (list ? list.length : 0) + '|' + (f.name||'') + '|' + (f.cmMin||'') + '|' + (f.cmMax||'') + '|' + (f.journey||'') + '|' + (f.journeyOnly?'1':'0') + '|' + (f.subjourney||'') + '|' + (f.subjourneyOnly?'1':'0') + '|' + (f.group||'') + '|' + (f.starredOnly?'1':'0') + '|' + (f.side||'') + rk + '|v' + _dataVersion + '|' + (s.regionsVersion || '')
   }
 
   var MatchList = {
@@ -1711,7 +1795,7 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
     s.fetchStateBadge = ''
     s.statusMsg = ''
     s.currentPage = 1
-    s.filters = { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, regions: [{ region: '', pctMin: null, pctMax: null }], group: '', starredOnly: false, side: '' }
+    s.filters = { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, subjourney: '', subjourneyOnly: false, regions: [{ region: '', pctMin: null, pctMax: null }], group: '', starredOnly: false, side: '' }
     s.buttonLabel = null
     s.fetchComplete = false
     s.canEdit = null
@@ -1721,6 +1805,9 @@ filters: { name: '', cmMin: null, cmMax: null, journey: '', journeyOnly: false, 
     s.profileLoading = !!guid
     _cachedRegionOpts = null
     _cachedJourneyOpts = null
+    s.journeySearch = ''
+    s.subjourneySearch = ''
+    _cachedSubjourneyOpts = { journey: null, opts: [{ value: '', label: 'All' }] }
     m.redraw()
     if (guid) {
       var session = await DB.getSession(guid)

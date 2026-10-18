@@ -11,7 +11,7 @@
     batchEthnicityData: {},
     batchCommunitiesData: {},
     sessionMatches: null,
-filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', journeyOnly: false, subjourney: '', subjourneyOnly: false }], regions: [{ region: '', pctMin: null, pctMax: null }], group: '', starredOnly: false, side: '' },
+filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjourney: '' }], journeyOnly: false, subjourneyOnly: false, regions: [{ region: '', pctMin: null, pctMax: null }], group: '', starredOnly: false, side: '' },
     journeySearch: '',
     subjourneySearch: '',
     regionSearch: '',
@@ -871,34 +871,54 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', journey
     if (jf && jf.length) {
       var sm = s.sessionMatches && s.sessionMatches[m.sampleId]
       var branches = sm && sm.journeys
-      // "Only this journey" means the match has exactly one journey, which can
-      // only apply when a single journey filter is active.
-      var activeJourneys = 0
-      for (var aj = 0; aj < jf.length; aj++) if (jf[aj] && jf[aj].journey) activeJourneys++
+      var selectedJourneys = {}
+      var selectedSubs = {}
+      for (var aj = 0; aj < jf.length; aj++) {
+        var rr = jf[aj]
+        if (!rr) continue
+        if (rr.journey) selectedJourneys[rr.journey] = true
+        if (rr.subjourney) selectedSubs[rr.subjourney] = true
+      }
+      var journeyOnlyRequested = !!f.journeyOnly && Object.keys(selectedJourneys).length > 0
+      var subOnlyRequested = !!f.subjourneyOnly && Object.keys(selectedSubs).length > 0
       for (var ji = 0; ji < jf.length; ji++) {
         var row = jf[ji]
         if (!row || !row.journey) continue
-        var found = false
+        var jbranch = null
         if (branches) {
           for (var bi = 0; bi < branches.length; bi++) {
-            if ((branches[bi].displayName || '') === row.journey) { found = true; break }
+            if ((branches[bi].displayName || '') === row.journey) { jbranch = branches[bi]; break }
           }
         }
-        if (!found) return false
-        if (row.journeyOnly && activeJourneys <= 1 && branches.length > 1) return false
+        if (!jbranch) return false
         if (row.subjourney) {
+          var comms = jbranch.communities || []
           var subFound = false
-          var subOnlyOk = true
-          for (var bi2 = 0; bi2 < branches.length; bi2++) {
-            if ((branches[bi2].displayName || '') !== row.journey) continue
-            var comms = branches[bi2].communities || []
-            for (var ci = 0; ci < comms.length; ci++) {
-              if ((comms[ci].displayName || '') === row.subjourney) { subFound = true; subOnlyOk = comms.length === 1; break }
-            }
-            if (subFound) break
+          for (var ci = 0; ci < comms.length; ci++) {
+            if ((comms[ci].displayName || '') === row.subjourney) { subFound = true; break }
           }
           if (!subFound) return false
-          if (row.subjourneyOnly && !subOnlyOk) return false
+        }
+      }
+      // "Only this journey" (on any row) means the match may not belong to any
+      // journey other than the selected ones, so ticking it on e.g. Puerto Rico
+      // and Dominican Republic shows matches with only those two journeys.
+      if (journeyOnlyRequested && branches) {
+        for (var bj = 0; bj < branches.length; bj++) {
+          var bnm = branches[bj].displayName
+          if (bnm && !selectedJourneys[bnm]) return false
+        }
+      }
+      // "Only this subjourney" (on any row) means the match may not belong to
+      // any subjourney other than the selected ones, so ticking it on Cibao and
+      // Santiago La Vega shows matches with only those two subjourneys.
+      if (subOnlyRequested && branches) {
+        for (var bi2 = 0; bi2 < branches.length; bi2++) {
+          var comms2 = branches[bi2].communities || []
+          for (var ci2 = 0; ci2 < comms2.length; ci2++) {
+            var nm = comms2[ci2].displayName
+            if (nm && !selectedSubs[nm]) return false
+          }
         }
       }
     }
@@ -1077,11 +1097,19 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', journey
     return false
   }
 
-  // Number of journey rows that currently have a journey selected.
-  function activeJourneyCount() {
+  // Number of journey rows with a journey selected.
+  function countSelectedJourneys() {
     var n = 0
     var rows = s.filters.journeys || []
     for (var i = 0; i < rows.length; i++) if (rows[i] && rows[i].journey) n++
+    return n
+  }
+
+  // Number of journey rows with a subjourney selected.
+  function countSelectedSubjourneys() {
+    var n = 0
+    var rows = s.filters.journeys || []
+    for (var i = 0; i < rows.length; i++) if (rows[i] && rows[i].subjourney) n++
     return n
   }
 
@@ -1379,7 +1407,7 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', journey
                     s.currentPage = 1
                     _cachedJourneyOpts = null
                     _cachedSubjourneyOpts = {}
-                    setState({ matchListData: null, sessionMatches: null, profileData: {}, batchEthnicityData: {}, batchCommunitiesData: {}, filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', journeyOnly: false, subjourney: '', subjourneyOnly: false }], regions: [{ region: '', pctMin: null, pctMax: null }], group: '', starredOnly: false, side: '' }, journeySearch: '', subjourneySearch: '', regionSearch: '', fetchStateBadge: '', showFetchOptions: false, fetchComplete: false, buttonLabel: null, currentPage: 1, statusMsg: '' })
+                    setState({ matchListData: null, sessionMatches: null, profileData: {}, batchEthnicityData: {}, batchCommunitiesData: {}, filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjourney: '' }], journeyOnly: false, subjourneyOnly: false, regions: [{ region: '', pctMin: null, pctMax: null }], group: '', starredOnly: false, side: '' }, journeySearch: '', subjourneySearch: '', regionSearch: '', fetchStateBadge: '', showFetchOptions: false, fetchComplete: false, buttonLabel: null, currentPage: 1, statusMsg: '' })
                   })
                 }
               }
@@ -1499,11 +1527,21 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', journey
                   style: { width: '170px' },
                   oninput: function (e) { s.journeySearch = e.target.value; m.redraw() }
                 }),
+                countSelectedJourneys() ? m('label.filter-check', [
+                  m('input#filterJourneyOnly', { type: 'checkbox', checked: s.filters.journeyOnly, onchange: function (e) { s.filters.journeyOnly = e.target.checked; applyFilterChange(); m.redraw() } }),
+                  m('span.check-mark'),
+                  countSelectedJourneys() > 1 ? ' Only these journeys' : ' Only this journey'
+                ]) : null,
                 anyJourneyHasSubs() ? m('input.filter-input', {
                   type: 'text', placeholder: 'Filter by subjourney', value: s.subjourneySearch,
                   style: { width: '170px' },
                   oninput: function (e) { s.subjourneySearch = e.target.value; m.redraw() }
-                }) : null
+                }) : null,
+                countSelectedSubjourneys() ? m('label.filter-check', [
+                  m('input#filterSubjourneyOnly', { type: 'checkbox', checked: s.filters.subjourneyOnly, onchange: function (e) { s.filters.subjourneyOnly = e.target.checked; applyFilterChange(); m.redraw() } }),
+                  m('span.check-mark'),
+                  countSelectedSubjourneys() > 1 ? ' Only these subjourneys' : ' Only this subjourney'
+                ]) : null
               ]),
               m('span#journeyFilters', renderJourneyFilterRows())
             ]),
@@ -1546,7 +1584,9 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', journey
                 _cachedJourneyOpts = null
                 _cachedSubjourneyOpts = {}
                 readFilters()
-                s.filters.journeys = [{ journey: '', journeyOnly: false, subjourney: '', subjourneyOnly: false }]
+                s.filters.journeys = [{ journey: '', subjourney: '' }]
+                s.filters.journeyOnly = false
+                s.filters.subjourneyOnly = false
                 s.filters.regions = [{ region: '', pctMin: null, pctMax: null }]
                 s.journeySearch = ''
                 s.subjourneySearch = ''
@@ -1562,13 +1602,12 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', journey
   }
 
   function renderJourneyFilterRows() {
-    var rows = s.filters.journeys && s.filters.journeys.length ? s.filters.journeys : [{ journey: '', journeyOnly: false, subjourney: '', subjourneyOnly: false }]
-    var multiJourneys = activeJourneyCount() > 1
+    var rows = s.filters.journeys && s.filters.journeys.length ? s.filters.journeys : [{ journey: '', subjourney: '' }]
     return rows.map(function (f, idx) {
       var addBtn = idx === rows.length - 1 ? m('button#addJourneyRow.topbar-btn', {
         style: { fontSize: '14px', padding: '2px 8px' },
         onclick: function () {
-          s.filters.journeys.push({ journey: '', journeyOnly: false, subjourney: '', subjourneyOnly: false })
+          s.filters.journeys.push({ journey: '', subjourney: '' })
           m.redraw()
         }
       }, '+') : null
@@ -1580,46 +1619,25 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', journey
           onfocus: function () { refreshJourneyOptions(); m.redraw() },
           onupdate: function (vnode) { var want = vnode.attrs.value == null ? '' : String(vnode.attrs.value); if (vnode.dom.value !== want) vnode.dom.value = want },
           onchange: function (e) {
-            s.filters.journeys[idx] = s.filters.journeys[idx] || { journey: '', journeyOnly: false, subjourney: '', subjourneyOnly: false }
+            s.filters.journeys[idx] = s.filters.journeys[idx] || { journey: '', subjourney: '' }
             s.filters.journeys[idx].journey = e.target.value
             s.filters.journeys[idx].subjourney = ''
-            s.filters.journeys[idx].subjourneyOnly = false
             applyFilterChange()
             m.redraw()
           }
         }, filterSelectOptions(getJourneyOptions(), s.journeySearch, f.journey).map(function (o) { return m('option', { value: o.value }, o.label) })),
-        m('label.filter-check' + (multiJourneys ? '.disabled' : ''), { title: multiJourneys ? 'Only available when filtering by a single journey' : '' }, [
-          m('input.journey-only', { type: 'checkbox', 'data-idx': idx, checked: f.journeyOnly, disabled: multiJourneys, onchange: function (e) {
-            s.filters.journeys[idx] = s.filters.journeys[idx] || { journey: '', journeyOnly: false, subjourney: '', subjourneyOnly: false }
-            s.filters.journeys[idx].journeyOnly = e.target.checked
-            applyFilterChange()
-            m.redraw()
-          } }),
-          m('span.check-mark'),
-          ' Only this journey'
-        ]),
         hasSubs ? m('select.subjourney-select.filter-select', {
           'data-idx': idx,
           value: f.subjourney,
           onfocus: function () { refreshSubjourneyOptions(f.journey); m.redraw() },
           onupdate: function (vnode) { var want = vnode.attrs.value == null ? '' : String(vnode.attrs.value); if (vnode.dom.value !== want) vnode.dom.value = want },
           onchange: function (e) {
-            s.filters.journeys[idx] = s.filters.journeys[idx] || { journey: '', journeyOnly: false, subjourney: '', subjourneyOnly: false }
+            s.filters.journeys[idx] = s.filters.journeys[idx] || { journey: '', subjourney: '' }
             s.filters.journeys[idx].subjourney = e.target.value
             applyFilterChange()
             m.redraw()
           }
         }, filterSelectOptions(getSubjourneyOptions(f.journey), s.subjourneySearch, f.subjourney).map(function (o) { return m('option', { value: o.value }, o.label) })) : null,
-        hasSubs ? m('label.filter-check', [
-          m('input.subjourney-only', { type: 'checkbox', 'data-idx': idx, checked: f.subjourneyOnly, onchange: function (e) {
-            s.filters.journeys[idx] = s.filters.journeys[idx] || { journey: '', journeyOnly: false, subjourney: '', subjourneyOnly: false }
-            s.filters.journeys[idx].subjourneyOnly = e.target.checked
-            applyFilterChange()
-            m.redraw()
-          } }),
-          m('span.check-mark'),
-          ' Only this subjourney'
-        ]) : null,
         m('button.journey-remove.topbar-btn', {
           'data-idx': idx,
           style: { fontSize: '14px', padding: '2px 8px', display: rows.length === 1 ? 'none' : '' },
@@ -1709,7 +1727,8 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', journey
     var rk = ''
     if (s._activeRegionFilters) for (var i = 0; i < s._activeRegionFilters.length; i++) rk += '|' + s._activeRegionFilters[i].region + '|' + (s._activeRegionFilters[i].pctMin||'') + '|' + (s._activeRegionFilters[i].pctMax||'')
     var jk = ''
-    if (f.journeys) for (var i = 0; i < f.journeys.length; i++) jk += '|' + ((f.journeys[i] && f.journeys[i].journey)||'') + '|' + ((f.journeys[i] && f.journeys[i].journeyOnly)?'1':'0') + '|' + ((f.journeys[i] && f.journeys[i].subjourney)||'') + '|' + ((f.journeys[i] && f.journeys[i].subjourneyOnly)?'1':'0')
+    if (f.journeys) for (var i = 0; i < f.journeys.length; i++) jk += '|' + ((f.journeys[i] && f.journeys[i].journey)||'') + '|' + ((f.journeys[i] && f.journeys[i].subjourney)||'')
+    jk += '|jo' + (f.journeyOnly?'1':'0') + '|so' + (f.subjourneyOnly?'1':'0')
     return s.sortBy + '|' + (list ? list.length : 0) + '|' + (f.name||'') + '|' + (f.cmMin||'') + '|' + (f.cmMax||'') + jk + '|' + (f.group||'') + '|' + (f.starredOnly?'1':'0') + '|' + (f.side||'') + rk + '|v' + _dataVersion + '|' + (s.regionsVersion || '')
   }
 
@@ -1881,7 +1900,7 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', journey
     s.fetchStateBadge = ''
     s.statusMsg = ''
     s.currentPage = 1
-    s.filters = { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', journeyOnly: false, subjourney: '', subjourneyOnly: false }], regions: [{ region: '', pctMin: null, pctMax: null }], group: '', starredOnly: false, side: '' }
+    s.filters = { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjourney: '' }], journeyOnly: false, subjourneyOnly: false, regions: [{ region: '', pctMin: null, pctMax: null }], group: '', starredOnly: false, side: '' }
     s.buttonLabel = null
     s.fetchComplete = false
     s.canEdit = null

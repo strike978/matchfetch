@@ -1271,6 +1271,7 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjour
         }, 30000)
       }
       Promise.all([loadRegionMap(), loadJourneyNameMap()]).then(fetchTests)
+      if (typeof Changelog !== 'undefined') Changelog.check().then(function (modal) { if (modal) setState({ modal: modal }) })
     },
     view: function () {
       return [m(UpdateBanner), m(KitSelector), m(MatchList), m(Modal)]
@@ -1306,8 +1307,8 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjour
   var Modal = {
     view: function () {
       if (!s.modal) return null
-      return m('.modal-overlay', { onclick: function (e) { if (e.target === e.currentTarget) { s.modal = null; m.redraw() } } }, [
-        m('.modal', [
+      return m('.modal-overlay', { onclick: function (e) { if (!s.modal.blocking && e.target === e.currentTarget) { s.modal = null; m.redraw() } } }, [
+        m('.modal', { class: s.modal.className || '' }, [
           s.modal.icon ? m('.modal-icon', m.trust(s.modal.icon)) : null,
           s.modal.title ? m('.modal-title', s.modal.title) : null,
           s.modal.text ? m('.modal-text', s.modal.text) : null,

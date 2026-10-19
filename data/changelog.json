@@ -1,0 +1,13 @@
+{
+  "entries": [
+    {
+      "version": "2.3.2",
+      "date": "October 19, 2026",
+      "changes": [
+        "Subjourney names are now up to date with Ancestry.",
+        "Ancestry corrected several misspelled place names, such as \"Mount Gambier\".",
+        "A subjourney that was missing a name now shows one."
+      ]
+    }
+  ]
+}

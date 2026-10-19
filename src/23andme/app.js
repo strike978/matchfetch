@@ -907,6 +907,7 @@
       })
       loadAccount()
       loadCountries()
+      if (typeof Changelog !== 'undefined') Changelog.check().then(function (modal) { if (modal) setState({ modal: modal }) })
     },
     view: function () {
       return [m(KitSelector), m(FilterBar), m(MatchList), m(Modal)]
@@ -916,11 +917,12 @@
   var Modal = {
     view: function () {
       if (!s.modal) return null
-      return m('.modal-overlay', { onclick: function (e) { if (e.target === e.currentTarget) { s.modal = null; m.redraw() } } }, [
-        m('.modal', [
+      return m('.modal-overlay', { onclick: function (e) { if (!s.modal.blocking && e.target === e.currentTarget) { s.modal = null; m.redraw() } } }, [
+        m('.modal', { class: s.modal.className || '' }, [
           s.modal.icon ? m('.modal-icon', m.trust(s.modal.icon)) : null,
           s.modal.title ? m('.modal-title', s.modal.title) : null,
           s.modal.text ? m('.modal-text', s.modal.text) : null,
+          s.modal.body ? m('.modal-body', (typeof s.modal.body === 'function' ? s.modal.body() : s.modal.body)) : null,
           m('.modal-actions', [
             s.modal.cancelText ? m('button.modal-btn.modal-cancel', { onclick: function () { s.modal = null; m.redraw() } }, s.modal.cancelText) : null,
             s.modal.confirmText ? m('button.modal-btn.modal-confirm', { onclick: function () { var cb = s.modal.onConfirm; s.modal = null; m.redraw(); if (cb) cb() } }, s.modal.confirmText) : null,

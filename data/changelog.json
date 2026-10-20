@@ -1,6 +1,14 @@
 {
   "entries": [
     {
+      "version": "2.3.3",
+      "date": "October 19, 2026",
+      "changes": [
+        "Improved journey sharing: journeys with matches spread across multiple profiles are no longer dropped before the 20-match minimum is applied.",
+        "If you've shared your journey stats before, use Share again to update your contribution."
+      ]
+    },
+    {
       "version": "2.3.2",
       "date": "October 19, 2026",
       "changes": [

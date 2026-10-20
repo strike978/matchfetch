@@ -312,7 +312,7 @@ var AncestryShare = (function () {
       var journeys = summarize(filtered, {
         onlyJourney: onlyJourney,
         minConnectionPercent: minConnectionPercent,
-        minMatches: minMatches,
+        minMatches: 1,
         requireFullRegions: opts.requireFullRegions !== false,
         regionTotalTolerance: regionTotalTolerance,
         version: version,

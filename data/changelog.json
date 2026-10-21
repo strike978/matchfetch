@@ -1,6 +1,14 @@
 {
   "entries": [
     {
+      "version": "2.3.4",
+      "date": "October 21, 2026",
+      "changes": [
+        "Share now clears shared stats for profiles that have no local data for the version being shared.",
+        "The share confirmation now lists the profiles whose shared stats will be cleared."
+      ]
+    },
+    {
       "version": "2.3.3",
       "date": "October 19, 2026",
       "changes": [

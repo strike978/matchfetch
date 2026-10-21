@@ -366,14 +366,147 @@ var AncestryShare = (function () {
     return next().then(function () { return { profiles: total } })
   }
 
+  function apiFetch(url, options) {
+    return new Promise(function (resolve, reject) {
+      if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.sendMessage) {
+        reject(new Error('Ancestry connection unavailable'))
+        return
+      }
+      chrome.runtime.sendMessage({
+        action: 'apiFetch', url: url, options: options, domain: 'ancestry.com'
+      }, function (response) {
+        if (chrome.runtime.lastError) return reject(new Error(chrome.runtime.lastError.message))
+        if (!response || !response.success) return reject(new Error(response ? response.error : 'No response'))
+        resolve(response.data)
+      })
+    })
+  }
+
+  function loadAccountProfiles() {
+    return apiFetch('https://www.ancestry.com/dna/insights/api/dnaSubnav/tests', {
+      credentials: 'include', mode: 'cors'
+    }).then(function (data) {
+      if (!Array.isArray(data)) throw new Error('Unexpected profile list response')
+      var list = data
+      var out = []
+      var seen = {}
+      for (var i = 0; i < list.length; i++) {
+        var t = list[i] || {}
+        var guid = t.testGuid || t.testId || t.guid || t.id || ''
+        if (!guid) continue
+        var id = profileId(guid)
+        if (seen[id]) continue
+        seen[id] = true
+        out.push({
+          guid: String(guid),
+          id: id,
+          name: t.subjectName || t.displayName || t.name || ''
+        })
+      }
+      return out
+    })
+  }
+
+  function fetchSharedProfileIds(ids, year) {
+    var list = ids || []
+    if (!list.length) return Promise.resolve({})
+    var filter = 'in.(' + list.map(function (id) { return encodeURIComponent(id) }).join(',') + ')'
+    var url = REMOTE.url + '/rest/v1/profile_summaries?select=profile_id,matches' +
+      '&provider=eq.ancestry&build_year=eq.' + encodeURIComponent(String(year || DEFAULTS.year)) +
+      '&matches=gt.0&profile_id=' + filter
+    return fetch(url, { headers: { 'apikey': REMOTE.publishableKey } }).then(function (r) {
+      if (!r.ok) {
+        return r.text().then(function (t) {
+          throw new Error('Could not check shared profiles (' + r.status + ')' + (t ? ': ' + t : ''))
+        })
+      }
+      return r.json()
+    }).then(function (rows) {
+      var out = {}
+      for (var i = 0; i < (rows || []).length; i++) {
+        if (rows[i] && rows[i].profile_id && Number(rows[i].matches) > 0) out[rows[i].profile_id] = true
+      }
+      return out
+    })
+  }
+
+  function hasVersionData(session, version) {
+    if (!session || !session.matches || !version) return false
+    var ids = Object.keys(session.matches)
+    for (var i = 0; i < ids.length; i++) {
+      var match = session.matches[ids[i]]
+      var regions = match && match.regions
+      if (!regions) continue
+      if (Array.isArray(regions)) {
+        if (String(match.version || '2025') === version && regions.length) return true
+      } else if (regions[version] && regions[version].length) {
+        return true
+      }
+    }
+    return false
+  }
+
+  // Build a full snapshot of the account. Profiles with local data for the
+  // version being shared are sent normally; profiles that were shared before
+  // but no longer have local data for that version are sent as empty profiles
+  // so submit_summary can replace their old rows.
+  function buildSnapshot(sessions, accounts, opts, sharedIds) {
+    var built = build(sessions, opts)
+    var builtProfiles = built.profiles || []
+    var version = String(opts && opts.version || DEFAULTS.year)
+    var localById = {}
+    var localSessionIds = {}
+    for (var s = 0; s < sessions.length; s++) {
+      if (hasVersionData(sessions[s], version)) localSessionIds[profileId(sessions[s].guid)] = true
+    }
+    for (var i = 0; i < builtProfiles.length; i++) localById[builtProfiles[i].id] = builtProfiles[i]
+
+    var profiles = []
+    var cleared = []
+    var seen = {}
+
+    // Upload profiles with data first, so a failure while clearing an empty
+    // profile cannot prevent the real data from being shared.
+    for (var a = 0; a < (accounts || []).length; a++) {
+      var acct = accounts[a]
+      if (!acct || !acct.id || seen[acct.id] || !localById[acct.id]) continue
+      seen[acct.id] = true
+      profiles.push(localById[acct.id])
+    }
+
+    for (var c = 0; c < (accounts || []).length; c++) {
+      var emptyAcct = accounts[c]
+      if (!emptyAcct || !emptyAcct.id || seen[emptyAcct.id]) continue
+      seen[emptyAcct.id] = true
+      if (!localSessionIds[emptyAcct.id] && (sharedIds === null || (sharedIds && sharedIds[emptyAcct.id]))) {
+        profiles.push({ id: emptyAcct.id, matches: 0, journeys: [] })
+        cleared.push({ id: emptyAcct.id, name: emptyAcct.name || '' })
+      }
+    }
+
+    for (var b = 0; b < builtProfiles.length; b++) {
+      var bp = builtProfiles[b]
+      if (seen[bp.id]) continue
+      seen[bp.id] = true
+      profiles.push(bp)
+    }
+
+    built.profiles = profiles
+    return { payload: built, cleared: cleared }
+  }
+
   function fmtCounts(payload) {
     var matches = 0
     var journeys = {}
     var regions = {}
     var profiles = payload.profiles || []
+    var dataProfiles = 0
     for (var i = 0; i < profiles.length; i++) {
-      matches += profiles[i].matches || 0
-      var js = profiles[i].journeys || []
+      var prof = profiles[i] || {}
+      var js = prof.journeys || []
+      if (!js.length) continue
+      dataProfiles++
+      matches += prof.matches || 0
       for (var j = 0; j < js.length; j++) {
         journeys[js[j].displayName || js[j].id] = true
         var macros = js[j].regions || []
@@ -383,7 +516,7 @@ var AncestryShare = (function () {
         }
       }
     }
-    return { profiles: profiles.length, matches: matches, journeys: Object.keys(journeys).length, regions: Object.keys(regions).length }
+    return { profiles: dataProfiles, totalProfiles: profiles.length, matches: matches, journeys: Object.keys(journeys).length, regions: Object.keys(regions).length }
   }
 
   function extURL(p) {
@@ -425,6 +558,11 @@ var AncestryShare = (function () {
     '.share-desc a { color: #60a5fa; font-weight: 600; text-decoration: none; }',
     '.share-desc a:hover { text-decoration: underline; }',
     '.share-stats { display: flex; gap: 10px; margin-bottom: 16px; }',
+    '.share-warning { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; line-height: 1.5; color: #fbbf24; background: rgba(251,191,36,.08); border: 1px solid rgba(251,191,36,.25); border-radius: 9px; padding: 8px 10px; margin-bottom: 10px; text-align: left; }',
+    '.share-warning-icon { flex-shrink: 0; display: inline-flex; margin-top: 1px; color: #fbbf24; }',
+    '.share-warning-icon svg { width: 14px; height: 14px; }',
+    '.share-warning-text { flex: 1; min-width: 0; }',
+    '.share-warning strong { color: #fde68a; font-weight: 700; }',
     '.share-stat { flex: 1; background: #0f1724; border: 1px solid #253044; border-radius: 12px; padding: 12px 6px; text-align: center; }',
     '.share-stat .n { font-size: 20px; font-weight: 700; color: #f1f5f9; font-variant-numeric: tabular-nums; letter-spacing: -.3px; }',
     '.share-stat .l { font-size: 10px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: .5px; margin-top: 3px; }',
@@ -447,9 +585,17 @@ var AncestryShare = (function () {
   var EXPLORER_URL = 'https://admixr.com/ancestry2026'
   var SHARE_ICON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>'
   var CHECK_ICON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+  var ALERT_ICON = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
   var SPINNER_ICON = '<div class="spinner-ring" style="margin:0 auto;width:28px;height:28px;border-width:3px"></div>'
   var SHARE_HERO = '<div class="share-hero">' + SHARE_ICON + '</div>'
   var CHECK_HERO = '<div class="share-hero ok">' + CHECK_ICON + '</div>'
+
+  function warningNode(children) {
+    return m('.share-warning', [
+      m('span.share-warning-icon', m.trust(ALERT_ICON)),
+      m('span.share-warning-text', children)
+    ])
+  }
 
   function startShare(opts) {
     opts = opts || {}
@@ -466,18 +612,48 @@ var AncestryShare = (function () {
       return
     }
 
+    var accountError = null
+    var remoteCheckFailed = false
+
     DB.getAllSessions('ancestry').then(function (sessions) {
-      var version = detectVersion(sessions) || DEFAULTS.year
-      return Promise.all([loadJourneyNames(), loadRegionNames(version)]).then(function (maps) {
-        return build(sessions, { year: version, version: version, journeyNames: maps[0], regionNames: maps[1] })
+      return loadAccountProfiles().catch(function (err) {
+        accountError = err
+        return []
+      }).then(function (accounts) {
+        var version = detectVersion(sessions) || DEFAULTS.year
+        var ids = []
+        for (var a = 0; a < accounts.length; a++) ids.push(accounts[a].id)
+        return fetchSharedProfileIds(ids, version).catch(function () {
+          remoteCheckFailed = true
+          return null
+        }).then(function (sharedIds) {
+          return Promise.all([loadJourneyNames(), loadRegionNames(version)]).then(function (maps) {
+            var snapshot = buildSnapshot(
+              sessions,
+              accounts,
+              { year: version, version: version, journeyNames: maps[0], regionNames: maps[1] },
+              sharedIds
+            )
+            return { payload: snapshot.payload, cleared: snapshot.cleared }
+          })
+        })
       })
-    }).then(function (payload) {
-      if (!payload.profiles || !payload.profiles.length) {
-        show({ title: 'Nothing to share yet', text: 'Fetch matches in the Ancestry app first, then come back.', cancelText: 'Close' })
+    }).then(function (data) {
+      var payload = data.payload
+      var profiles = payload.profiles || []
+      var cleared = data.cleared || []
+      var counts = fmtCounts(payload)
+
+      if (!counts.profiles && !cleared.length) {
+        if (accountError) {
+          show({ title: 'Could not load your profiles', text: 'We could not read your Ancestry profile list. Please try again.', cancelText: 'Close' })
+        } else {
+          show({ title: 'Nothing to share yet', text: 'Fetch matches in the Ancestry app first, then come back.', cancelText: 'Close' })
+        }
         return
       }
-      var view = { state: 'ready', done: 0, total: payload.profiles.length, error: '' }
-      var counts = fmtCounts(payload)
+
+      var view = { state: 'ready', done: 0, total: profiles.length, error: '' }
 
       function doShare() {
         if (view.state === 'sharing' || view.state === 'done') return
@@ -499,32 +675,80 @@ var AncestryShare = (function () {
       function body() {
         var cls = 'share-status'
         var text = ''
-        if (view.state === 'sharing') text = 'Sharing profile ' + view.done + ' of ' + view.total + '\u2026'
-        else if (view.state === 'done') { cls += ' ok'; text = 'Shared stats from ' + counts.profiles + ' profile' + (counts.profiles === 1 ? '' : 's') + '.' }
-        else if (view.state === 'error') { cls += ' err'; text = view.error }
+        if (view.state === 'sharing') {
+          text = 'Syncing profile ' + view.done + ' of ' + view.total + '\u2026'
+        } else if (view.state === 'done') {
+          cls += ' ok'
+          if (counts.profiles) text = 'Shared stats from ' + counts.profiles + ' profile' + (counts.profiles === 1 ? '' : 's') + '.'
+          if (cleared.length) {
+            text += (text ? ' ' : '') + 'Cleared shared stats for ' + cleared.length + ' profile' + (cleared.length === 1 ? '' : 's') + ' with no local data for this share.'
+          }
+        } else if (view.state === 'error') {
+          cls += ' err'
+          text = view.error
+        }
+
+        var warnings = []
+        if (cleared.length && view.state !== 'done') {
+          var names = []
+          for (var i = 0; i < cleared.length; i++) {
+            if (cleared[i].name) names.push(cleared[i].name)
+          }
+          var detail = names.length === cleared.length
+            ? names.join(', ')
+            : cleared.length + ' profile' + (cleared.length === 1 ? '' : 's')
+          warnings.push(warningNode([
+            m('strong', names.length === cleared.length ? 'Also clearing shared stats for: ' : 'Also clearing shared stats for '),
+            detail
+          ]))
+        }
+        if (accountError) {
+          warnings.push(warningNode([
+            m('strong', 'Profile list unavailable: '),
+            'cleared profiles could not be identified. ' + String(accountError.message || accountError)
+          ]))
+        }
+        if (remoteCheckFailed) {
+          warnings.push(warningNode([
+            m('strong', 'Could not check shared profiles: '),
+            'all profiles without local data will be cleared.'
+          ]))
+        }
+
+        var description = counts.profiles
+          ? [
+              'Help build the ',
+              m('a', { href: EXPLORER_URL, target: '_blank', rel: 'noopener' }, 'Ancestry Journey Explorer'),
+              ' with aggregated journey and region averages from your matches.'
+            ]
+          : 'This will remove the shared stats for profiles that have no local data for this share.'
+
         return m('.share-modal', [
-          m('.share-desc', [
-            'Help build the ',
-            m('a', { href: EXPLORER_URL, target: '_blank', rel: 'noopener' }, 'Ancestry Journey Explorer'),
-            ' with aggregated journey and region averages from your matches.'
-          ]),
-          m('.share-stats', [
+          m('.share-desc', description),
+          counts.profiles ? m('.share-stats', [
             m('.share-stat', [m('.n', counts.matches.toLocaleString()), m('.l', 'Matches')]),
             m('.share-stat', [m('.n', counts.journeys.toLocaleString()), m('.l', 'Journeys')]),
             m('.share-stat', [m('.n', counts.regions.toLocaleString()), m('.l', 'Regions')])
-          ]),
+          ]) : null,
+          warnings,
           m('.' + cls, text),
           m('button.share-btn', {
             disabled: view.state === 'sharing' || view.state === 'done',
             onclick: doShare
-          }, m.trust(view.state === 'done' ? CHECK_ICON + ' Shared'
-            : view.state === 'sharing' ? 'Sharing\u2026'
+          }, m.trust(view.state === 'done' ? CHECK_ICON + (counts.profiles ? ' Shared' : ' Cleared')
+            : view.state === 'sharing' ? 'Syncing\u2026'
             : view.state === 'error' ? 'Try again'
-            : SHARE_ICON + ' Share stats'))
+            : counts.profiles ? SHARE_ICON + ' Share stats'
+            : 'Remove shared stats'))
         ])
       }
 
-      show({ title: 'Share your journey stats', icon: SHARE_HERO, body: body, cancelText: 'Not now' })
+      show({
+        title: counts.profiles ? 'Share your journey stats' : 'Remove shared stats?',
+        icon: SHARE_HERO,
+        body: body,
+        cancelText: 'Not now'
+      })
     }).catch(function () {
       show({ title: 'Something went wrong', text: 'We could not gather your stats. Please try again.', cancelText: 'Close' })
     })
@@ -538,6 +762,10 @@ var AncestryShare = (function () {
     profileId: profileId,
     remote: REMOTE,
     upload: upload,
+    loadAccountProfiles: loadAccountProfiles,
+    fetchSharedProfileIds: fetchSharedProfileIds,
+    buildSnapshot: buildSnapshot,
+    hasVersionData: hasVersionData,
     startShare: startShare,
     titleize: titleize
   }

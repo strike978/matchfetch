@@ -676,7 +676,8 @@ var AncestryShare = (function () {
         var cls = 'share-status'
         var text = ''
         if (view.state === 'sharing') {
-          text = 'Syncing profile ' + view.done + ' of ' + view.total + '\u2026'
+          var current = Math.min(view.done + 1, view.total)
+          text = 'Syncing profile ' + current + ' of ' + view.total + '\u2026'
         } else if (view.state === 'done') {
           cls += ' ok'
           if (counts.profiles) text = 'Shared stats from ' + counts.profiles + ' profile' + (counts.profiles === 1 ? '' : 's') + '.'

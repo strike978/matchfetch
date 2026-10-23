@@ -48,14 +48,39 @@
   }
 
   function friendlyError(msg) {
-    if (/Status 30[137]/.test(msg)) return 'Make sure you are logged into Ancestry.com, then try again.'
-    if (/Status 40[13]/.test(msg)) return 'Access denied. Make sure you are logged into Ancestry.com.'
+    if (/Status 30[137]/.test(msg)) return 'Make sure you are logged into Ancestry.com and keep a tab open at https://www.ancestry.com/dna/matches/list, then refresh MatchFetch.'
+    if (/Status 40[13]/.test(msg)) return 'Access denied. Make sure you are logged into Ancestry.com, then refresh MatchFetch.'
     if (/Status 403/.test(msg)) return 'Access denied. You may not have permission to view this data.'
     if (/Status 404/.test(msg)) return 'Data not found. The test or match may no longer be available.'
     if (/Status 429/.test(msg)) return 'Too many requests. Please wait a moment and try again.'
     if (/Status 5\d\d/.test(msg)) return 'Ancestry server error. Please try again later.'
     if (/Fetch failed/.test(msg)) return 'Could not reach Ancestry. Check your internet connection.'
     return msg
+  }
+
+  function linkify(msg) {
+    return String(msg).split(/(https?:\/\/[^\s,]+)/g).map(function (part) {
+      if (!/^https?:\/\//.test(part)) return part
+      return m('a', { href: part, target: '_blank', rel: 'noopener noreferrer', style: { color: '#60a5fa' } }, part)
+    })
+  }
+
+  // Status/error message with an icon and clickable URLs.
+  function renderMsg(msg) {
+    if (!msg) return msg
+    var text = String(msg)
+    var error = /logged in|access denied|error|could not|failed|not found|permission|too many|server error|incomplete|enter min/i.test(text)
+    var success = !error && /added|no new|fetched|complete|restored|saved/i.test(text)
+    var color = error ? '#f87171' : success ? '#4ade80' : '#60a5fa'
+    var icon = error
+      ? '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>'
+      : success
+        ? '<circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.5 2.5L16 9"/>'
+        : '<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>'
+    return m('span', { style: { display: 'inline-flex', alignItems: 'flex-start', gap: '8px' } }, [
+      m.trust('<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="' + color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px">' + icon + '</svg>'),
+      m('span', linkify(msg))
+    ])
   }
 
   function setMatchTag(guid, sampleId, tagId, add) {
@@ -898,7 +923,7 @@
           m('a.profile-link', { href: profileUrl, target: '_blank', title: 'Open on Ancestry' }, m.trust('<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>'))
         ]),
         relParts.length ? m('.card-details', { style: { marginTop: '12px' } }, [m('.rel-text', relParts)]) : null,
-        s.statusMsg ? m('.status-msg', s.statusMsg) : null
+        s.statusMsg ? m('.status-msg', renderMsg(s.statusMsg)) : null
       ])
     }
   }

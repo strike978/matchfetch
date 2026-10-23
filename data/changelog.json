@@ -1,6 +1,14 @@
 {
   "entries": [
     {
+      "version": "2.3.5",
+      "date": "October 23, 2026",
+      "changes": [
+        "MatchFetch now finds your open Ancestry or 23andMe tab, including Ancestry's redirected matches page, and opens it in the background if it's missing.",
+        "Clearer login and error messages with icons, a link to the required page, and a reminder to refresh MatchFetch. 23andMe now asks you to log in instead of showing a connection error."
+      ]
+    },
+    {
       "version": "2.3.4",
       "date": "October 21, 2026",
       "changes": [

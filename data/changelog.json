@@ -1,6 +1,14 @@
 {
   "entries": [
     {
+      "version": "2.4.0",
+      "date": "October 23, 2026",
+      "changes": [
+        "Added a Map view to the Ancestry match list: see where the selected profile's matches' journeys are, with a color for each journey and match counts right on the map.",
+        "Click a journey to explore its subjourneys, then switch to List to see that journey's matches. By default only matches with a single journey are counted."
+      ]
+    },
+    {
       "version": "2.3.5",
       "date": "October 23, 2026",
       "changes": [

@@ -44,6 +44,9 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjour
     customTags: null,
     regionsVersion: null,
     paternalCluster: '',
+    showMap: false,
+    mapSingleOnly: true,
+    mapSelection: null,
   }
 
   function setState(o) { Object.assign(s, o); m.redraw() }
@@ -912,7 +915,7 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjour
         var jbranch = null
         if (branches) {
           for (var bi = 0; bi < branches.length; bi++) {
-            if ((branches[bi].displayName || '') === row.journey) { jbranch = branches[bi]; break }
+            if (branches[bi].id === row.journey) { jbranch = branches[bi]; break }
           }
         }
         if (!jbranch) return false
@@ -920,7 +923,7 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjour
           var comms = jbranch.communities || []
           var subFound = false
           for (var ci = 0; ci < comms.length; ci++) {
-            if ((comms[ci].displayName || '') === row.subjourney) { subFound = true; break }
+            if (comms[ci].id === row.subjourney) { subFound = true; break }
           }
           if (!subFound) return false
         }
@@ -930,8 +933,8 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjour
       // and Dominican Republic shows matches with only those two journeys.
       if (journeyOnlyRequested && branches) {
         for (var bj = 0; bj < branches.length; bj++) {
-          var bnm = branches[bj].displayName
-          if (bnm && !selectedJourneys[bnm]) return false
+          var bid = branches[bj].id
+          if (bid && !selectedJourneys[bid]) return false
         }
       }
       // "Only this subjourney" (on any row) means the match may not belong to
@@ -941,8 +944,8 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjour
         for (var bi2 = 0; bi2 < branches.length; bi2++) {
           var comms2 = branches[bi2].communities || []
           for (var ci2 = 0; ci2 < comms2.length; ci2++) {
-            var nm = comms2[ci2].displayName
-            if (nm && !selectedSubs[nm]) return false
+            var cid = comms2[ci2].id
+            if (cid && !selectedSubs[cid]) return false
           }
         }
       }
@@ -1044,8 +1047,11 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjour
       var branches = s.sessionMatches[sids[i]] && s.sessionMatches[sids[i]].journeys
       if (branches) {
         for (var bi = 0; bi < branches.length; bi++) {
-          var name = branches[bi].displayName
-          if (name && !known[name]) { known[name] = true; opts.push({ value: name, label: name }) }
+          var id = branches[bi].id
+          if (id && !known[id]) {
+            known[id] = true
+            opts.push({ value: id, label: branches[bi].displayName || id })
+          }
         }
       }
     }
@@ -1070,22 +1076,26 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjour
 
   // Subjourneys of the given journey that appear among the loaded matches.
   // Matches store journeys as a tree (branches -> communities), so we collect
-  // the communities of the branch whose display name is the journey.
-  function buildSubjourneyOptions(journeyName) {
+  // the communities of the branch with the given journey ID. Values are IDs so
+  // duplicate name displays can't conflate two different subjourneys.
+  function buildSubjourneyOptions(journeyId) {
     var opts = [{ value: '', label: 'All' }]
-    if (!journeyName || !s.sessionMatches) return opts
+    if (!journeyId || !s.sessionMatches) return opts
     var known = {}
     var sids = Object.keys(s.sessionMatches)
     for (var i = 0; i < sids.length; i++) {
       var branches = s.sessionMatches[sids[i]] && s.sessionMatches[sids[i]].journeys
       if (!branches) continue
       for (var bi = 0; bi < branches.length; bi++) {
-        if ((branches[bi].displayName || '') !== journeyName) continue
+        if (branches[bi].id !== journeyId) continue
         var comms = branches[bi].communities
         if (!comms) continue
         for (var ci = 0; ci < comms.length; ci++) {
-          var name = comms[ci].displayName
-          if (name && !known[name]) { known[name] = true; opts.push({ value: name, label: name }) }
+          var id = comms[ci].id
+          if (id && !known[id]) {
+            known[id] = true
+            opts.push({ value: id, label: comms[ci].displayName || id })
+          }
         }
       }
     }
@@ -1097,21 +1107,21 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjour
     return opts
   }
 
-  function getSubjourneyOptions(journeyName) {
-    if (!journeyName) return [{ value: '', label: 'All' }]
-    if (!_cachedSubjourneyOpts[journeyName]) _cachedSubjourneyOpts[journeyName] = buildSubjourneyOptions(journeyName)
-    return _cachedSubjourneyOpts[journeyName]
+  function getSubjourneyOptions(journeyId) {
+    if (!journeyId) return [{ value: '', label: 'All' }]
+    if (!_cachedSubjourneyOpts[journeyId]) _cachedSubjourneyOpts[journeyId] = buildSubjourneyOptions(journeyId)
+    return _cachedSubjourneyOpts[journeyId]
   }
 
-  function refreshSubjourneyOptions(journeyName) {
-    if (!journeyName) return
-    _cachedSubjourneyOpts[journeyName] = buildSubjourneyOptions(journeyName)
+  function refreshSubjourneyOptions(journeyId) {
+    if (!journeyId) return
+    _cachedSubjourneyOpts[journeyId] = buildSubjourneyOptions(journeyId)
   }
 
   // True when the given journey has any subjourneys in the loaded matches
   // (options always include the "All" entry, so more than one means it has some).
-  function hasSubsForJourney(journeyName) {
-    return !!journeyName && getSubjourneyOptions(journeyName).length > 1
+  function hasSubsForJourney(journeyId) {
+    return !!journeyId && getSubjourneyOptions(journeyId).length > 1
   }
 
   // True when at least one selected journey has subjourneys, so the subjourney
@@ -1225,6 +1235,31 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjour
   function applyFilterChange() {
     readFilters()
     s.currentPage = 1
+  }
+
+  // Reset every list filter. Used by the Clear filters link, the map's Reset
+  // view button, and when entering the map so it starts from the full profile.
+  function clearFilters() {
+    var el
+    el = document.getElementById('filterName'); if (el) el.value = ''
+    el = document.getElementById('filterCmMin'); if (el) el.value = ''
+    el = document.getElementById('filterCmMax'); if (el) el.value = ''
+    el = document.getElementById('filterGroup'); if (el) el.value = ''
+    el = document.getElementById('filterStarred'); if (el) el.checked = false
+    el = document.getElementById('filterSide'); if (el) el.value = ''
+    _cachedJourneyOpts = null
+    _cachedSubjourneyOpts = {}
+    readFilters()
+    s.filters.journeys = [{ journey: '', subjourney: '' }]
+    s.filters.journeyOnly = false
+    s.filters.subjourneyOnly = false
+    s.filters.regions = [{ region: '', pctMin: null, pctMax: null }]
+    s.journeySearch = ''
+    s.subjourneySearch = ''
+    s.regionSearch = ''
+    s.mapSelection = null
+    s.currentPage = 1
+    m.redraw()
   }
 
   var App = {
@@ -1553,7 +1588,9 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjour
                   style: { width: '170px' },
                   oninput: function (e) { s.journeySearch = e.target.value; m.redraw() }
                 }),
-                countSelectedJourneys() ? m('label.filter-check', [
+                countSelectedJourneys() ? m('label.filter-check', {
+                  title: 'Excludes matches that also belong to another journey.'
+                }, [
                   m('input#filterJourneyOnly', { type: 'checkbox', checked: s.filters.journeyOnly, onchange: function (e) { s.filters.journeyOnly = e.target.checked; applyFilterChange(); m.redraw() } }),
                   m('span.check-mark'),
                   countSelectedJourneys() > 1 ? ' Only these journeys' : ' Only this journey'
@@ -1563,7 +1600,9 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjour
                   style: { width: '170px' },
                   oninput: function (e) { s.subjourneySearch = e.target.value; m.redraw() }
                 }) : null,
-                countSelectedSubjourneys() ? m('label.filter-check', [
+                countSelectedSubjourneys() ? m('label.filter-check', {
+                  title: 'Excludes matches that also belong to another subjourney.'
+                }, [
                   m('input#filterSubjourneyOnly', { type: 'checkbox', checked: s.filters.subjourneyOnly, onchange: function (e) { s.filters.subjourneyOnly = e.target.checked; applyFilterChange(); m.redraw() } }),
                   m('span.check-mark'),
                   countSelectedSubjourneys() > 1 ? ' Only these subjourneys' : ' Only this subjourney'
@@ -1601,24 +1640,7 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjour
             ]),
             m('span#filterReset.filter-clear', {
               onclick: function () {
-                document.getElementById('filterName').value = ''
-                document.getElementById('filterCmMin').value = ''
-                document.getElementById('filterCmMax').value = ''
-                document.getElementById('filterGroup').value = ''
-                document.getElementById('filterStarred').checked = false
-                document.getElementById('filterSide').value = ''
-                _cachedJourneyOpts = null
-                _cachedSubjourneyOpts = {}
-                readFilters()
-                s.filters.journeys = [{ journey: '', subjourney: '' }]
-                s.filters.journeyOnly = false
-                s.filters.subjourneyOnly = false
-                s.filters.regions = [{ region: '', pctMin: null, pctMax: null }]
-                s.journeySearch = ''
-                s.subjourneySearch = ''
-                s.regionSearch = ''
-                s.currentPage = 1
-                m.redraw()
+                clearFilters()
               }
             }, 'Clear filters')
           ])
@@ -1747,6 +1769,33 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjour
     return (b.createdDate || 0) - (a.createdDate || 0)
   }
 
+  // Apply a journey/subjourney filter and return to the card list. Filter
+  // values are IDs, so duplicate display names can't conflate different areas.
+  // The map counts matches that include a subjourney, so we deliberately do not
+  // force "Only this subjourney" here; that stays a manual, stricter option.
+  function applyJourneyFilter(journeyId, subId) {
+    if (!journeyId) return
+    refreshJourneyOptions()
+    refreshSubjourneyOptions(journeyId)
+    s.filters.journeys = [{ journey: journeyId, subjourney: subId || '' }]
+    s.filters.journeyOnly = !!s.mapSingleOnly
+    s.filters.subjourneyOnly = false
+    s.journeySearch = ''
+    s.subjourneySearch = ''
+    s.showFilterBody = true
+    s.showMap = false
+    s.mapSelection = null
+    applyFilterChange()
+    m.redraw()
+  }
+
+  // Turn a journey clicked on the map into the equivalent journey filter, then
+  // return to the card list so the user immediately sees those matches.
+  function pickJourneyFromMap(item) {
+    if (!item || !item.id) return
+    applyJourneyFilter(item.parentId || item.id, item.parentId ? item.id : '')
+  }
+
   function computeFilterKey(list) {
     readFilters()
     var f = s.filters
@@ -1788,17 +1837,70 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjour
       var page = filtered.slice(start, end)
       var totalPages = Math.max(1, Math.ceil(filtered.length / s.pageSize))
       if (s.currentPage > totalPages) s.currentPage = totalPages
-      var cards = page.map(function (match) { return m(MatchCard, { match: match, guid: s.selectedGuid }) })
+      var showingMap = !!s.showMap && typeof AncestryMatchesMap !== 'undefined'
+      var cards = showingMap ? [] : page.map(function (match) { return m(MatchCard, { match: match, guid: s.selectedGuid }) })
+      var body
+      if (showingMap) {
+        body = [m(AncestryMatchesMap.View, {
+          matches: filtered,
+          getJourneys: function (sampleId) {
+            var sm = s.sessionMatches && s.sessionMatches[sampleId]
+            return sm && sm.journeys
+          },
+          nameFor: function (id) { return s.journeyNameMap && s.journeyNameMap[id] },
+          singleOnly: s.mapSingleOnly,
+          onSingleOnlyChange: function (v) { setState({ mapSingleOnly: v }) },
+          onResetView: function () { clearFilters() },
+          onSelectionChange: function (sel) { s.mapSelection = sel },
+          onPick: pickJourneyFromMap
+        })]
+      } else {
+        body = [
+          shown < total ? m('.match-count', ['Showing ', m('strong', shown), ' of ', m('strong', total), ' matches']) : null,
+          m('.cards', cards),
+          totalPages > 1 ? m(Pagination, { currentPage: s.currentPage, totalPages: totalPages }) : null
+        ]
+      }
       return m('#matchListResult', [
         m('.sort-bar', [
-          m('span.sort-label', 'Sort by:'),
-          m('button.sort-btn' + (s.sortBy === 'cm' ? '.active' : ''), { onclick: function () { setState({ sortBy: 'cm', currentPage: 1 }) } }, 'Relationship'),
-          m('button.sort-btn' + (s.sortBy === 'date' ? '.active' : ''), { onclick: function () { setState({ sortBy: 'date', currentPage: 1 }) } }, 'Date')
-        ]),
-        shown < total ? m('.match-count', ['Showing ', m('strong', shown), ' of ', m('strong', total), ' matches']) : null,
-        m('.cards', cards),
-        totalPages > 1 ? m(Pagination, { currentPage: s.currentPage, totalPages: totalPages }) : null
-      ])
+          showingMap ? [
+            m('label.filter-check', [
+              m('input', {
+                type: 'checkbox',
+                checked: s.mapSingleOnly,
+                onchange: function (e) { setState({ mapSingleOnly: e.target.checked }) }
+              }),
+              m('span.check-mark'),
+              ' Single-journey matches only'
+            ])
+          ] : [
+            m('span.sort-label', 'Sort by:'),
+            m('button.sort-btn' + (s.sortBy === 'cm' ? '.active' : ''), { onclick: function () { setState({ sortBy: 'cm', currentPage: 1 }) } }, 'Relationship'),
+            m('button.sort-btn' + (s.sortBy === 'date' ? '.active' : ''), { onclick: function () { setState({ sortBy: 'date', currentPage: 1 }) } }, 'Date')
+          ],
+          m('.view-toggle', [
+            m('button.view-btn' + (showingMap ? '' : '.active'), {
+              title: 'Show matches as cards',
+              onclick: function () {
+                if (!s.showMap) return
+                if (s.mapSelection) {
+                  applyJourneyFilter(s.mapSelection.journeyId, s.mapSelection.subId)
+                  return
+                }
+                setState({ showMap: false })
+              }
+            }, 'List'),
+            m('button.view-btn' + (showingMap ? '.active' : ''), {
+              title: 'Show these matches on a journey map',
+              onclick: function () {
+                if (s.showMap) return
+                clearFilters()
+                setState({ showMap: true })
+              }
+            }, 'Map')
+          ])
+        ])
+      ].concat(body))
     }
   }
 
@@ -1925,6 +2027,9 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjour
     s.batchCommunitiesData = {}
     s.fetchStateBadge = ''
     s.statusMsg = ''
+    s.showMap = false
+    s.mapSingleOnly = true
+    s.mapSelection = null
     s.currentPage = 1
     s.filters = { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjourney: '' }], journeyOnly: false, subjourneyOnly: false, regions: [{ region: '', pctMin: null, pctMax: null }], group: '', starredOnly: false, side: '' }
     s.buttonLabel = null

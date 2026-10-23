@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MatchFetch</title>
+<link rel="stylesheet" href="../../lib/leaflet.css">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -133,11 +134,61 @@ select:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.15)
 #journeyFilters { display:flex;flex-direction:column;gap:8px;white-space:normal; }
 .journey-select, .subjourney-select { width:auto; max-width:220px; margin-top:0; }
 .filter-clear:hover { color: #f87171; }
-.sort-bar { display: flex; align-items: center; gap: 6px; margin-top: 12px; margin-bottom: 10px; padding-top: 12px; border-top: 1px solid #253044; }
+.sort-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 12px; margin-bottom: 10px; padding-top: 12px; border-top: 1px solid #253044; }
 .sort-label { font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: .5px; }
 .sort-btn { background: #0f1724; border: 1px solid #253044; color: #94a3b8; cursor: pointer; font-size: 11px; font-weight: 600; padding: 4px 12px; border-radius: 6px; font-family: inherit; transition: all .15s; }
 .sort-btn:hover { background: #253044; color: #e2e8f0; }
 .sort-btn.active { background: #3b82f6; color: #fff; border-color: #3b82f6; }
+.view-toggle { display: flex; gap: 2px; margin-left: auto; background: #0f1724; border: 1px solid #253044; border-radius: 8px; padding: 2px; }
+.view-btn { display: inline-flex; align-items: center; gap: 5px; padding: 4px 12px; border: none; border-radius: 6px; background: transparent; color: #64748b; font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer; transition: all .15s; }
+.view-btn:hover:not(.active) { color: #e2e8f0; background: rgba(255,255,255,.04); }
+.view-btn.active { background: #3b82f6; color: #fff; }
+
+.mf-map { margin-top: 4px; }
+.mf-map-layout { display: flex; gap: 12px; align-items: stretch; }
+.mf-map-canvas { flex: 1; min-width: 0; height: 460px; border-radius: 10px; overflow: hidden; border: 1px solid #253044; background: #0f1724; }
+.mf-map-side { width: 226px; flex-shrink: 0; display: flex; flex-direction: column; gap: 9px; background: #0f1724; border: 1px solid #253044; border-radius: 10px; padding: 12px; }
+.mf-map-title { font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .6px; }
+.mf-map-stat { font-size: 12px; line-height: 1.5; color: #cbd5e1; }
+.mf-map-stat strong { color: #f1f5f9; font-weight: 700; font-variant-numeric: tabular-nums; }
+.mf-map-back { align-self: flex-start; display: inline-flex; align-items: center; gap: 5px; padding: 0; border: none; background: transparent; color: #60a5fa; font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer; transition: color .15s; }
+.mf-map-back:hover { color: #93c5fd; }
+.mf-map-drill-head { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.mf-map-drill-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 700; color: #f1f5f9; }
+.mf-map-muted { font-size: 11px; line-height: 1.4; color: #64748b; margin-top: -4px; }
+.mf-map-progress { display: flex; align-items: center; gap: 7px; font-size: 11px; color: #64748b; }
+.mf-map-legend { display: flex; flex-direction: column; gap: 1px; min-height: 0; overflow-y: auto; max-height: 240px; margin: 0 -4px; padding: 0 4px; }
+.mf-map-legend::-webkit-scrollbar { width: 6px; }
+.mf-map-legend::-webkit-scrollbar-track { background: #0f1724; }
+.mf-map-legend::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+.mf-map-row { display: flex; align-items: center; gap: 8px; padding: 4px 6px; border-radius: 6px; cursor: pointer; transition: background .15s; }
+.mf-map-row:hover { background: rgba(255,255,255,.05); }
+.mf-map-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+.mf-map-row-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; color: #e2e8f0; }
+.mf-map-row-count { font-size: 11px; font-weight: 700; color: #94a3b8; font-variant-numeric: tabular-nums; }
+.mf-map-reset { align-self: flex-start; padding: 4px 10px; border: 1px solid #253044; border-radius: 6px; background: transparent; color: #94a3b8; font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer; transition: all .15s; }
+.mf-map-reset:hover { border-color: #3b82f6; color: #e2e8f0; }
+.mf-map-hint { font-size: 10px; line-height: 1.4; color: #64748b; }
+.mf-map-empty { padding: 40px 20px; text-align: center; color: #64748b; font-size: 13px; border: 1px dashed #253044; border-radius: 10px; }
+.mf-map-empty-sub { margin-top: 6px; font-size: 11px; color: #475569; }
+.mf-map-area { cursor: pointer; }
+.leaflet-tooltip.mf-map-count { padding: 0; background: transparent; border: none; box-shadow: none; }
+.leaflet-tooltip.mf-map-count:before { display: none; }
+.mf-map-count-inner { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 999px; background: rgba(15,23,36,.88); border: 1.5px solid; color: #f1f5f9; font-size: 11px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; box-shadow: 0 2px 8px rgba(0,0,0,.55); }
+.mf-map-count-sub .mf-map-count-inner { min-width: 18px; height: 18px; font-size: 10px; border-style: dashed; }
+.leaflet-container { background: #0f1724; outline: 0; font-family: inherit; }
+.leaflet-interactive, .leaflet-interactive:focus, .leaflet-interactive:focus-visible { outline: 0 !important; }
+.leaflet-tooltip { background: #1a2332; color: #e2e8f0; border: 1px solid #253044; border-radius: 6px; box-shadow: 0 4px 16px rgba(0,0,0,.5); font-size: 12px; font-weight: 600; padding: 4px 8px; }
+.leaflet-tooltip-top:before { border-top-color: #1a2332; }
+.leaflet-tooltip-bottom:before { border-bottom-color: #1a2332; }
+.leaflet-tooltip-left:before { border-left-color: #1a2332; }
+.leaflet-tooltip-right:before { border-right-color: #1a2332; }
+@media (max-width: 760px) {
+    .mf-map-layout { flex-direction: column; }
+    .mf-map-canvas { height: 340px; }
+    .mf-map-side { width: auto; }
+    .mf-map-legend { max-height: 160px; }
+}
 .pagination { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 16px; }
 .page-btn {
     background: #1e293b; border: 1px solid #253044; color: #94a3b8; cursor: pointer;
@@ -255,8 +306,10 @@ select:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.15)
 <script src="../../lib/dexie.js"></script>
 <script src="../db.js"></script>
 <script src="../../lib/mithril.js"></script>
+<script src="../../lib/leaflet.js"></script>
 <script src="../changelog.js"></script>
 <script src="share.js"></script>
+<script src="matches-map.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

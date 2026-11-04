@@ -11,7 +11,7 @@
     batchEthnicityData: {},
     batchCommunitiesData: {},
     sessionMatches: null,
-filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjourney: '' }], journeyOnly: false, subjourneyOnly: false, regions: [{ region: '', pctMin: null, pctMax: null }], group: '', starredOnly: false, side: '' },
+filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjourney: '' }], journeyOnly: false, subjourneyOnly: false, regions: [{ region: '', pctMin: null, pctMax: null }], group: '', starredOnly: false, hideLimited: false, side: '' },
     journeySearch: '',
     subjourneySearch: '',
     regionSearch: '',
@@ -328,6 +328,16 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjour
     var v = s.regionsVersion || s.ethnicityVersion
     if (v && sm.regions[String(v)]) return sm.regions[String(v)]
     return null
+  }
+
+  // True when Ancestry only exposes part of this match's regions (the card
+  // shows a "Limited Data" pill for these). Matches without region data are
+  // not treated as limited.
+  function regionsAreLimited(regs) {
+    if (!regs || !regs.length) return false
+    var total = 0
+    for (var i = 0; i < regs.length; i++) total += regs[i].percentage || 0
+    return total < 100
   }
 
   var _cachedRegionVersions = { sm: undefined, key: '', list: [] }
@@ -1016,6 +1026,10 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjour
         if (!ok) return false
       }
     }
+    if (f.hideLimited) {
+      var limSm = s.sessionMatches && s.sessionMatches[m.sampleId]
+      if (regionsAreLimited(limSm ? getFilterRegions(limSm) : null)) return false
+    }
     return true
   }
 
@@ -1235,6 +1249,7 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjour
     var groupEl = document.getElementById('filterGroup')
     f.group = groupEl ? groupEl.value : ''
     f.starredOnly = document.getElementById('filterStarred') ? document.getElementById('filterStarred').checked : false
+    f.hideLimited = document.getElementById('filterHideLimited') ? document.getElementById('filterHideLimited').checked : false
     var sideEl = document.getElementById('filterSide')
     f.side = sideEl ? sideEl.value : ''
     // Build the active region filters from state rather than from the DOM.
@@ -1268,6 +1283,7 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjour
     el = document.getElementById('filterCmMax'); if (el) el.value = ''
     el = document.getElementById('filterGroup'); if (el) el.value = ''
     el = document.getElementById('filterStarred'); if (el) el.checked = false
+    el = document.getElementById('filterHideLimited'); if (el) el.checked = false
     el = document.getElementById('filterSide'); if (el) el.value = ''
     _cachedJourneyOpts = null
     _cachedSubjourneyOpts = {}
@@ -1490,7 +1506,7 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjour
                     s.currentPage = 1
                     _cachedJourneyOpts = null
                     _cachedSubjourneyOpts = {}
-                    setState({ matchListData: null, sessionMatches: null, profileData: {}, batchEthnicityData: {}, batchCommunitiesData: {}, filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjourney: '' }], journeyOnly: false, subjourneyOnly: false, regions: [{ region: '', pctMin: null, pctMax: null }], group: '', starredOnly: false, side: '' }, journeySearch: '', subjourneySearch: '', regionSearch: '', fetchStateBadge: '', showFetchOptions: false, fetchComplete: false, buttonLabel: null, currentPage: 1, statusMsg: '' })
+                    setState({ matchListData: null, sessionMatches: null, profileData: {}, batchEthnicityData: {}, batchCommunitiesData: {}, filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjourney: '' }], journeyOnly: false, subjourneyOnly: false, regions: [{ region: '', pctMin: null, pctMax: null }], group: '', starredOnly: false, hideLimited: false, side: '' }, journeySearch: '', subjourneySearch: '', regionSearch: '', fetchStateBadge: '', showFetchOptions: false, fetchComplete: false, buttonLabel: null, currentPage: 1, statusMsg: '' })
                   })
                 }
               }
@@ -1658,6 +1674,13 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjour
                 m('span.check-mark'),
                 m.trust('<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="#facc15" stroke="#facc15" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:-1px"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>'),
                 ' Starred matches'
+              ]),
+              m('label.filter-check', {
+                title: 'Hides matches where Ancestry only shows the regions and journeys you have in common.'
+              }, [
+                m('input#filterHideLimited', { type: 'checkbox', checked: s.filters.hideLimited, onchange: function () { applyFilterChange(); m.redraw() } }),
+                m('span.check-mark'),
+                ' Hide limited data'
               ])
             ]),
             m('span#filterReset.filter-clear', {
@@ -1829,7 +1852,7 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjour
     var jk = ''
     if (f.journeys) for (var i = 0; i < f.journeys.length; i++) jk += '|' + ((f.journeys[i] && f.journeys[i].journey)||'') + '|' + ((f.journeys[i] && f.journeys[i].subjourney)||'')
     jk += '|jo' + (f.journeyOnly?'1':'0') + '|so' + (f.subjourneyOnly?'1':'0')
-    return s.sortBy + '|' + (list ? list.length : 0) + '|' + (f.name||'') + '|' + (f.cmMin||'') + '|' + (f.cmMax||'') + jk + '|' + (f.group||'') + '|' + (f.starredOnly?'1':'0') + '|' + (f.side||'') + rk + '|v' + _dataVersion + '|' + (s.regionsVersion || '')
+    return s.sortBy + '|' + (list ? list.length : 0) + '|' + (f.name||'') + '|' + (f.cmMin||'') + '|' + (f.cmMax||'') + jk + '|' + (f.group||'') + '|' + (f.starredOnly?'1':'0') + '|' + (f.hideLimited?'1':'0') + '|' + (f.side||'') + rk + '|v' + _dataVersion + '|' + (s.regionsVersion || '')
   }
 
   var MatchList = {
@@ -1952,12 +1975,7 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjour
       else if (s.paternalCluster && clusterCode === s.paternalCluster) { sideLabel = 'Paternal side'; sideClass = 'side-paternal' }
       else if (s.paternalCluster && (clusterCode === 'p1' || clusterCode === 'p2')) { sideLabel = 'Maternal side'; sideClass = 'side-maternal' }
       var regs = sm ? getFilterRegions(sm) : null
-      var limited = false
-      if (regs && regs.length) {
-        var regTotal = 0
-        for (var ri = 0; ri < regs.length; ri++) regTotal += regs[ri].percentage || 0
-        limited = regTotal < 100
-      }
+      var limited = regionsAreLimited(regs)
       var tagLabels = []
       if (tags && s.customTags) {
         var seen = {}
@@ -2056,7 +2074,7 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjour
     s.mapSingleOnly = true
     s.mapSelection = null
     s.currentPage = 1
-    s.filters = { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjourney: '' }], journeyOnly: false, subjourneyOnly: false, regions: [{ region: '', pctMin: null, pctMax: null }], group: '', starredOnly: false, side: '' }
+    s.filters = { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjourney: '' }], journeyOnly: false, subjourneyOnly: false, regions: [{ region: '', pctMin: null, pctMax: null }], group: '', starredOnly: false, hideLimited: false, side: '' }
     s.buttonLabel = null
     s.fetchComplete = false
     s.canEdit = null

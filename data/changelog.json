@@ -1,6 +1,13 @@
 {
   "entries": [
     {
+      "version": "2.4.1",
+      "date": "November 3, 2026",
+      "changes": [
+        "Ancestry region filters can now exclude a region: set the maximum to 0 (for example 0\u20130) to show only matches that do NOT have that region. It still combines with every other filter."
+      ]
+    },
+    {
       "version": "2.4.0",
       "date": "October 23, 2026",
       "changes": [

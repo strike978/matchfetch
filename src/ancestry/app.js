@@ -964,6 +964,28 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjour
       for (var fi = 0; fi < activeRegions.length; fi++) {
         var rf = activeRegions[fi]
         if (!rf.region) continue
+        // A max of 0 means "at most 0%", i.e. "must NOT have this region":
+        // keep matches where the region is absent or contributes 0%. This is
+        // still an ordinary AND condition, so it combines with every other
+        // filter and with other region rows.
+        if (rf.pctMax != null && rf.pctMax === 0) {
+          var hasRegion = false
+          if (rf.region.indexOf('__macro__') === 0) {
+            var exMacroKey = rf.region.slice(9)
+            if (regs) {
+              for (var exRi = 0; exRi < regs.length; exRi++) {
+                if ((regs[exRi].macroRegionKey || '') === exMacroKey && (regs[exRi].percentage || 0) > 0) { hasRegion = true; break }
+              }
+            }
+          } else if (regs) {
+            for (var exRi2 = 0; exRi2 < regs.length; exRi2++) {
+              if ((regs[exRi2].displayName || regs[exRi2].key || '') === rf.region && (regs[exRi2].percentage || 0) > 0) { hasRegion = true; break }
+            }
+          }
+          if (hasRegion) return false
+          continue
+        }
+        // Existing include logic (unchanged) applies to every other range.
         var ok = false
         if (rf.region.indexOf('__macro__') === 0) {
           var mkey = rf.region.slice(9)
@@ -980,10 +1002,10 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjour
           }
         } else {
           if (regs) {
-            for (var ri = 0; ri < regs.length; ri++) {
-              if ((regs[ri].displayName || regs[ri].key || '') === rf.region) {
+            for (var ri2 = 0; ri2 < regs.length; ri2++) {
+              if ((regs[ri2].displayName || regs[ri2].key || '') === rf.region) {
                 ok = true
-                var pct = regs[ri].percentage
+                var pct = regs[ri2].percentage
                 if (rf.pctMin != null && (pct == null || pct < rf.pctMin)) ok = false
                 if (rf.pctMax != null && (pct == null || pct > rf.pctMax)) ok = false
                 if (ok) break
@@ -1738,6 +1760,7 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjour
         m('span.filter-sep', '\u2013'),
         m('input.region-pct-max.filter-input.filter-cm', {
           type: 'number', placeholder: '100', max: 100,
+          title: 'Set the max to 0 to show matches that do NOT have this region.',
           value: f.pctMax != null ? f.pctMax : '',
           oninput: function (e) {
             s.filters.regions[idx] = s.filters.regions[idx] || { region: '', pctMin: null, pctMax: null }
@@ -1800,7 +1823,9 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjour
     readFilters()
     var f = s.filters
     var rk = ''
-    if (s._activeRegionFilters) for (var i = 0; i < s._activeRegionFilters.length; i++) rk += '|' + s._activeRegionFilters[i].region + '|' + (s._activeRegionFilters[i].pctMin||'') + '|' + (s._activeRegionFilters[i].pctMax||'')
+    // Include 0 explicitly: a 0% bound is a real filter ("must not have this
+    // region"), so it can't share a cache key with an empty bound.
+    if (s._activeRegionFilters) for (var i = 0; i < s._activeRegionFilters.length; i++) rk += '|' + s._activeRegionFilters[i].region + '|' + (s._activeRegionFilters[i].pctMin == null ? '' : s._activeRegionFilters[i].pctMin) + '|' + (s._activeRegionFilters[i].pctMax == null ? '' : s._activeRegionFilters[i].pctMax)
     var jk = ''
     if (f.journeys) for (var i = 0; i < f.journeys.length; i++) jk += '|' + ((f.journeys[i] && f.journeys[i].journey)||'') + '|' + ((f.journeys[i] && f.journeys[i].subjourney)||'')
     jk += '|jo' + (f.journeyOnly?'1':'0') + '|so' + (f.subjourneyOnly?'1':'0')

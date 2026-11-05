@@ -1034,6 +1034,21 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjour
   }
 
   var _cachedRegionOpts = null
+  var _cachedRegionOptsKey = ''
+  var _cachedRegionOptsSm = null
+  // True while one of the filter dropdowns has focus. The native select popup is
+  // open during this time, so we keep the option lists stable until it closes:
+  // rewriting <option> children underneath an open menu can close/replace it.
+  var _filterSelectFocused = false
+
+  // Options are cached because building them walks every stored match. Key the
+  // cache on the data version, the viewed version, and the match object so it
+  // refreshes itself when matches are fetched or the version changes. (It used
+  // to refresh in the select's focus handler, but rebuilding the options while
+  // the native dropdown was opening closed it again, so a search looked empty.)
+  function regionOptionsKey() {
+    return _dataVersion + '|' + (s.regionsVersion || s.ethnicityVersion || '')
+  }
 
   function buildRegionOptions() {
     var opts = [{ value: '', label: 'All' }]
@@ -1064,15 +1079,21 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjour
   }
 
   function getRegionOptions() {
-    if (!_cachedRegionOpts) _cachedRegionOpts = buildRegionOptions()
+    var key = regionOptionsKey()
+    var stale = !_cachedRegionOpts || _cachedRegionOptsKey !== key || _cachedRegionOptsSm !== s.sessionMatches
+    // Keep an already-built list stable while the user has a filter dropdown
+    // open; the next render after it blurs picks up any newly fetched data.
+    if (stale && (!_cachedRegionOpts || !_filterSelectFocused)) {
+      _cachedRegionOpts = buildRegionOptions()
+      _cachedRegionOptsKey = key
+      _cachedRegionOptsSm = s.sessionMatches
+    }
     return _cachedRegionOpts
   }
 
-  function refreshRegionOptions() {
-    _cachedRegionOpts = buildRegionOptions()
-  }
-
   var _cachedJourneyOpts = null
+  var _cachedJourneyOptsKey = ''
+  var _cachedJourneyOptsSm = null
 
   function buildJourneyOptions() {
     var opts = [{ value: '', label: 'All' }]
@@ -1100,15 +1121,24 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjour
   }
 
   function getJourneyOptions() {
-    if (!_cachedJourneyOpts) _cachedJourneyOpts = buildJourneyOptions()
+    var key = _dataVersion + '|' + (s.sessionMatches ? '1' : '0')
+    var stale = !_cachedJourneyOpts || _cachedJourneyOptsKey !== key || _cachedJourneyOptsSm !== s.sessionMatches
+    if (stale && (!_cachedJourneyOpts || !_filterSelectFocused)) {
+      _cachedJourneyOpts = buildJourneyOptions()
+      _cachedJourneyOptsKey = key
+      _cachedJourneyOptsSm = s.sessionMatches
+    }
     return _cachedJourneyOpts
   }
 
   function refreshJourneyOptions() {
-    _cachedJourneyOpts = buildJourneyOptions()
+    _cachedJourneyOpts = null
+    _cachedJourneyOptsSm = null
   }
 
   var _cachedSubjourneyOpts = {}
+  var _cachedSubjourneyKey = ''
+  var _cachedSubjourneyStale = false
 
   // Subjourneys of the given journey that appear among the loaded matches.
   // Matches store journeys as a tree (branches -> communities), so we collect
@@ -1143,14 +1173,31 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjour
     return opts
   }
 
+  // Drop the per-journey subjourney cache when the underlying match data or
+  // profile changes, so freshly fetched communities show up. While a filter
+  // dropdown is focused, just mark it stale so the open menu doesn't change.
+  function ensureSubjourneyCache() {
+    var key = _dataVersion + '|' + (s.sessionMatches ? '1' : '0')
+    if (_cachedSubjourneyKey !== key) {
+      _cachedSubjourneyKey = key
+      _cachedSubjourneyStale = true
+    }
+    if (_cachedSubjourneyStale && !_filterSelectFocused) {
+      _cachedSubjourneyOpts = {}
+      _cachedSubjourneyStale = false
+    }
+  }
+
   function getSubjourneyOptions(journeyId) {
     if (!journeyId) return [{ value: '', label: 'All' }]
+    ensureSubjourneyCache()
     if (!_cachedSubjourneyOpts[journeyId]) _cachedSubjourneyOpts[journeyId] = buildSubjourneyOptions(journeyId)
     return _cachedSubjourneyOpts[journeyId]
   }
 
   function refreshSubjourneyOptions(journeyId) {
     if (!journeyId) return
+    ensureSubjourneyCache()
     _cachedSubjourneyOpts[journeyId] = buildSubjourneyOptions(journeyId)
   }
 
@@ -1195,7 +1242,8 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjour
 
   function filterSelectOptions(opts, query, keepValue) {
     if (!query) return opts
-    var q = query.toLowerCase()
+    var q = String(query).trim().toLowerCase()
+    if (!q) return opts
     var out = []
     for (var i = 0; i < opts.length; i++) {
       var o = opts[i]
@@ -1206,7 +1254,8 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjour
 
   function filterRegionOptions(opts, query, keepValue) {
     if (!query) return opts
-    var q = query.toLowerCase()
+    var q = String(query).trim().toLowerCase()
+    if (!q) return opts
     var out = []
     var curMacro = null
     var macroMatches = false
@@ -1709,7 +1758,8 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjour
         m('select.journey-select.filter-select', {
           'data-idx': idx,
           value: f.journey,
-          onfocus: function () { refreshJourneyOptions(); m.redraw() },
+          onfocus: function () { _filterSelectFocused = true },
+          onblur: function () { _filterSelectFocused = false; m.redraw() },
           onupdate: function (vnode) { var want = vnode.attrs.value == null ? '' : String(vnode.attrs.value); if (vnode.dom.value !== want) vnode.dom.value = want },
           onchange: function (e) {
             s.filters.journeys[idx] = s.filters.journeys[idx] || { journey: '', subjourney: '' }
@@ -1722,7 +1772,8 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjour
         hasSubs ? m('select.subjourney-select.filter-select', {
           'data-idx': idx,
           value: f.subjourney,
-          onfocus: function () { refreshSubjourneyOptions(f.journey); m.redraw() },
+          onfocus: function () { _filterSelectFocused = true },
+          onblur: function () { _filterSelectFocused = false; m.redraw() },
           onupdate: function (vnode) { var want = vnode.attrs.value == null ? '' : String(vnode.attrs.value); if (vnode.dom.value !== want) vnode.dom.value = want },
           onchange: function (e) {
             s.filters.journeys[idx] = s.filters.journeys[idx] || { journey: '', subjourney: '' }
@@ -1752,7 +1803,8 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjour
         m('select.region-select', {
           'data-idx': idx,
           value: f.region,
-          onfocus: function () { refreshRegionOptions(); m.redraw() },
+          onfocus: function () { _filterSelectFocused = true },
+          onblur: function () { _filterSelectFocused = false; m.redraw() },
           // Options are filtered by the search box; Mithril applies the value
           // before updating the <option> children, so re-apply it afterwards to
           // keep the visible selection in sync with the filter state.
@@ -2084,6 +2136,7 @@ filters: { name: '', cmMin: null, cmMax: null, journeys: [{ journey: '', subjour
     s.profileLoading = !!guid
     _cachedRegionOpts = null
     _cachedJourneyOpts = null
+    _filterSelectFocused = false
     s.journeySearch = ''
     s.subjourneySearch = ''
     _cachedSubjourneyOpts = {}

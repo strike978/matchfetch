@@ -1,6 +1,13 @@
 {
   "entries": [
     {
+      "version": "2.4.2",
+      "date": "November 4, 2026",
+      "changes": [
+        "Fixed the Ancestry region, journey, and subjourney search in Filtering Options so matching entries actually appear in the dropdown when it opens."
+      ]
+    },
+    {
       "version": "2.4.1",
       "date": "November 3, 2026",
       "changes": [

@@ -1,6 +1,14 @@
 {
   "entries": [
     {
+      "version": "2.4.3",
+      "date": "November 6, 2026",
+      "changes": [
+        "Updated Ancestry journey data with the latest journey sets for Ashkenazi Jewish, Balkan, Croatian, Italian, and Maltese communities. New journeys include Romania, Ionian Islands, Serbia, Sardinia, Apulia, and Malta.",
+        "Refreshed journey and subjourney names used by filtering, the map view, and shared stats."
+      ]
+    },
+    {
       "version": "2.4.2",
       "date": "November 4, 2026",
       "changes": [

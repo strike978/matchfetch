@@ -339,31 +339,39 @@ var AncestryShare = (function () {
 
   function upload(payload, onProgress) {
     var profiles = payload.profiles || []
-    var total = profiles.length
-    var i = 0
+    // Serialize once, then pack profiles into requests of roughly 700 KB so
+    // a single call stays below typical API gateway body limits.
+    var encoded = profiles.map(function (p) { return JSON.stringify(p) })
+    var total = encoded.length
+    var done = 0
+    var MAX_BYTES = 700 * 1024
+
     function next() {
-      if (i >= total) return Promise.resolve()
-      var prof = profiles[i]
-      var body = JSON.stringify({
-        payload: {
-          provider: payload.provider,
-          year: payload.year,
-          schemaVersion: REMOTE.schemaVersion,
-          profiles: [prof]
-        }
-      })
+      if (done >= total) return Promise.resolve({ profiles: total })
+      var parts = []
+      var bytes = 0
+      while (done + parts.length < total) {
+        var text = encoded[done + parts.length]
+        if (parts.length && bytes + text.length > MAX_BYTES) break
+        parts.push(text)
+        bytes += text.length
+      }
+      var body = '{"payload":{"provider":' + JSON.stringify(payload.provider) +
+        ',"year":' + JSON.stringify(payload.year) +
+        ',"schemaVersion":' + REMOTE.schemaVersion +
+        ',"profiles":[' + parts.join(',') + ']}}'
       return fetch(REMOTE.url + '/rest/v1/rpc/submit_summary', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'apikey': REMOTE.publishableKey },
         body: body
       }).then(function (r) {
         if (!r.ok) return r.text().then(function (t) { throw new Error('Upload failed (' + r.status + ')' + (t ? ': ' + t : '')) })
-        i++
-        if (onProgress) onProgress(i, total)
+        done += parts.length
+        if (onProgress) onProgress(done, total)
         return next()
       })
     }
-    return next().then(function () { return { profiles: total } })
+    return next()
   }
 
   function apiFetch(url, options) {

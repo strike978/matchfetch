@@ -1,6 +1,14 @@
 {
   "entries": [
     {
+      "version": "2.4.4",
+      "date": "November 13, 2026",
+      "changes": [
+        "Sharing your journey stats now uploads in batches, so it uses fewer requests and finishes faster. If a share is interrupted, retrying cleanly replaces the affected profiles.",
+        "Ancestry's Hazara region has been renamed to Afghanistan and now shows the updated description."
+      ]
+    },
+    {
       "version": "2.4.3",
       "date": "November 6, 2026",
       "changes": [

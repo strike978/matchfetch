@@ -337,36 +337,53 @@ var AncestryShare = (function () {
     }
   }
 
+  // Supabase's anon role has a short statement_timeout (3s by default).
+  // Sending several profiles in one submit_summary call pushes it over that limit
+  // (Postgres 57014), especially on the first share while the database is cold.
+  // Upload one profile per request so every call stays small; the share modal's
+  // existing "Try again" button handles a failed upload.
+
+  function uploadError(status, body) {
+    var text = body == null ? '' : String(body)
+    var err = new Error('Upload failed (' + status + ')' + (text ? ': ' + text : ''))
+    err.status = status
+    err.body = text
+    if (status >= 500 && /"code"\s*:\s*"57014"|canceling statement due to statement timeout/i.test(text)) {
+      err.timeout = true
+      err.message = 'The server took too long to save your stats (57014). Please try again.'
+    }
+    return err
+  }
+
   function upload(payload, onProgress) {
     var profiles = payload.profiles || []
-    // Serialize once, then pack profiles into requests of roughly 700 KB so
-    // a single call stays below typical API gateway body limits.
-    var encoded = profiles.map(function (p) { return JSON.stringify(p) })
-    var total = encoded.length
+    var total = profiles.length
     var done = 0
-    var MAX_BYTES = 700 * 1024
 
-    function next() {
-      if (done >= total) return Promise.resolve({ profiles: total })
-      var parts = []
-      var bytes = 0
-      while (done + parts.length < total) {
-        var text = encoded[done + parts.length]
-        if (parts.length && bytes + text.length > MAX_BYTES) break
-        parts.push(text)
-        bytes += text.length
-      }
-      var body = '{"payload":{"provider":' + JSON.stringify(payload.provider) +
-        ',"year":' + JSON.stringify(payload.year) +
-        ',"schemaVersion":' + REMOTE.schemaVersion +
-        ',"profiles":[' + parts.join(',') + ']}}'
+    function postProfile(profile) {
+      var body = JSON.stringify({
+        payload: {
+          provider: payload.provider,
+          year: payload.year,
+          schemaVersion: REMOTE.schemaVersion,
+          profiles: [profile]
+        }
+      })
       return fetch(REMOTE.url + '/rest/v1/rpc/submit_summary', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'apikey': REMOTE.publishableKey },
         body: body
       }).then(function (r) {
-        if (!r.ok) return r.text().then(function (t) { throw new Error('Upload failed (' + r.status + ')' + (t ? ': ' + t : '')) })
-        done += parts.length
+        if (!r.ok) return r.text().then(function (t) { throw uploadError(r.status, t) })
+      }, function (err) {
+        throw uploadError(0, err && err.message)
+      })
+    }
+
+    function next() {
+      if (done >= total) return Promise.resolve({ profiles: total })
+      return postProfile(profiles[done]).then(function () {
+        done++
         if (onProgress) onProgress(done, total)
         return next()
       })

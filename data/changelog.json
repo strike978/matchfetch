@@ -1,6 +1,13 @@
 {
   "entries": [
     {
+      "version": "2.4.5",
+      "date": "November 14, 2026",
+      "changes": [
+        "Fixed sharing timing out with a database error (57014) on the first upload. Profiles now upload one at a time, so each request stays under the server's time limit."
+      ]
+    },
+    {
       "version": "2.4.4",
       "date": "November 13, 2026",
       "changes": [

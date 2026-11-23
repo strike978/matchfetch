@@ -36,6 +36,39 @@
     return m.ibd_proportion != null ? Math.round(m.ibd_proportion * 6800) : null
   }
 
+  // The saved matches don't reliably carry a "latest compute" flag, so we use
+  // the current population tree shipped with the extension as the source of
+  // truth: only region names that exist in it are offered by the filter. That
+  // drops retired names from older ancestry versions (and trace regions, which
+  // live outside ancestry.regions).
+  var _currentRegionLabels = null
+  var _currentRegionLabelsLoading = false
+
+  function loadCurrentRegionLabels() {
+    if (_currentRegionLabels || _currentRegionLabelsLoading) return
+    _currentRegionLabelsLoading = true
+    fetch(chrome.runtime.getURL('data/23andme/population_tree.json')).then(function (r) { return r.json() }).then(function (tree) {
+      var labels = {}
+      ;(function walk(nodes) {
+        if (!Array.isArray(nodes)) return
+        for (var i = 0; i < nodes.length; i++) {
+          var n = nodes[i]
+          if (!n) continue
+          if (n.label) labels[n.label] = true
+          if (n.children && n.children.length) walk(n.children)
+        }
+      })(Array.isArray(tree) ? tree : [])
+      _currentRegionLabels = labels
+      _currentRegionLabelsLoading = false
+      refreshRegionGroups()
+      m.redraw()
+    }, function () { _currentRegionLabelsLoading = false })
+  }
+
+  function isCurrentRegion(label) {
+    return !_currentRegionLabels || _currentRegionLabels[label] === true
+  }
+
   function grandparentCountry(m) {
     var locs = m.grandparent_birth_locations
     if (!locs) return null
@@ -79,6 +112,8 @@
   var _dataVersion = 0
   var _fetchToken = 0
   var _gpbOptionsCache = null
+  var _gpbOptionsKey = -1
+  var _gpbOptionsSrc = null
 
   function friendlyError(msg) {
     if (/Status 30[137]/.test(msg)) return 'Make sure you are logged into 23andMe and keep a tab open at https://you.23andme.com/, then refresh MatchFetch.'
@@ -194,6 +229,8 @@
     _regionGroupsCache = null
     _haploOptionsCache = null
     _gpbOptionsCache = null
+    s._activeRegionFilters = []
+    s._activeGpbFilters = []
     setState({ selectedProfileId: id, matches: {}, matchCount: null, matchCountLoading: false, isFetching: false, fetchComplete: false, buttonLabel: null, statusMsg: '', fetchMsg: '', fetchProgress: 0, fetchPct: '', currentPage: 1, showFetchOptions: false, fetchMode: 'all', desiredCount: '100', cmRangeMin: '', cmRangeMax: '', birthCountry: '', targetIds: [], filters: { name: '', cmMin: null, cmMax: null, side: '', regions: [{ region: '', min: null, max: null }], ydna: '', mtdna: '', gpbLocations: [{ country: '', min: null }] } })
     await loadSaved(id)
     await fetchMatchCount(id)
@@ -244,7 +281,7 @@
   function extractNodes(node, allNodes) {
     if (!node) return allNodes
     if (node.totalPercent && parseFloat(node.totalPercent) > 0 && node.id !== 'root') {
-      allNodes.push({ id: node.id, label: node.label, totalPercent: node.totalPercent, color: node.color, parent_id: node.parent_id, is_trace: node.is_trace === true })
+      allNodes.push({ id: node.id, label: node.label, totalPercent: node.totalPercent, color: node.color, parent_id: node.parent_id, is_trace: node.is_trace === true, is_broad: node.is_broad === true })
     }
     if (node.children && Array.isArray(node.children)) {
       for (var i = 0; i < node.children.length; i++) extractNodes(node.children[i], allNodes)
@@ -256,7 +293,7 @@
     var nodeMap = {}
     var result = {}
     for (var i = 0; i < nodes.length; i++) {
-      nodeMap[nodes[i].id] = { id: nodes[i].id, label: nodes[i].label, totalPercent: nodes[i].totalPercent, color: nodes[i].color, parent_id: nodes[i].parent_id, regions: {} }
+      nodeMap[nodes[i].id] = { id: nodes[i].id, label: nodes[i].label, totalPercent: nodes[i].totalPercent, color: nodes[i].color, parent_id: nodes[i].parent_id, is_broad: nodes[i].is_broad === true, regions: {} }
     }
     for (var j = 0; j < nodes.length; j++) {
       var node = nodes[j]
@@ -523,8 +560,6 @@
     if (s._activeRegionFilters && s._activeRegionFilters.length) {
       for (var fi = 0; fi < s._activeRegionFilters.length; fi++) {
         var rf = s._activeRegionFilters[fi]
-        var a = m.ancestry
-        if (!a || a.using_latest_compute !== true) return false
         var pct = regionPct(m, rf.region)
         if (pct == null) return false
         if (rf.min != null && pct < rf.min) return false
@@ -567,12 +602,24 @@
       .filter(function (m) { return m && m.ancestry })
   }
 
-  function collectTree(nodes, parentLabel, g) {
+  function isBroadRegion(node) {
+    if (!node) return false
+    if (node.is_broad === true) return true
+    // Older saved matches predate is_broad; their broad entries are the ones
+    // labelled "Broadly ...".
+    return /^Broadly\s/i.test(node.label || '')
+  }
+
+  function collectTree(nodes, parentLabel, g, broad) {
     if (!nodes) return
     for (var i = 0; i < nodes.length; i++) {
       var node = nodes[i]
       if (!node.label) continue
-      if (node.label !== parentLabel) {
+      var nodeBroad = isBroadRegion(node)
+      if (nodeBroad) broad[node.label] = true
+      // Broad entries are left out of the menu; their children (if any) stay
+      // attached to the closest non-broad ancestor.
+      if (!nodeBroad && node.label !== parentLabel) {
         if (!g.childrenOf[parentLabel]) g.childrenOf[parentLabel] = []
         if (g.childrenOf[parentLabel].indexOf(node.label) === -1) g.childrenOf[parentLabel].push(node.label)
       }
@@ -580,7 +627,7 @@
       if (node.regions) {
         for (var k in node.regions) childNodes = childNodes.concat(node.regions[k])
       }
-      collectTree(childNodes, node.label, g)
+      collectTree(childNodes, nodeBroad ? parentLabel : node.label, g, broad)
     }
   }
 
@@ -594,6 +641,12 @@
   }
 
   var _regionGroupsCache = null
+  var _regionGroupsKey = -1
+  var _regionGroupsSrc = null
+  // True while a filter dropdown has focus. The native select popup is open
+  // during this time, so the option lists must stay stable: rewriting <option>
+  // children underneath an open menu closes/replaces it.
+  var _filterSelectFocused = false
 
   function regionPct(m, label) {
     var a = m.ancestry
@@ -611,47 +664,76 @@
       }
     }
     walk(a && a.regions)
-    if (a && a.trace) {
-      for (var t = 0; t < a.trace.length; t++) {
-        if (a.trace[t].label === label) { found = true; total += parseFloat(a.trace[t].totalPercent) || 0 }
-      }
-    }
     return found ? total : null
   }
 
   function buildRegionGroups() {
-    var opts = [{ value: '', label: 'All' }]
     var groups = {}
+    var broadLabels = {}
     var list = buildMatchList()
+    var withRegions = 0
     for (var i = 0; i < list.length; i++) {
       var ancestry = list[i].ancestry
-      if (!ancestry || ancestry.using_latest_compute !== true) continue
-      var regions = ancestry.regions
+      var regions = ancestry && ancestry.regions
       if (!regions) continue
+      var topKeys = Object.keys(regions)
+      if (!topKeys.length) continue
+      withRegions++
       for (var topParent in regions) {
+        if (!isCurrentRegion(topParent)) continue
         if (!groups[topParent]) groups[topParent] = { childrenOf: {} }
-        collectTree(regions[topParent], topParent, groups[topParent])
+        collectTree(regions[topParent], topParent, groups[topParent], broadLabels)
       }
     }
+    var opts = [{ value: '', label: 'All' }]
     var topParents = Object.keys(groups).sort()
     for (var p = 0; p < topParents.length; p++) {
       var tp = topParents[p]
-      opts.push({ value: tp, label: tp })
+      // Exclude the broad label itself, but keep its children (they render as
+      // top-level options when the broad group has no other parent).
+      if (!broadLabels[tp]) opts.push({ value: tp, label: tp })
       renderRegionTreeOptions(tp, 0, groups[tp], opts)
     }
-    return opts
+    // Keep only current, non-broad region names, and drop duplicate values.
+    var filtered = [opts[0]]
+    var seen = {}
+    var retired = {}
+    for (var oi = 1; oi < opts.length; oi++) {
+      var v = opts[oi].value
+      if (broadLabels[v]) continue
+      if (!isCurrentRegion(v)) { retired[v] = true; continue }
+      if (seen[v]) continue
+      seen[v] = true
+      filtered.push(opts[oi])
+    }
+    // Diagnostics: if the dropdown has no regions, say why.
+    if (filtered.length === 1) {
+      console.log('[MatchFetch 23] No region filter options. Loaded matches:', list.length, '| with a region tree:', withRegions, '| retired names dropped:', Object.keys(retired).length)
+    }
+    return filtered
   }
 
   function getRegionGroups() {
-    if (!_regionGroupsCache) _regionGroupsCache = buildRegionGroups()
+    // Rebuild when the match data changes, but never while the dropdown is
+    // open (see _filterSelectFocused).
+    if (!_regionGroupsCache || _regionGroupsKey !== _dataVersion || _regionGroupsSrc !== s.matches) {
+      if (!_filterSelectFocused || !_regionGroupsCache) {
+        _regionGroupsCache = buildRegionGroups()
+        _regionGroupsKey = _dataVersion
+        _regionGroupsSrc = s.matches
+      }
+    }
     return _regionGroupsCache
   }
 
+  // Invalidate the list; it rebuilds on the next render.
   function refreshRegionGroups() {
-    _regionGroupsCache = buildRegionGroups()
+    _regionGroupsCache = null
   }
 
   var _haploOptionsCache = null
+  var _haploOptionsKey = -1
+  var _haploOptionsSrc = null
 
   function buildHaploOptions() {
     var ydnaSet = {}
@@ -667,17 +749,24 @@
   }
 
   function getHaploOptions() {
-    if (!_haploOptionsCache) _haploOptionsCache = buildHaploOptions()
+    if (!_haploOptionsCache || _haploOptionsKey !== _dataVersion || _haploOptionsSrc !== s.matches) {
+      if (!_filterSelectFocused || !_haploOptionsCache) {
+        _haploOptionsCache = buildHaploOptions()
+        _haploOptionsKey = _dataVersion
+        _haploOptionsSrc = s.matches
+      }
+    }
     return _haploOptionsCache
   }
 
   function refreshHaploOptions() {
-    _haploOptionsCache = buildHaploOptions()
+    _haploOptionsCache = null
   }
 
   function loadCountries() {
     fetch(chrome.runtime.getURL('data/23andme/countries.json')).then(function (r) { return r.json() }).then(function (d) {
       setState({ countryNames: d || {} })
+      refreshGpbOptions()
     }, function () { })
   }
 
@@ -701,12 +790,18 @@
   }
 
   function getGpbOptions() {
-    if (!_gpbOptionsCache) _gpbOptionsCache = buildGpbOptions()
+    if (!_gpbOptionsCache || _gpbOptionsKey !== _dataVersion || _gpbOptionsSrc !== s.matches) {
+      if (!_filterSelectFocused || !_gpbOptionsCache) {
+        _gpbOptionsCache = buildGpbOptions()
+        _gpbOptionsKey = _dataVersion
+        _gpbOptionsSrc = s.matches
+      }
+    }
     return _gpbOptionsCache
   }
 
   function refreshGpbOptions() {
-    _gpbOptionsCache = buildGpbOptions()
+    _gpbOptionsCache = null
   }
 
   function computeFilterKey(list) {
@@ -734,27 +829,29 @@
     f.side = document.getElementById('filterSide') ? document.getElementById('filterSide').value : ''
     f.ydna = document.getElementById('filterYdna') ? document.getElementById('filterYdna').value : ''
     f.mtdna = document.getElementById('filterMtdna') ? document.getElementById('filterMtdna').value : ''
-    var rows = document.querySelectorAll('#regionFilters .region-row')
+    // Build the active region filters from state rather than from the DOM.
+    // The select's value can be reset while the native dropdown is opening,
+    // and reading the DOM here would then silently drop a selected region.
     s._activeRegionFilters = []
-    for (var ri = 0; ri < rows.length; ri++) {
-      var rowSel = rows[ri].querySelector('.region-select')
-      var minEl = rows[ri].querySelector('.region-pct-min')
-      var maxEl = rows[ri].querySelector('.region-pct-max')
-      var region = rowSel ? rowSel.value : ''
-      if (!region) continue
-      var minV = parseFloat(minEl.value)
-      var maxV = parseFloat(maxEl.value)
-      s._activeRegionFilters.push({ region: region, min: isNaN(minV) ? null : minV, max: isNaN(maxV) ? null : maxV })
+    var regionRows = s.filters.regions || []
+    for (var ri = 0; ri < regionRows.length; ri++) {
+      var rrow = regionRows[ri]
+      if (!rrow || !rrow.region) continue
+      s._activeRegionFilters.push({
+        region: rrow.region,
+        min: rrow.min != null ? rrow.min : null,
+        max: rrow.max != null ? rrow.max : null
+      })
     }
-    var gpbRows = document.querySelectorAll('#gpbFilters .region-row')
     s._activeGpbFilters = []
+    var gpbRows = s.filters.gpbLocations || []
     for (var gi = 0; gi < gpbRows.length; gi++) {
-      var gpbSel = gpbRows[gi].querySelector('.gpb-country')
-      var gpbMin = gpbRows[gi].querySelector('.gpb-min')
-      var country = gpbSel ? gpbSel.value : ''
-      if (!country) continue
-      var minV2 = gpbMin ? parseInt(gpbMin.value, 10) : null
-      s._activeGpbFilters.push({ country: country, min: isNaN(minV2) ? null : minV2 })
+      var grow = gpbRows[gi]
+      if (!grow || !grow.country) continue
+      s._activeGpbFilters.push({
+        country: grow.country,
+        min: grow.min != null ? grow.min : null
+      })
     }
   }
 
@@ -772,7 +869,11 @@
           'data-idx': idx,
           style: { width: '200px' },
           value: f.region,
-          onfocus: function () { refreshRegionGroups(); m.redraw() },
+          onfocus: function () { _filterSelectFocused = true },
+          onblur: function () { _filterSelectFocused = false; m.redraw() },
+          // Mithril applies the value before updating the <option> children,
+          // so re-apply it afterwards to keep the visible selection in sync.
+          onupdate: function (vnode) { var want = vnode.attrs.value == null ? '' : String(vnode.attrs.value); if (vnode.dom.value !== want) vnode.dom.value = want },
           onchange: function (e) {
             s.filters.regions[idx] = s.filters.regions[idx] || { region: '', min: null, max: null }
             s.filters.regions[idx].region = e.target.value
@@ -834,7 +935,9 @@
           'data-idx': idx,
           style: { width: '180px' },
           value: f.country,
-          onfocus: function () { refreshGpbOptions(); m.redraw() },
+          onfocus: function () { _filterSelectFocused = true },
+          onblur: function () { _filterSelectFocused = false; m.redraw() },
+          onupdate: function (vnode) { var want = vnode.attrs.value == null ? '' : String(vnode.attrs.value); if (vnode.dom.value !== want) vnode.dom.value = want },
           onchange: function (e) {
             s.filters.gpbLocations[idx] = s.filters.gpbLocations[idx] || { country: '', min: null }
             s.filters.gpbLocations[idx].country = e.target.value
@@ -932,6 +1035,7 @@
       })
       loadAccount()
       loadCountries()
+      loadCurrentRegionLabels()
       if (typeof Changelog !== 'undefined') Changelog.check().then(function (modal) { if (modal) setState({ modal: modal }) })
     },
     view: function () {
@@ -1101,14 +1205,14 @@
             ]),
             m('span.filter-group', [
               'Y-DNA ',
-              m('select#filterYdna.filter-select', { style: { width: '150px' }, value: s.filters.ydna, onfocus: function () { refreshHaploOptions(); m.redraw() }, onchange: function (e) { s.filters.ydna = e.target.value; applyFilterChange(); m.redraw() } }, [
+              m('select#filterYdna.filter-select', { style: { width: '150px' }, value: s.filters.ydna, onfocus: function () { _filterSelectFocused = true }, onblur: function () { _filterSelectFocused = false; m.redraw() }, onupdate: function (vnode) { var want = vnode.attrs.value == null ? '' : String(vnode.attrs.value); if (vnode.dom.value !== want) vnode.dom.value = want }, onchange: function (e) { s.filters.ydna = e.target.value; applyFilterChange(); m.redraw() } }, [
                 m('option', { value: '' }, 'All'),
                 getHaploOptions().ydna.map(function (v) { return m('option', { value: v }, v) })
               ])
             ]),
             m('span.filter-group', [
               'mtDNA ',
-              m('select#filterMtdna.filter-select', { style: { width: '150px' }, value: s.filters.mtdna, onfocus: function () { refreshHaploOptions(); m.redraw() }, onchange: function (e) { s.filters.mtdna = e.target.value; applyFilterChange(); m.redraw() } }, [
+              m('select#filterMtdna.filter-select', { style: { width: '150px' }, value: s.filters.mtdna, onfocus: function () { _filterSelectFocused = true }, onblur: function () { _filterSelectFocused = false; m.redraw() }, onupdate: function (vnode) { var want = vnode.attrs.value == null ? '' : String(vnode.attrs.value); if (vnode.dom.value !== want) vnode.dom.value = want }, onchange: function (e) { s.filters.mtdna = e.target.value; applyFilterChange(); m.redraw() } }, [
                 m('option', { value: '' }, 'All'),
                 getHaploOptions().mtdna.map(function (v) { return m('option', { value: v }, v) })
               ])

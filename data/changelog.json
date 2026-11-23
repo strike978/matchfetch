@@ -1,6 +1,13 @@
 {
   "entries": [
     {
+      "version": "2.4.6",
+      "date": "November 23, 2026",
+      "changes": [
+        "Fixed the 23andMe region filter: it now lists current regions only and keeps your selection."
+      ]
+    },
+    {
       "version": "2.4.5",
       "date": "November 14, 2026",
       "changes": [

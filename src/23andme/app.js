@@ -635,8 +635,26 @@
     var children = g.childrenOf[label] || []
     children.sort()
     for (var i = 0; i < children.length; i++) {
-      opts.push({ value: children[i], label: Array(depth + 2).join('\u00A0\u00A0') + children[i] })
+      opts.push({
+        value: children[i],
+        label: Array(depth + 2).join('\u00A0\u00A0') + children[i] + ' (' + (g.counts[children[i]] || 0) + ')'
+      })
       renderRegionTreeOptions(children[i], depth + 1, g, opts)
+    }
+  }
+
+  // Record every region label a single match carries, so each option can show
+  // how many of the profile's matches fall into it. A label counts once per
+  // match even when it appears under more than one parent.
+  function collectMatchRegionLabels(regions, seen) {
+    if (!regions) return
+    for (var key in regions) {
+      var arr = regions[key]
+      for (var i = 0; i < arr.length; i++) {
+        var node = arr[i]
+        if (node.label) seen[node.label] = true
+        collectMatchRegionLabels(node.regions, seen)
+      }
     }
   }
 
@@ -670,6 +688,7 @@
   function buildRegionGroups() {
     var groups = {}
     var broadLabels = {}
+    var counts = {}
     var list = buildMatchList()
     var withRegions = 0
     for (var i = 0; i < list.length; i++) {
@@ -679,9 +698,12 @@
       var topKeys = Object.keys(regions)
       if (!topKeys.length) continue
       withRegions++
+      var seenLabels = {}
+      collectMatchRegionLabels(regions, seenLabels)
+      for (var label in seenLabels) counts[label] = (counts[label] || 0) + 1
       for (var topParent in regions) {
         if (!isCurrentRegion(topParent)) continue
-        if (!groups[topParent]) groups[topParent] = { childrenOf: {} }
+        if (!groups[topParent]) groups[topParent] = { childrenOf: {}, counts: counts }
         collectTree(regions[topParent], topParent, groups[topParent], broadLabels)
       }
     }
@@ -691,7 +713,7 @@
       var tp = topParents[p]
       // Exclude the broad label itself, but keep its children (they render as
       // top-level options when the broad group has no other parent).
-      if (!broadLabels[tp]) opts.push({ value: tp, label: tp })
+      if (!broadLabels[tp]) opts.push({ value: tp, label: tp + ' (' + (counts[tp] || 0) + ')' })
       renderRegionTreeOptions(tp, 0, groups[tp], opts)
     }
     // Keep only current, non-broad region names, and drop duplicate values.
@@ -736,16 +758,21 @@
   var _haploOptionsSrc = null
 
   function buildHaploOptions() {
-    var ydnaSet = {}
-    var mtdnaSet = {}
+    var ydnaCounts = {}
+    var mtdnaCounts = {}
     var list = buildMatchList()
     for (var i = 0; i < list.length; i++) {
       var hg = list[i].ancestry && list[i].ancestry.haplogroups
       if (!hg) continue
-      if (hg.ydna) ydnaSet[hg.ydna] = true
-      if (hg.mtdna) mtdnaSet[hg.mtdna] = true
+      if (hg.ydna) ydnaCounts[hg.ydna] = (ydnaCounts[hg.ydna] || 0) + 1
+      if (hg.mtdna) mtdnaCounts[hg.mtdna] = (mtdnaCounts[hg.mtdna] || 0) + 1
     }
-    return { ydna: Object.keys(ydnaSet).sort(), mtdna: Object.keys(mtdnaSet).sort() }
+    function toOptions(counts) {
+      return Object.keys(counts).sort().map(function (v) {
+        return { value: v, label: v + ' (' + counts[v] + ')' }
+      })
+    }
+    return { ydna: toOptions(ydnaCounts), mtdna: toOptions(mtdnaCounts) }
   }
 
   function getHaploOptions() {
@@ -1207,14 +1234,14 @@
               'Y-DNA ',
               m('select#filterYdna.filter-select', { style: { width: '150px' }, value: s.filters.ydna, onfocus: function () { _filterSelectFocused = true }, onblur: function () { _filterSelectFocused = false; m.redraw() }, onupdate: function (vnode) { var want = vnode.attrs.value == null ? '' : String(vnode.attrs.value); if (vnode.dom.value !== want) vnode.dom.value = want }, onchange: function (e) { s.filters.ydna = e.target.value; applyFilterChange(); m.redraw() } }, [
                 m('option', { value: '' }, 'All'),
-                getHaploOptions().ydna.map(function (v) { return m('option', { value: v }, v) })
+                getHaploOptions().ydna.map(function (o) { return m('option', { value: o.value }, o.label) })
               ])
             ]),
             m('span.filter-group', [
               'mtDNA ',
               m('select#filterMtdna.filter-select', { style: { width: '150px' }, value: s.filters.mtdna, onfocus: function () { _filterSelectFocused = true }, onblur: function () { _filterSelectFocused = false; m.redraw() }, onupdate: function (vnode) { var want = vnode.attrs.value == null ? '' : String(vnode.attrs.value); if (vnode.dom.value !== want) vnode.dom.value = want }, onchange: function (e) { s.filters.mtdna = e.target.value; applyFilterChange(); m.redraw() } }, [
                 m('option', { value: '' }, 'All'),
-                getHaploOptions().mtdna.map(function (v) { return m('option', { value: v }, v) })
+                getHaploOptions().mtdna.map(function (o) { return m('option', { value: o.value }, o.label) })
               ])
             ]),
             m('span.filter-group', [

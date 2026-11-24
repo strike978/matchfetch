@@ -1,6 +1,13 @@
 {
   "entries": [
     {
+      "version": "2.4.7",
+      "date": "November 24, 2026",
+      "changes": [
+        "23andMe filtering options now show match counts: each Y-DNA and mtDNA haplogroup and each region lists how many of the selected profile's matches have it, for example A2 (45)."
+      ]
+    },
+    {
       "version": "2.4.6",
       "date": "November 23, 2026",
       "changes": [
